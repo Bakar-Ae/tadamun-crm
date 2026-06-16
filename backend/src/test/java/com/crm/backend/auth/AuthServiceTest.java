@@ -26,19 +26,23 @@ class AuthServiceTest {
     private JwtService jwtService;
     private LoginAttemptService loginAttemptService;
     private AuthService authService;
+    private RefreshTokenService refreshTokenService;
 
     @BeforeEach
     void setUp() {
+
         authenticationManager = mock(AuthenticationManager.class);
         customUserDetailsService = mock(CustomUserDetailsService.class);
         jwtService = mock(JwtService.class);
         loginAttemptService = new LoginAttemptService();
+        refreshTokenService = mock(RefreshTokenService.class);
 
         authService = new AuthService(
                 authenticationManager,
                 customUserDetailsService,
                 jwtService,
-                loginAttemptService
+                loginAttemptService,
+                refreshTokenService
         );
     }
 
@@ -68,9 +72,13 @@ class AuthServiceTest {
         when(jwtService.generateToken(userDetails))
                 .thenReturn("fake-jwt-token");
 
+        when(refreshTokenService.createRefreshToken(user))
+                .thenReturn("fake-refresh-token");
+
         LoginResponse response = authService.login(request);
 
-        assertEquals("fake-jwt-token", response.token());
+        assertEquals("fake-jwt-token", response.accessToken());
+        assertEquals("fake-refresh-token", response.refreshToken());
         assertEquals("Bearer", response.tokenType());
         assertEquals(1L, response.userId());
         assertEquals("admin@crm.com", response.email());

@@ -1,5 +1,4 @@
 package com.crm.backend.auth;
-import org.springframework.security.core.AuthenticationException;
 
 import com.crm.backend.security.CustomUserDetails;
 import com.crm.backend.security.CustomUserDetailsService;
@@ -8,11 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
-
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
@@ -20,17 +19,20 @@ public class AuthService {
     private final CustomUserDetailsService userDetailsService;
     private final JwtService jwtService;
     private final LoginAttemptService loginAttemptService;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthService(
             AuthenticationManager authenticationManager,
             CustomUserDetailsService userDetailsService,
             JwtService jwtService,
-            LoginAttemptService loginAttemptService
+            LoginAttemptService loginAttemptService,
+            RefreshTokenService refreshTokenService
     ) {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
         this.loginAttemptService = loginAttemptService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -51,21 +53,23 @@ public class AuthService {
         CustomUserDetails userDetails =
                 (CustomUserDetails) userDetailsService.loadUserByUsername(request.email());
 
-        String token = jwtService.generateToken(userDetails);
+        String accessToken = jwtService.generateToken(userDetails);
+        String refreshToken = refreshTokenService.createRefreshToken(userDetails.getUser());
 
         log.info("Login successful for user {}", userDetails.getUsername());
 
-        return buildLoginResponse(token, userDetails);
+        return buildLoginResponse(accessToken, refreshToken, userDetails);
     }
 
     public LoginResponse me(CustomUserDetails userDetails) {
-        return buildLoginResponse(null, userDetails);
+        return buildLoginResponse(null, null, userDetails);
     }
 
-    private LoginResponse buildLoginResponse(String token, CustomUserDetails userDetails) {
+    private LoginResponse buildLoginResponse(String accessToken, String refreshToken, CustomUserDetails userDetails) {
         return new LoginResponse(
-                token,
-                token == null ? null : "Bearer",
+                accessToken,
+                refreshToken,
+                accessToken == null ? null : "Bearer",
                 userDetails.getId(),
                 userDetails.getFullName(),
                 userDetails.getUsername(),
