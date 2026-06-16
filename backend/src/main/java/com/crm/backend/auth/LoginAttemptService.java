@@ -22,7 +22,7 @@ public class LoginAttemptService {
         }
 
         if (attempt.blockedUntil != null && Instant.now().isBefore(attempt.blockedUntil)) {
-            throw new IllegalArgumentException("Too many failed login attempts. Please try again later.");
+            throw new TooManyLoginAttemptsException("Too many failed login attempts. Please try again later.");
         }
 
         if (attempt.blockedUntil != null && Instant.now().isAfter(attempt.blockedUntil)) {

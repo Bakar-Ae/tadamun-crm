@@ -110,8 +110,8 @@ class AuthServiceTest {
             );
         }
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        TooManyLoginAttemptsException exception = assertThrows(
+                TooManyLoginAttemptsException.class,
                 () -> authService.login(request)
         );
 
