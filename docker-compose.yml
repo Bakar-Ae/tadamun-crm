@@ -41,6 +41,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
       SERVER_PORT: ${SERVER_PORT}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     ports:
       - "${BACKEND_PORT}:8081"
     healthcheck:
@@ -55,8 +56,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-        
-        CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
 
     
 

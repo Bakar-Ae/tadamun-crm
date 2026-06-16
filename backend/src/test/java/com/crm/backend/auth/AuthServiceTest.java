@@ -24,6 +24,7 @@ class AuthServiceTest {
     private AuthenticationManager authenticationManager;
     private CustomUserDetailsService customUserDetailsService;
     private JwtService jwtService;
+    private LoginAttemptService loginAttemptService;
     private AuthService authService;
 
     @BeforeEach
@@ -31,11 +32,13 @@ class AuthServiceTest {
         authenticationManager = mock(AuthenticationManager.class);
         customUserDetailsService = mock(CustomUserDetailsService.class);
         jwtService = mock(JwtService.class);
+        loginAttemptService = new LoginAttemptService();
 
         authService = new AuthService(
                 authenticationManager,
                 customUserDetailsService,
-                jwtService
+                jwtService,
+                loginAttemptService
         );
     }
 
@@ -87,6 +90,34 @@ class AuthServiceTest {
         assertThrows(
                 BadCredentialsException.class,
                 () -> authService.login(request)
+        );
+    }
+
+    @Test
+    void loginShouldBlockAfterTooManyFailedAttempts() {
+        LoginRequest request = new LoginRequest(
+                "admin@crm.com",
+                "wrong-password"
+        );
+
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+                .thenThrow(new BadCredentialsException("Bad credentials"));
+
+        for (int i = 0; i < 5; i++) {
+            assertThrows(
+                    BadCredentialsException.class,
+                    () -> authService.login(request)
+            );
+        }
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.login(request)
+        );
+
+        assertEquals(
+                "Too many failed login attempts. Please try again later.",
+                exception.getMessage()
         );
     }
 }
