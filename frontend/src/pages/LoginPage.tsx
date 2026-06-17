@@ -23,8 +23,8 @@ type ApiError = {
 }
 
 export function LoginPage() {
-  const [email, setEmail] = useState('admin@crm.com')
-  const [password, setPassword] = useState('Admin@12345')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -211,11 +211,7 @@ export function LoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase text-slate-400">Demo account</p>
-              <p className="mt-2 text-sm font-medium text-slate-700">admin@crm.com</p>
-              <p className="text-sm text-slate-500">Admin@12345</p>
-            </div>
+            
           </section>
         </div>
       </section>
