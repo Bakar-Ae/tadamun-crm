@@ -1,4 +1,5 @@
 package com.crm.backend.common;
+import org.springframework.security.access.AccessDeniedException;
 
 import com.crm.backend.auth.TooManyLoginAttemptsException;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ public class GlobalExceptionHandler {
         ));
     }
 
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
@@ -43,12 +45,32 @@ public class GlobalExceptionHandler {
                         (first, second) -> first
                 ));
 
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
                 "timestamp", LocalDateTime.now(),
                 "status", 400,
                 "error", "Validation Failed",
                 "message", "Request validation failed",
                 "fieldErrors", fieldErrors
+        ));
+    }
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException exception) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", 403,
+                "error", "Forbidden",
+                "message", "Access denied"
+        ));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleUnexpected(Exception exception) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", 500,
+                "error", "Internal Server Error",
+                "message", "Unexpected server error"
         ));
     }
 }
