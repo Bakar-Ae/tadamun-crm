@@ -9,8 +9,8 @@ import { AuditLogsPage } from './pages/AuditLogsPage'
 import { NotesPage } from './pages/NotesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { ChangePasswordPage } from './pages/ChangePasswordPage'
-
-
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 
 function App() {
   const path = window.location.pathname
@@ -19,47 +19,61 @@ function App() {
   const user = storedUser ? JSON.parse(storedUser) : null
   const passwordChangeRequired = user?.passwordChangeRequired === true
 
+  if (path === '/forgot-password') {
+    return <ForgotPasswordPage />
+  }
+
+  if (path === '/reset-password') {
+    return <ResetPasswordPage />
+  }
+
   if (!token) {
     return <LoginPage />
   }
-  if (passwordChangeRequired && path !== '/change-password') {
-  setTimeout(() => {
-    window.location.assign('/change-password')
-  }, 0)
 
-  return null
-}
+  if (passwordChangeRequired && path !== '/change-password') {
+    setTimeout(() => {
+      window.location.assign('/change-password')
+    }, 0)
+
+    return null
+  }
+
   if (path === '/users') {
     return <UsersPage />
   }
+
   if (path === '/contacts') {
-  return <ContactsPage />
-}
+    return <ContactsPage />
+  }
 
-if (path === '/notes') {
-  return <NotesPage />
-}
+  if (path === '/notes') {
+    return <NotesPage />
+  }
 
-if (path === '/reports') {
-  return <ReportsPage />
-}
+  if (path === '/reports') {
+    return <ReportsPage />
+  }
 
-if (path === '/audit-logs') {
-  return <AuditLogsPage />
-}
+  if (path === '/audit-logs') {
+    return <AuditLogsPage />
+  }
 
-if (path === '/tasks') {
-  return <TasksPage />
-}
+  if (path === '/tasks') {
+    return <TasksPage />
+  }
+
   if (path === '/customers') {
-  return <CustomersPage />
-}
-if (path === '/leads') {
-  return <LeadsPage />
-}
-if (path === '/change-password') {
-  return <ChangePasswordPage />
-}
+    return <CustomersPage />
+  }
+
+  if (path === '/leads') {
+    return <LeadsPage />
+  }
+
+  if (path === '/change-password') {
+    return <ChangePasswordPage />
+  }
 
   if (path === '/dashboard') {
     return <DashboardPage />
@@ -67,6 +81,5 @@ if (path === '/change-password') {
 
   return <DashboardPage />
 }
-
 
 export default App

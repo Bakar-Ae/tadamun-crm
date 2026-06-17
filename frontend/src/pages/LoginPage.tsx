@@ -204,6 +204,15 @@ export function LoginPage() {
                   {error}
                 </div>
               )}
+              <div className="flex justify-end">
+               <button
+                type="button"
+                onClick={() => window.location.assign('/forgot-password')}
+                className="text-sm font-semibold text-blue-700 transition hover:text-blue-900"
+  >
+                Forgot password?
+              </button>
+            </div>
 
               <button
                 className="group flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
