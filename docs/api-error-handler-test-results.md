@@ -15,3 +15,18 @@ Command:
 
 ```powershell
 mvn test
+```
+
+## Result
+
+Tests passed.
+
+Security endpoint tests confirmed:
+
+- Unauthenticated users receive 401
+- Authenticated users without permission receive 403
+- Admin users can access protected admin endpoints
+
+## Status
+
+PASS
