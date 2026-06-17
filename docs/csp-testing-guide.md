@@ -25,3 +25,10 @@ This lets the browser report violations without blocking the application.
 
 ```nginx
 add_header Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' http://localhost:8081; frame-ancestors 'none';" always;
+```
+
+## Production Notes
+
+For production, replace `http://localhost:8081` with the real backend API origin.
+
+Do not enforce CSP until the report-only policy is tested.
