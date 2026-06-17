@@ -8,6 +8,7 @@ import { TasksPage } from './pages/TasksPage'
 import { AuditLogsPage } from './pages/AuditLogsPage'
 import { NotesPage } from './pages/NotesPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { ChangePasswordPage } from './pages/ChangePasswordPage'
 
 
 
@@ -46,6 +47,9 @@ if (path === '/tasks') {
 }
 if (path === '/leads') {
   return <LeadsPage />
+}
+if (path === '/change-password') {
+  return <ChangePasswordPage />
 }
 
   if (path === '/dashboard') {

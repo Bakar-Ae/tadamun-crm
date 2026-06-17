@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Users,
   X,
+  KeyRound,
+
 } from 'lucide-react'
 
 type AppLayoutProps = {
@@ -21,6 +23,7 @@ type AppLayoutProps = {
 
 const navItems = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { label: 'Change Password', path: '/change-password', icon: KeyRound },
   { label: 'Users', path: '/users', icon: Users },
   { label: 'Customers', path: '/customers', icon: BriefcaseBusiness },
   { label: 'Leads', path: '/leads', icon: ClipboardList },
