@@ -108,7 +108,7 @@ setTimeout(() => {
               label="Current Password"
               value={currentPassword}
               show={showPasswords}
-              onChange={setCurrentPassword}
+              onChange={setCurrentPassword} 
             />
 
             <PasswordInput
