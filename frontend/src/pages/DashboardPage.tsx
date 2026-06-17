@@ -75,6 +75,7 @@ export function DashboardPage() {
       })
       .catch(() => {
         localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
         window.location.href = '/'
       })

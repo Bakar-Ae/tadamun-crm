@@ -1,5 +1,7 @@
 package com.crm.backend.auth;
 
+import com.crm.backend.security.CustomUserDetails;
+import com.crm.backend.security.JwtService;
 import com.crm.backend.user.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,13 +20,46 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final long refreshTokenExpirationMs;
+    private final JwtService jwtService;
+    @Transactional
+    public void revokeRefreshToken(String rawRefreshToken) {
+        String tokenHash = hashToken(rawRefreshToken);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+
+        refreshToken.setRevoked(true);
+        refreshToken.setRevokedAt(LocalDateTime.now());
+    }
 
     public RefreshTokenService(
             RefreshTokenRepository refreshTokenRepository,
+            JwtService jwtService,
             @Value("${jwt.refresh-expiration-ms:604800000}") long refreshTokenExpirationMs
     ) {
         this.refreshTokenRepository = refreshTokenRepository;
+        this.jwtService = jwtService;
         this.refreshTokenExpirationMs = refreshTokenExpirationMs;
+    }
+    @Transactional(readOnly = true)
+    public RefreshTokenResponse refreshAccessToken(String rawRefreshToken) {
+        String tokenHash = hashToken(rawRefreshToken);
+
+        RefreshToken refreshToken = refreshTokenRepository.findByTokenHash(tokenHash)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+
+        if (refreshToken.isRevoked()) {
+            throw new IllegalArgumentException("Refresh token has been revoked");
+        }
+
+        if (refreshToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Refresh token has expired");
+        }
+
+        CustomUserDetails userDetails = new CustomUserDetails(refreshToken.getUser());
+        String accessToken = jwtService.generateToken(userDetails);
+
+        return new RefreshTokenResponse(accessToken, "Bearer");
     }
 
     @Transactional

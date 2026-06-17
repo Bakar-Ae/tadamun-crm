@@ -6,12 +6,16 @@ export type LoginRequest = {
 }
 
 export type LoginResponse = {
-  token: string
-  tokenType: string
+  accessToken: string | null
+  refreshToken: string | null
+  tokenType: string | null
   userId: number
   fullName: string
   email: string
   role: string
+}
+export async function logout(refreshToken: string) {
+  await api.post('/auth/logout', { refreshToken })
 }
 
 export async function login(request: LoginRequest) {

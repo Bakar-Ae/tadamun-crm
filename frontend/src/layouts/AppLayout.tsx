@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { logout as logoutRequest } from '../services/authService'
 import {
   BarChart3,
   BriefcaseBusiness,
@@ -39,10 +40,19 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pageTitle = getPageTitle()
 
-  function logout() {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    window.location.href = '/'
+  async function logout() {
+    const refreshToken = localStorage.getItem('refreshToken')
+
+    try {
+      if (refreshToken) {
+        await logoutRequest(refreshToken)
+      }
+    } finally {
+      localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
+      localStorage.removeItem('user')
+      window.location.href = '/'
+    }
   }
 
   return (

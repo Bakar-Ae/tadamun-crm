@@ -13,6 +13,15 @@ import {
 } from 'lucide-react'
 import { login } from '../services/authService'
 
+type ApiError = {
+  response?: {
+    status?: number
+    data?: {
+      message?: string
+    }
+  }
+}
+
 export function LoginPage() {
   const [email, setEmail] = useState('admin@crm.com')
   const [password, setPassword] = useState('Admin@12345')
@@ -28,14 +37,33 @@ export function LoginPage() {
     try {
       const response = await login({ email, password })
 
-      if (response.token) {
-        localStorage.setItem('token', response.token)
+      if (!response.accessToken || !response.refreshToken) {
+        setError('Login failed. Please try again.')
+        return
       }
 
-      localStorage.setItem('user', JSON.stringify(response))
+      localStorage.setItem('token', response.accessToken)
+      localStorage.setItem('refreshToken', response.refreshToken)
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          userId: response.userId,
+          fullName: response.fullName,
+          email: response.email,
+          role: response.role,
+        }),
+      )
       window.location.href = '/dashboard'
-    } catch {
-      setError('Invalid email or password')
+    } catch (error) {
+      const apiError = error as ApiError
+      const status = apiError.response?.status
+      const message = apiError.response?.data?.message
+
+      if (status === 429) {
+        setError(message ?? 'Too many login attempts. Please try again later.')
+      } else {
+        setError('Invalid email or password')
+      }
     } finally {
       setLoading(false)
     }
