@@ -21,6 +21,11 @@ public class RefreshTokenService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final long refreshTokenExpirationMs;
     private final JwtService jwtService;
+
+    @Transactional
+    public void revokeAllRefreshTokensForUser(Long userId) {
+        refreshTokenRepository.revokeAllActiveTokensForUser(userId, LocalDateTime.now());
+    }
     @Transactional
     public void revokeRefreshToken(String rawRefreshToken) {
         String tokenHash = hashToken(rawRefreshToken);

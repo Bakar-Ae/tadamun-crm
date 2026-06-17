@@ -32,6 +32,14 @@ public class AuthController {
         refreshTokenService.revokeRefreshToken(request.refreshToken());
         return ResponseEntity.noContent().build();
     }
+    @PatchMapping("/password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        authService.changePassword(userDetails, request);
+        return ResponseEntity.noContent().build();
+    }
 
     @GetMapping("/me")
     public ResponseEntity<LoginResponse> me(@AuthenticationPrincipal CustomUserDetails userDetails) {
