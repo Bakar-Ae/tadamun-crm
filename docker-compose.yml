@@ -2,7 +2,7 @@ services:
   mysql:
     image: mysql:8.4
     container_name: crm_mysql
-    restart: unless-stoppedt
+    restart: unless-stopped
     mem_limit: 1g
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
