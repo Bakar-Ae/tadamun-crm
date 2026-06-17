@@ -13,6 +13,7 @@ export type LoginResponse = {
   fullName: string
   email: string
   role: string
+  passwordChangeRequired: boolean
 }
 export async function logout(refreshToken: string) {
   await api.post('/auth/logout', { refreshToken })

@@ -47,13 +47,16 @@ export function LoginPage() {
       localStorage.setItem(
         'user',
         JSON.stringify({
+
           userId: response.userId,
           fullName: response.fullName,
           email: response.email,
           role: response.role,
+          passwordChangeRequired: response.passwordChangeRequired,
+          
         }),
       )
-      window.location.href = '/dashboard'
+      window.location.href = response.passwordChangeRequired ? '/change-password' : '/dashboard'
     } catch (error) {
       const apiError = error as ApiError
       const status = apiError.response?.status

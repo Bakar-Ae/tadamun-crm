@@ -93,6 +93,7 @@ public class AuthService {
         }
 
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        user.setPasswordChangeRequired(false);
         userRepository.save(user);
         refreshTokenService.revokeAllRefreshTokensForUser(user.getId());
 
@@ -107,7 +108,8 @@ public class AuthService {
                 userDetails.getId(),
                 userDetails.getFullName(),
                 userDetails.getUsername(),
-                userDetails.getAuthorities().iterator().next().getAuthority()
+                userDetails.getAuthorities().iterator().next().getAuthority(),
+                userDetails.getUser().isPasswordChangeRequired()
         );
     }
 }

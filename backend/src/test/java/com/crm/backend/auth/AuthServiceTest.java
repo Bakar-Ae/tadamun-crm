@@ -70,6 +70,7 @@ class AuthServiceTest {
         user.setFullName("System Administrator");
         user.setEmail("admin@crm.com");
         user.setPasswordHash("hashed-password");
+        user.setPasswordChangeRequired(true);
         user.setRole(role);
         user.setStatus(UserStatus.ACTIVE);
 
@@ -92,6 +93,7 @@ class AuthServiceTest {
         assertEquals(1L, response.userId());
         assertEquals("admin@crm.com", response.email());
         assertEquals("ROLE_ADMIN", response.role());
+        assertEquals(true, response.passwordChangeRequired());
     }
 
     @Test
@@ -178,6 +180,32 @@ class AuthServiceTest {
         );
 
         assertEquals("New password and confirmation do not match", exception.getMessage());
+    }
+    @Test
+    void changePasswordShouldUpdatePasswordAndClearRequiredFlag() {
+        User user = createAdminUser();
+        user.setPasswordChangeRequired(true);
+
+        CustomUserDetails userDetails = new CustomUserDetails(user);
+
+        ChangePasswordRequest request = new ChangePasswordRequest(
+                "Admin@12345",
+                "NewPassword123",
+                "NewPassword123"
+        );
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Admin@12345", "hashed-password"))
+                .thenReturn(true);
+        when(passwordEncoder.matches("NewPassword123", "hashed-password"))
+                .thenReturn(false);
+        when(passwordEncoder.encode("NewPassword123"))
+                .thenReturn("new-hashed-password");
+
+        authService.changePassword(userDetails, request);
+
+        assertEquals("new-hashed-password", user.getPasswordHash());
+        assertEquals(false, user.isPasswordChangeRequired());
     }
 
     private User createAdminUser() {

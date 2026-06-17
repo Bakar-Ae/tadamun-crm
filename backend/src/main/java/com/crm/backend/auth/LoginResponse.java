@@ -7,6 +7,7 @@ public record LoginResponse(
         Long userId,
         String fullName,
         String email,
-        String role
+        String role,
+        boolean passwordChangeRequired
 ) {
 }

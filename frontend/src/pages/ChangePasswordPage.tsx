@@ -34,10 +34,28 @@ export function ChangePasswordPage() {
         confirmNewPassword,
       })
 
-      setCurrentPassword('')
-      setNewPassword('')
-      setConfirmNewPassword('')
-      setSuccess('Password changed successfully. Please use the new password next time you log in.')
+     const storedUser = localStorage.getItem('user')
+
+if (storedUser) {
+  const user = JSON.parse(storedUser)
+
+  localStorage.setItem(
+    'user',
+    JSON.stringify({
+      ...user,
+      passwordChangeRequired: false,
+    }),
+  )
+}
+
+setCurrentPassword('')
+setNewPassword('')
+setConfirmNewPassword('')
+setSuccess('Password changed successfully.')
+
+setTimeout(() => {
+  window.location.assign('/dashboard')
+}, 700) 
     } catch (error) {
       const apiError = error as ApiError
       const fieldErrors = apiError.response?.data?.fieldErrors

@@ -15,11 +15,20 @@ import { ChangePasswordPage } from './pages/ChangePasswordPage'
 function App() {
   const path = window.location.pathname
   const token = localStorage.getItem('token')
+  const storedUser = localStorage.getItem('user')
+  const user = storedUser ? JSON.parse(storedUser) : null
+  const passwordChangeRequired = user?.passwordChangeRequired === true
 
   if (!token) {
     return <LoginPage />
   }
+  if (passwordChangeRequired && path !== '/change-password') {
+  setTimeout(() => {
+    window.location.assign('/change-password')
+  }, 0)
 
+  return null
+}
   if (path === '/users') {
     return <UsersPage />
   }
