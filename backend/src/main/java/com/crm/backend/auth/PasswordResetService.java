@@ -46,6 +46,7 @@ public class PasswordResetService {
     public void requestPasswordReset(ForgotPasswordRequest request) {
         userRepository.findByEmail(request.email())
                 .ifPresent(user -> {
+                    revokeActiveResetTokens(user);
                     String rawToken = generateRawToken();
                     String tokenHash = hashToken(rawToken);
 
@@ -94,6 +95,13 @@ public class PasswordResetService {
         resetToken.setUsedAt(LocalDateTime.now());
 
         refreshTokenService.revokeAllRefreshTokensForUser(user.getId());
+    }
+    private void revokeActiveResetTokens(User user) {
+        passwordResetTokenRepository.findByUserAndUsedFalse(user)
+                .forEach(token -> {
+                    token.setUsed(true);
+                    token.setUsedAt(LocalDateTime.now());
+                });
     }
 
     private String generateRawToken() {
