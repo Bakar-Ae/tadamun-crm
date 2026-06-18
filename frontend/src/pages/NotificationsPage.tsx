@@ -1,12 +1,36 @@
 import { useEffect, useState } from 'react'
-import { Bell, CheckCircle2 } from 'lucide-react'
+import { motion, type Variants } from 'framer-motion'
+import { Bell, CheckCircle2, Inbox, ShieldCheck } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
+import { GlassCard, PageShell, StatTile } from '../components/ui'
 import {
   getNotifications,
   getUnreadNotificationCount,
   markNotificationAsRead,
   type NotificationResponse,
 } from '../services/notificationService'
+
+const containerAnimation: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+}
+
+const cardAnimation: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut',
+    },
+  },
+}
 
 async function fetchNotificationData() {
   const [notificationPage, countResponse] = await Promise.all([
@@ -24,6 +48,7 @@ export function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationResponse[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   async function refreshNotifications() {
     const data = await fetchNotificationData()
@@ -32,8 +57,14 @@ export function NotificationsPage() {
   }
 
   async function handleMarkAsRead(id: number) {
-    await markNotificationAsRead(id)
-    await refreshNotifications()
+    setActionLoadingId(id)
+
+    try {
+      await markNotificationAsRead(id)
+      await refreshNotifications()
+    } finally {
+      setActionLoadingId(null)
+    }
   }
 
   useEffect(() => {
@@ -65,75 +96,112 @@ export function NotificationsPage() {
     }
   }, [])
 
+  const readCount = notifications.filter((notification) => notification.readStatus).length
+
   return (
     <AppLayout>
-      <div>
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-950">Notifications</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Security and system updates for your account.
-            </p>
+      <PageShell
+        title="Notifications"
+        description="Review security, system, and workflow updates for your Tadamun account."
+      >
+        <motion.section
+          className="grid gap-4 sm:grid-cols-3"
+          variants={containerAnimation}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div variants={cardAnimation}>
+            <StatTile label="Unread" value={unreadCount} icon={Bell} tone="amber" />
+          </motion.div>
+
+          <motion.div variants={cardAnimation}>
+            <StatTile label="Read" value={readCount} icon={CheckCircle2} tone="green" />
+          </motion.div>
+
+          <motion.div variants={cardAnimation}>
+            <StatTile label="Total" value={notifications.length} icon={Inbox} tone="blue" />
+          </motion.div>
+        </motion.section>
+
+        <GlassCard className="overflow-hidden p-0">
+          <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
+            <div>
+              <h3 className="font-semibold text-[var(--crm-text)]">Notification Inbox</h3>
+              <p className="text-sm text-[var(--crm-text-muted)]">
+                System messages and account events
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-cyan-400/10 p-3 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+              <ShieldCheck size={22} />
+            </div>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm">
-            Unread: {unreadCount}
-          </div>
-        </div>
-
-        <section className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           {loading ? (
-            <div className="p-6 text-sm text-slate-500">Loading notifications...</div>
+            <div className="p-6 text-sm text-[var(--crm-text-muted)]">Loading notifications...</div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
                 <Bell size={24} />
               </div>
-              <h3 className="mt-4 text-lg font-semibold text-slate-950">No notifications yet</h3>
-              <p className="mt-2 max-w-md text-sm text-slate-500">
+              <h3 className="mt-4 text-lg font-semibold text-[var(--crm-text)]">No notifications yet</h3>
+              <p className="mt-2 max-w-md text-sm text-[var(--crm-text-muted)]">
                 Important security and system updates will appear here.
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <motion.div
+              className="divide-y divide-[var(--crm-border)]"
+              variants={containerAnimation}
+              initial="hidden"
+              animate="show"
+            >
               {notifications.map((notification) => (
-                <div
+                <motion.div
                   key={notification.id}
                   className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between ${
-                    notification.readStatus ? 'bg-white' : 'bg-blue-50/60'
+                    notification.readStatus ? 'bg-transparent' : 'bg-cyan-400/5'
                   }`}
+                  variants={cardAnimation}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <Bell
                         size={18}
-                        className={notification.readStatus ? 'text-slate-400' : 'text-blue-700'}
+                        className={
+                          notification.readStatus
+                            ? 'text-[var(--crm-text-muted)]'
+                            : 'text-[var(--crm-accent-text)]'
+                        }
                       />
-                      <h3 className="font-semibold text-slate-950">{notification.title}</h3>
+                      <h3 className="font-semibold text-[var(--crm-text)]">{notification.title}</h3>
                     </div>
 
-                    <p className="mt-2 text-sm text-slate-600">{notification.message}</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--crm-text-muted)]">
+                      {notification.message}
+                    </p>
 
-                    <p className="mt-3 text-xs font-medium uppercase text-slate-400">
-                      {notification.type} • {new Date(notification.createdAt).toLocaleString()}
+                    <p className="mt-3 text-xs font-medium uppercase text-[var(--crm-text-muted)]">
+                      {notification.type} - {new Date(notification.createdAt).toLocaleString()}
                     </p>
                   </div>
 
                   {!notification.readStatus && (
                     <button
                       onClick={() => handleMarkAsRead(notification.id)}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-3 text-sm font-semibold text-blue-700 transition hover:bg-blue-50"
+                      disabled={actionLoadingId === notification.id}
+                      className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-400/10 px-3 text-sm font-semibold text-[var(--crm-accent-text)] transition hover:bg-cyan-400/15 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       <CheckCircle2 size={16} />
-                      Mark read
+                      {actionLoadingId === notification.id ? 'Saving...' : 'Mark read'}
                     </button>
                   )}
-                </div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
-        </section>
-      </div>
+        </GlassCard>
+      </PageShell>
     </AppLayout>
   )
 }
