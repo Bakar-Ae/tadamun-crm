@@ -1,23 +1,47 @@
-import { useEffect, useState } from 'react'
-import { Building2, Mail, Phone, Search, UserRound, UsersRound } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { motion, type Variants } from 'framer-motion'
+import { Activity, Building2, Mail, Phone, Search, UserRound, UsersRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
+import { GlassCard, PageShell, StatTile } from '../components/ui'
 import { getCustomers, type CustomerResponse } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
 
+const containerAnimation: Variants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+    },
+  },
+}
+
+const cardAnimation: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut',
+    },
+  },
+}
+
 function statusBadgeClass(status: string) {
   if (status === 'ACTIVE') {
-    return 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+    return 'border-emerald-400/30 bg-emerald-400/10 text-[var(--crm-success-text)]'
   }
 
-  return 'bg-slate-100 text-slate-600 ring-slate-200'
+  return 'border-amber-400/30 bg-amber-400/10 text-[var(--crm-warning-text)]'
 }
 
 function typeBadgeClass(type: string) {
   if (type === 'COMPANY') {
-    return 'bg-blue-50 text-blue-700 ring-blue-200'
+    return 'border-cyan-400/30 bg-cyan-400/10 text-[var(--crm-accent-text)]'
   }
 
-  return 'bg-violet-50 text-violet-700 ring-violet-200'
+  return 'border-violet-400/30 bg-violet-400/10 text-violet-400'
 }
 
 export function CustomersPage() {
@@ -61,7 +85,7 @@ export function CustomersPage() {
     }
   }, [])
 
-  function handleSearch(event: React.FormEvent<HTMLFormElement>) {
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     loadCustomers(keyword)
   }
@@ -74,80 +98,75 @@ export function CustomersPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="bg-slate-950 px-6 py-6 text-white">
-            <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-              <div>
-                <p className="text-sm font-medium text-emerald-300">Customer Management</p>
-                <h2 className="mt-2 text-3xl font-semibold">Customers</h2>
-                <p className="mt-2 max-w-2xl text-sm text-slate-300">
-                  View customer records, company accounts, contact details, and customer status.
-                </p>
-              </div>
+      <PageShell
+        title="Customers"
+        description="View customer records, company accounts, contact details, and customer status."
+      >
+        <motion.section
+          className="grid gap-4 sm:grid-cols-3"
+          variants={containerAnimation}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.div variants={cardAnimation}>
+            <StatTile label="Visible" value={visibleCustomers.length} icon={UsersRound} tone="blue" />
+          </motion.div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-lg border border-white/10 bg-white/10 px-4 py-3">
-                  <p className="text-xs text-slate-400">Visible</p>
-                  <p className="mt-1 text-xl font-semibold">{visibleCustomers.length}</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-white/10 px-4 py-3">
-                  <p className="text-xs text-slate-400">Active</p>
-                  <p className="mt-1 text-xl font-semibold">{activeCustomers}</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-white/10 px-4 py-3">
-                  <p className="text-xs text-slate-400">Companies</p>
-                  <p className="mt-1 text-xl font-semibold">{companyCustomers}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <motion.div variants={cardAnimation}>
+            <StatTile label="Active" value={activeCustomers} icon={Activity} tone="green" />
+          </motion.div>
 
-          <form onSubmit={handleSearch} className="border-t border-slate-200 p-5">
+          <motion.div variants={cardAnimation}>
+            <StatTile label="Companies" value={companyCustomers} icon={Building2} tone="amber" />
+          </motion.div>
+        </motion.section>
+
+        <GlassCard>
+          <form onSubmit={handleSearch}>
             <div className="flex flex-col gap-3 md:flex-row">
               <div className="relative flex-1">
                 <Search
                   size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]"
                 />
                 <input
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
                   placeholder="Search by name, email, phone, or company"
-                  className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
+                  className="crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-3 text-sm text-[var(--crm-text)] transition placeholder:text-[var(--crm-text-muted)] focus:border-cyan-400"
                 />
               </div>
 
-              <button className="h-11 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+              <button className="h-11 rounded-xl bg-cyan-600 px-5 text-sm font-semibold text-white shadow-sm shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700">
                 Search
               </button>
             </div>
           </form>
-        </section>
+        </GlassCard>
 
         {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
             {error}
           </div>
         )}
 
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <GlassCard className="overflow-hidden p-0">
+          <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
             <div>
-              <h3 className="font-semibold text-slate-950">Customer Directory</h3>
-              <p className="text-sm text-slate-500">
+              <h3 className="font-semibold text-[var(--crm-text)]">Customer Directory</h3>
+              <p className="text-sm text-[var(--crm-text-muted)]">
                 Showing {visibleCustomers.length} of {customers?.totalElements ?? 0} customers
               </p>
             </div>
 
-            <div className="rounded-lg bg-emerald-50 p-3 text-emerald-700">
+            <div className="rounded-xl bg-cyan-400/10 p-3 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
               <UsersRound size={22} />
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] border-collapse text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <thead className="bg-[var(--crm-card-subtle)] text-xs uppercase text-[var(--crm-text-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Customer</th>
                   <th className="px-5 py-3 font-semibold">Email</th>
@@ -158,10 +177,10 @@ export function CustomersPage() {
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-[var(--crm-border)]">
                 {loading && (
                   <tr>
-                    <td className="px-5 py-8 text-center text-slate-500" colSpan={6}>
+                    <td className="px-5 py-8 text-center text-[var(--crm-text-muted)]" colSpan={6}>
                       Loading customers...
                     </td>
                   </tr>
@@ -169,10 +188,10 @@ export function CustomersPage() {
 
                 {!loading &&
                   visibleCustomers.map((customer) => (
-                    <tr key={customer.id} className="transition hover:bg-slate-50">
+                    <tr key={customer.id} className="transition hover:bg-cyan-400/5">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
                             {customer.customerType === 'COMPANY' ? (
                               <Building2 size={18} />
                             ) : (
@@ -180,31 +199,33 @@ export function CustomersPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-950">{customer.name}</p>
-                            <p className="text-xs text-slate-500">ID #{customer.id}</p>
+                            <p className="font-semibold text-[var(--crm-text)]">{customer.name}</p>
+                            <p className="text-xs text-[var(--crm-text-muted)]">ID #{customer.id}</p>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 text-slate-600">
+                      <td className="px-5 py-4 text-[var(--crm-text-muted)]">
                         <div className="flex items-center gap-2">
-                          <Mail size={16} className="text-slate-400" />
+                          <Mail size={16} />
                           {customer.email ?? '-'}
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 text-slate-600">
+                      <td className="px-5 py-4 text-[var(--crm-text-muted)]">
                         <div className="flex items-center gap-2">
-                          <Phone size={16} className="text-slate-400" />
+                          <Phone size={16} />
                           {customer.phone ?? '-'}
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 text-slate-600">{customer.companyName ?? '-'}</td>
+                      <td className="px-5 py-4 text-[var(--crm-text-muted)]">
+                        {customer.companyName ?? '-'}
+                      </td>
 
                       <td className="px-5 py-4">
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${typeBadgeClass(
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ring-1 ${typeBadgeClass(
                             customer.customerType,
                           )}`}
                         >
@@ -214,7 +235,7 @@ export function CustomersPage() {
 
                       <td className="px-5 py-4">
                         <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${statusBadgeClass(
+                          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ring-1 ${statusBadgeClass(
                             customer.status,
                           )}`}
                         >
@@ -226,7 +247,7 @@ export function CustomersPage() {
 
                 {!loading && visibleCustomers.length === 0 && (
                   <tr>
-                    <td className="px-5 py-10 text-center text-slate-500" colSpan={6}>
+                    <td className="px-5 py-10 text-center text-[var(--crm-text-muted)]" colSpan={6}>
                       No customers found
                     </td>
                   </tr>
@@ -234,8 +255,8 @@ export function CustomersPage() {
               </tbody>
             </table>
           </div>
-        </section>
-      </div>
+        </GlassCard>
+      </PageShell>
     </AppLayout>
   )
 }
