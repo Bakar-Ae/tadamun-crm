@@ -119,9 +119,9 @@ export function DashboardPage() {
           <GlassCard className="min-h-[360px]">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div>
-                <p className="text-sm font-semibold text-cyan-200">Pipeline Momentum</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Sales activity trend</h2>
-                <p className="mt-2 text-sm text-slate-400">
+                <p className="text-sm font-semibold text-[var(--crm-accent-text)]">Pipeline Momentum</p>
+                <h2 className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">Sales activity trend</h2>
+                <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
                   Demo trend view for weekly leads and customer movement.
                 </p>
               </div>
@@ -141,15 +141,15 @@ export function DashboardPage() {
                       <stop offset="95%" stopColor="#02f5a1" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgba(173,223,241,0.08)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#64748b" tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748b" tickLine={false} axisLine={false} />
+                  <CartesianGrid stroke="var(--crm-chart-grid)" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--crm-text-muted)" tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--crm-text-muted)" tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{
-                      background: '#07191e',
-                      border: '1px solid rgba(173,223,241,0.16)',
+                      background: 'var(--crm-surface)',
+                      border: '1px solid var(--crm-border)',
                       borderRadius: '12px',
-                      color: '#fff',
+                      color: 'var(--crm-text)',
                     }}
                   />
                   <Area
@@ -172,9 +172,9 @@ export function DashboardPage() {
           </GlassCard>
 
           <GlassCard className="min-h-[360px]">
-            <p className="text-sm font-semibold text-cyan-200">Task Status</p>
-            <h2 className="mt-2 text-2xl font-semibold text-white">Work completion</h2>
-            <p className="mt-2 text-sm text-slate-400">Open vs completed task balance.</p>
+            <p className="text-sm font-semibold text-[var(--crm-accent-text)]">Task Status</p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">Work completion</h2>
+            <p className="mt-2 text-sm text-[var(--crm-text-muted)]">Open vs completed task balance.</p>
 
             <div className="mt-8 h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -193,10 +193,10 @@ export function DashboardPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      background: '#07191e',
-                      border: '1px solid rgba(173,223,241,0.16)',
+                      background: 'var(--crm-surface)',
+                      border: '1px solid var(--crm-border)',
                       borderRadius: '12px',
-                      color: '#fff',
+                      color: 'var(--crm-text)',
                     }}
                   />
                 </PieChart>
@@ -204,14 +204,14 @@ export function DashboardPage() {
             </div>
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-xs text-slate-400">Open</p>
+              <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <p className="text-xs text-[var(--crm-text-muted)]">Open</p>
                 <p className="mt-1 text-2xl font-semibold text-amber-200">
                   {summary?.openTasks ?? 0}
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <p className="text-xs text-slate-400">Completed</p>
+              <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <p className="text-xs text-[var(--crm-text-muted)]">Completed</p>
                 <p className="mt-1 text-2xl font-semibold text-emerald-200">
                   {summary?.completedTasks ?? 0}
                 </p>
@@ -227,23 +227,23 @@ export function DashboardPage() {
                 <TrendingUp size={22} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-cyan-200">Tadamun Composition</p>
-                <h2 className="text-xl font-semibold text-white">Workspace distribution</h2>
+                <p className="text-sm font-semibold text-[var(--crm-accent-text)]">Tadamun Composition</p>
+                <h2 className="text-xl font-semibold text-[var(--crm-text)]">Workspace distribution</h2>
               </div>
             </div>
 
             <div className="mt-6 h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
-                  <CartesianGrid stroke="rgba(173,223,241,0.08)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#64748b" tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748b" tickLine={false} axisLine={false} />
+                  <CartesianGrid stroke="var(--crm-chart-grid)" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--crm-text-muted)" tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--crm-text-muted)" tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{
-                      background: '#07191e',
-                      border: '1px solid rgba(173,223,241,0.16)',
+                      background: 'var(--crm-surface)',
+                      border: '1px solid var(--crm-border)',
                       borderRadius: '12px',
-                      color: '#fff',
+                      color: 'var(--crm-text)',
                     }}
                   />
                   <Bar dataKey="value" radius={[10, 10, 0, 0]} fill="#41c0f2" />
@@ -255,8 +255,8 @@ export function DashboardPage() {
           <GlassCard>
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
               <div>
-                <p className="text-sm font-semibold text-cyan-200">Operational Focus</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">What needs attention</h2>
+                <p className="text-sm font-semibold text-[var(--crm-accent-text)]">Operational Focus</p>
+                <h2 className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">What needs attention</h2>
               </div>
               <StatusBadge variant="neutral">{user?.email ?? 'Loading'}</StatusBadge>
             </div>
@@ -266,8 +266,8 @@ export function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <ClipboardList className="text-amber-200" size={20} />
                   <div>
-                    <p className="font-semibold text-white">Open tasks</p>
-                    <p className="text-sm text-slate-400">Work still waiting for execution</p>
+                    <p className="font-semibold text-[var(--crm-text)]">Open tasks</p>
+                    <p className="text-sm text-[var(--crm-text-muted)]">Work still waiting for execution</p>
                   </div>
                 </div>
                 <p className="text-2xl font-semibold text-amber-200">{summary?.openTasks ?? 0}</p>
@@ -275,21 +275,21 @@ export function DashboardPage() {
 
               <div className="flex items-center justify-between rounded-2xl border border-cyan-300/20 bg-cyan-300/10 px-4 py-4">
                 <div className="flex items-center gap-3">
-                  <Target className="text-cyan-200" size={20} />
+                  <Target className="text-[var(--crm-accent-text)]" size={20} />
                   <div>
-                    <p className="font-semibold text-white">Active leads</p>
-                    <p className="text-sm text-slate-400">Pipeline opportunities to follow up</p>
+                    <p className="font-semibold text-[var(--crm-text)]">Active leads</p>
+                    <p className="text-sm text-[var(--crm-text-muted)]">Pipeline opportunities to follow up</p>
                   </div>
                 </div>
-                <p className="text-2xl font-semibold text-cyan-200">{summary?.activeLeads ?? 0}</p>
+                <p className="text-2xl font-semibold text-[var(--crm-accent-text)]">{summary?.activeLeads ?? 0}</p>
               </div>
 
               <div className="flex items-center justify-between rounded-2xl border border-red-300/20 bg-red-300/10 px-4 py-4">
                 <div className="flex items-center gap-3">
                   <Archive className="text-red-200" size={20} />
                   <div>
-                    <p className="font-semibold text-white">Archived customers</p>
-                    <p className="text-sm text-slate-400">Records removed from active workspace</p>
+                    <p className="font-semibold text-[var(--crm-text)]">Archived customers</p>
+                    <p className="text-sm text-[var(--crm-text-muted)]">Records removed from active workspace</p>
                   </div>
                 </div>
                 <p className="text-2xl font-semibold text-red-200">
@@ -301,8 +301,8 @@ export function DashboardPage() {
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="text-emerald-200" size={20} />
                   <div>
-                    <p className="font-semibold text-white">Completed tasks</p>
-                    <p className="text-sm text-slate-400">Execution progress this workspace can show</p>
+                    <p className="font-semibold text-[var(--crm-text)]">Completed tasks</p>
+                    <p className="text-sm text-[var(--crm-text-muted)]">Execution progress this workspace can show</p>
                   </div>
                 </div>
                 <p className="text-2xl font-semibold text-emerald-200">

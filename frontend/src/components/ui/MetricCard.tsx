@@ -23,8 +23,8 @@ export function MetricCard({ label, value, icon: Icon, tone = 'blue', trend }: M
     <GlassCard>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-slate-400">{label}</p>
-          <p className="mt-3 text-3xl font-semibold tracking-normal text-white">{value}</p>
+          <p className="text-sm font-medium text-[var(--crm-text-muted)]">{label}</p>
+          <p className="mt-3 text-3xl font-semibold tracking-normal text-[var(--crm-text)]">{value}</p>
 
           {trend && (
             <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-300">

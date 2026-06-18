@@ -70,7 +70,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed left-4 top-4 z-40 rounded-xl border border-white/10 bg-white/10 p-2 text-white shadow-lg backdrop-blur lg:hidden"
+        className="fixed left-4 top-4 z-40 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-glass)] p-2 text-[var(--crm-text)] shadow-lg backdrop-blur lg:hidden"
         aria-label="Open navigation"
       >
         <Menu size={20} />
@@ -86,26 +86,27 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-white/10 bg-slate-950/85 text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform lg:translate-x-0',
+         'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[var(--crm-border)] bg-[var(--crm-surface-glass)] text-[var(--crm-text)] shadow-2xl backdrop-blur-xl transition-transform lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',
           'lg:z-30',
         )}
       >
-        <div className="flex h-20 items-center justify-between border-b border-white/10 px-5">
+        <div className="flex h-20 items-center justify-between border-b border-[var(--crm-border)] px-5">
           <div className="flex items-center gap-3">
             <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 text-sm font-bold text-cyan-100 ring-1 ring-cyan-300/25 shadow-[0_0_30px_rgba(65,192,242,0.18)]">
               TD
               <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(2,245,161,0.9)]" />
             </div>
             <div>
-              <h1 className="text-base font-semibold text-white">Tadamun</h1>
-              <p className="text-xs text-slate-400">Sales command center</p>
+              <h1 className="text-base font-semibold text-[var(--crm-text)]">Tadamun</h1>
+              <p className="text-xs text-[var(--crm-text-muted)]">Sales command center</p>
+              
             </div>
           </div>
 
           <button
             onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white lg:hidden"
+            className="rounded-lg p-2 text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)] lg:hidden"
             aria-label="Close navigation"
           >
             <X size={18} />
@@ -128,8 +129,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                 className={cn(
                   'group relative mb-1 flex h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm font-medium transition',
                   active
-                    ? 'bg-cyan-400/15 text-white ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]'
-                    : 'text-slate-400 hover:bg-white/8 hover:text-white',
+                    ? 'bg-cyan-400/15 text-[var(--crm-text)] ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]'
+                    : 'text-[var(--crm-text-muted)] hover:bg-cyan-400/10 hover:text-[var(--crm-text)]',
                 )}
               >
                 {active && (
@@ -151,8 +152,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           })}
         </nav>
 
-        <div className="border-t border-white/10 p-4">
-          <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+        <div className="border-t border-[var(--crm-border)] p-4">
+          <div className="mb-3 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-300/20">
                 <Sparkles size={18} />
@@ -161,7 +162,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                   Environment
                 </p>
-                <p className="mt-1 text-sm font-medium text-slate-100">Local Docker</p>
+                <p className="mt-1 text-sm font-medium text-[var(--crm-text)]">Local Docker</p>
               </div>
             </div>
           </div>

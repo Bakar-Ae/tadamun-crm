@@ -23,8 +23,12 @@ export function PageShell({ title, description, action, children, className }: P
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
             Tadamun CRM
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-normal text-white">{title}</h1>
-          {description && <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">{description}</p>}
+          <h1 className="mt-2 text-3xl font-semibold tracking-normal text-[var(--crm-text)]">{title}</h1>
+        {description && (
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--crm-text-muted)]">
+          {description}
+        </p>
+)}
         </div>
 
         {action && <div className="shrink-0">{action}</div>}
