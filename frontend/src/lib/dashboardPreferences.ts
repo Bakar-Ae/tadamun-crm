@@ -7,13 +7,11 @@ export type DashboardWidgetKey =
 
 export type DashboardPreferences = {
   density: "comfortable" | "compact";
-  defaultRange: "today" | "7d" | "30d";
   widgets: Record<DashboardWidgetKey, boolean>;
 };
 
 const defaultDashboardPreferences: DashboardPreferences = {
   density: "comfortable",
-  defaultRange: "7d",
   widgets: {
     kpis: true,
     pipeline: true,

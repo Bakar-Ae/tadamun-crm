@@ -9,11 +9,11 @@ import {
 } from "../lib/dashboardPreferences";
 
 const widgetLabels: Array<{ key: DashboardWidgetKey; label: string }> = [
-  { key: "kpis", label: "KPI cards" },
-  { key: "pipeline", label: "Sales activity" },
-  { key: "tasks", label: "Task completion" },
-  { key: "distribution", label: "Workspace distribution" },
-  { key: "focus", label: "Attention panel" },
+  { key: "kpis", label: "KPI grid" },
+  { key: "pipeline", label: "Task status" },
+  { key: "tasks", label: "Account status" },
+  { key: "distribution", label: "CRM totals" },
+  { key: "focus", label: "Review list" },
 ];
 
 export function SettingsPanel() {
@@ -49,7 +49,7 @@ export function SettingsPanel() {
       <Modal
         open={open}
         title="Workspace settings"
-        description="Customize dashboard density, range, and visible widgets."
+        description="Customize dashboard density and visible widgets."
         onClose={() => setOpen(false)}
       >
         <div className="space-y-6">
@@ -70,30 +70,6 @@ export function SettingsPanel() {
                   }`}
                 >
                   {density}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-sm font-semibold text-[var(--crm-text)]">
-              Default range
-            </h3>
-            <div className="mt-3 grid grid-cols-3 gap-3">
-              {(["today", "7d", "30d"] as const).map((range) => (
-                <button
-                  key={range}
-                  type="button"
-                  onClick={() =>
-                    updatePreferences({ ...preferences, defaultRange: range })
-                  }
-                  className={`h-11 rounded-xl border px-3 text-sm font-semibold uppercase transition ${
-                    preferences.defaultRange === range
-                      ? "border-cyan-300/50 bg-cyan-400/15 text-[var(--crm-text)]"
-                      : "border-[var(--crm-border)] bg-[var(--crm-surface-soft)] text-[var(--crm-text-muted)] hover:text-[var(--crm-text)]"
-                  }`}
-                >
-                  {range}
                 </button>
               ))}
             </div>
