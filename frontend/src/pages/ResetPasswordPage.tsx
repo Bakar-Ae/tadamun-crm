@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
+import { motion } from 'framer-motion'
 import { ArrowLeft, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { resetPassword } from '../services/authService'
 
@@ -21,7 +22,7 @@ export function ResetPasswordPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setSuccess(false)
@@ -46,89 +47,66 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:44px_44px]" />
-      <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-600/25 to-transparent" />
+    <main className="relative min-h-screen overflow-hidden bg-[var(--crm-bg)] text-[var(--crm-text)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(65,192,242,0.2),transparent_30rem),radial-gradient(circle_at_80%_0%,rgba(2,245,161,0.1),transparent_24rem)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(173,223,241,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(173,223,241,0.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white p-6 text-slate-950 shadow-2xl shadow-slate-950/40 sm:p-8">
+        <motion.div
+          className="w-full max-w-md rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface-glass)] p-6 shadow-2xl backdrop-blur-xl sm:p-8"
+          initial={{ opacity: 0, y: 18, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+        >
           <div className="mb-8">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
               <ShieldCheck size={24} />
             </div>
 
-            <p className="text-sm font-semibold text-blue-700">Secure reset</p>
-            <h1 className="mt-2 text-3xl font-semibold">Create new password</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="text-sm font-semibold text-[var(--crm-accent-text)]">Secure reset</p>
+            <h1 className="mt-2 text-3xl font-semibold text-[var(--crm-text)]">Create new password</h1>
+            <p className="mt-2 text-sm leading-6 text-[var(--crm-text-muted)]">
               Choose a strong password with uppercase, lowercase, and a number.
             </p>
           </div>
 
           {!token && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            <div className="mb-4 rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
               Reset token is missing. Please request a new password reset link.
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">New password</label>
-              <div className="relative">
-                <LockKeyhole
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-11 text-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((value) => !value)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
+            <PasswordField
+              label="New password"
+              value={newPassword}
+              show={showPassword}
+              onChange={setNewPassword}
+              withToggle
+              onToggle={() => setShowPassword((value) => !value)}
+            />
 
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Confirm password</label>
-              <div className="relative">
-                <LockKeyhole
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
-                  value={confirmNewPassword}
-                  onChange={(event) => setConfirmNewPassword(event.target.value)}
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  required
-                />
-              </div>
-            </div>
+            <PasswordField
+              label="Confirm password"
+              value={confirmNewPassword}
+              show={showPassword}
+              onChange={setConfirmNewPassword}
+            />
 
             {success && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-success-text)]">
                 Password reset successful. You can now sign in.
               </div>
             )}
 
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <div className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
                 {error}
               </div>
             )}
 
             <button
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center rounded-xl bg-cyan-600 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={loading || !token}
             >
               {loading ? 'Resetting...' : 'Reset password'}
@@ -138,13 +116,54 @@ export function ResetPasswordPage() {
           <button
             type="button"
             onClick={() => window.location.assign('/')}
-            className="mt-6 flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-950"
+            className="mt-6 flex items-center gap-2 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:text-[var(--crm-text)]"
           >
             <ArrowLeft size={16} />
             Back to login
           </button>
-        </div>
+        </motion.div>
       </section>
     </main>
+  )
+}
+
+type PasswordFieldProps = {
+  label: string
+  value: string
+  show: boolean
+  onChange: (value: string) => void
+  withToggle?: boolean
+  onToggle?: () => void
+}
+
+function PasswordField({ label, value, show, onChange, withToggle, onToggle }: PasswordFieldProps) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-semibold text-[var(--crm-text)]">{label}</label>
+      <div className="relative">
+        <LockKeyhole
+          size={18}
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]"
+        />
+        <input
+          className="crm-focus h-12 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-11 text-sm text-[var(--crm-text)] transition focus:border-cyan-400"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          type={show ? 'text' : 'password'}
+          autoComplete="new-password"
+          required
+        />
+        {withToggle && (
+          <button
+            type="button"
+            onClick={onToggle}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)]"
+            aria-label={show ? 'Hide password' : 'Show password'}
+          >
+            {show ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        )}
+      </div>
+    </div>
   )
 }

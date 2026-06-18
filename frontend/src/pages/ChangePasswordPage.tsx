@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
+import { GlassCard, PageShell } from '../components/ui'
 import { changePassword } from '../services/authService'
 
 type ApiError = {
@@ -21,7 +22,7 @@ export function ChangePasswordPage() {
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setSuccess('')
@@ -34,28 +35,28 @@ export function ChangePasswordPage() {
         confirmNewPassword,
       })
 
-     const storedUser = localStorage.getItem('user')
+      const storedUser = localStorage.getItem('user')
 
-if (storedUser) {
-  const user = JSON.parse(storedUser)
+      if (storedUser) {
+        const user = JSON.parse(storedUser)
 
-  localStorage.setItem(
-    'user',
-    JSON.stringify({
-      ...user,
-      passwordChangeRequired: false,
-    }),
-  )
-}
+        localStorage.setItem(
+          'user',
+          JSON.stringify({
+            ...user,
+            passwordChangeRequired: false,
+          }),
+        )
+      }
 
-setCurrentPassword('')
-setNewPassword('')
-setConfirmNewPassword('')
-setSuccess('Password changed successfully.')
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmNewPassword('')
+      setSuccess('Password changed successfully.')
 
-setTimeout(() => {
-  window.location.assign('/dashboard')
-}, 700) 
+      setTimeout(() => {
+        window.location.assign('/dashboard')
+      }, 700)
     } catch (error) {
       const apiError = error as ApiError
       const fieldErrors = apiError.response?.data?.fieldErrors
@@ -73,77 +74,78 @@ setTimeout(() => {
 
   return (
     <AppLayout>
-      <div className="mx-auto max-w-3xl space-y-6">
-        <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="bg-slate-950 px-6 py-7 text-white">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600">
-                <ShieldCheck size={24} />
-              </div>
+      <PageShell
+        title="Change Password"
+        description="Update your password to keep your Tadamun account secure."
+      >
+        <GlassCard className="mx-auto max-w-3xl">
+          <div className="mb-6 flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+              <ShieldCheck size={24} />
+            </div>
 
-              <div>
-                <p className="text-sm font-medium text-blue-300">Account Security</p>
-                <h2 className="mt-1 text-2xl font-semibold">Change Password</h2>
-                <p className="mt-1 text-sm text-slate-300">
-                  Update your password to keep your CRM account secure.
-                </p>
-              </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--crm-accent-text)]">Account Security</p>
+              <h2 className="mt-1 text-2xl font-semibold text-[var(--crm-text)]">Password update</h2>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5 p-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <div className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
                 {error}
               </div>
             )}
 
             {success && (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-success-text)]">
                 {success}
               </div>
             )}
 
             <PasswordInput
-              label="Current Password"
+              label="Current password"
               value={currentPassword}
               show={showPasswords}
-              onChange={setCurrentPassword} 
+              onChange={setCurrentPassword}
+              autoComplete="current-password"
             />
 
             <PasswordInput
-              label="New Password"
+              label="New password"
               value={newPassword}
               show={showPasswords}
               onChange={setNewPassword}
+              autoComplete="new-password"
             />
 
             <PasswordInput
-              label="Confirm New Password"
+              label="Confirm new password"
               value={confirmNewPassword}
               show={showPasswords}
               onChange={setConfirmNewPassword}
+              autoComplete="new-password"
             />
 
-            <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <label className="flex items-center gap-2 text-sm font-medium text-[var(--crm-text-muted)]">
               <input
                 type="checkbox"
                 checked={showPasswords}
                 onChange={(event) => setShowPasswords(event.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                className="h-4 w-4 rounded border-[var(--crm-border)] text-cyan-600"
               />
               Show passwords
             </label>
 
             <button
               disabled={loading}
-              className="inline-flex h-11 items-center justify-center rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-cyan-600 px-5 text-sm font-semibold text-white shadow-sm shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Changing...' : 'Change Password'}
             </button>
           </form>
-        </section>
-      </div>
+        </GlassCard>
+      </PageShell>
     </AppLayout>
   )
 }
@@ -153,27 +155,29 @@ type PasswordInputProps = {
   value: string
   show: boolean
   onChange: (value: string) => void
+  autoComplete: string
 }
 
-function PasswordInput({ label, value, show, onChange }: PasswordInputProps) {
+function PasswordInput({ label, value, show, onChange, autoComplete }: PasswordInputProps) {
   return (
     <div>
-      <label className="mb-2 block text-sm font-semibold text-slate-700">{label}</label>
+      <label className="mb-2 block text-sm font-semibold text-[var(--crm-text)]">{label}</label>
       <div className="relative">
         <LockKeyhole
           size={18}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]"
         />
 
         <input
-          className="h-11 w-full rounded-lg border border-slate-300 bg-white pl-10 pr-10 text-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+          className="crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-10 text-sm text-[var(--crm-text)] transition focus:border-cyan-400"
           type={show ? 'text' : 'password'}
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          autoComplete="new-password"
+          autoComplete={autoComplete}
+          required
         />
 
-        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+        <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]">
           {show ? <EyeOff size={18} /> : <Eye size={18} />}
         </div>
       </div>

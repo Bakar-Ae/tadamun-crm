@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
+import { motion } from 'framer-motion'
 import { ArrowLeft, Mail, ShieldCheck } from 'lucide-react'
 import { forgotPassword } from '../services/authService'
 
@@ -16,7 +17,7 @@ export function ForgotPasswordPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setSuccess(false)
@@ -35,34 +36,39 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:44px_44px]" />
-      <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-600/25 to-transparent" />
+    <main className="relative min-h-screen overflow-hidden bg-[var(--crm-bg)] text-[var(--crm-text)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(65,192,242,0.2),transparent_30rem),radial-gradient(circle_at_80%_0%,rgba(2,245,161,0.1),transparent_24rem)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(173,223,241,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(173,223,241,0.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white p-6 text-slate-950 shadow-2xl shadow-slate-950/40 sm:p-8">
+        <motion.div
+          className="w-full max-w-md rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface-glass)] p-6 shadow-2xl backdrop-blur-xl sm:p-8"
+          initial={{ opacity: 0, y: 18, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+        >
           <div className="mb-8">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
               <ShieldCheck size={24} />
             </div>
 
-            <p className="text-sm font-semibold text-blue-700">Account recovery</p>
-            <h1 className="mt-2 text-3xl font-semibold">Forgot password?</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Enter your email and we will send password reset instructions if the account exists.
+            <p className="text-sm font-semibold text-[var(--crm-accent-text)]">Tadamun account recovery</p>
+            <h1 className="mt-2 text-3xl font-semibold text-[var(--crm-text)]">Forgot password?</h1>
+            <p className="mt-2 text-sm leading-6 text-[var(--crm-text-muted)]">
+              Enter your email and we will send reset instructions if the account exists.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Email</label>
+              <label className="mb-2 block text-sm font-semibold text-[var(--crm-text)]">Email</label>
               <div className="relative">
                 <Mail
                   size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]"
                 />
                 <input
-                  className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-100"
+                  className="crm-focus h-12 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-3 text-sm text-[var(--crm-text)] transition focus:border-cyan-400"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   type="email"
@@ -73,19 +79,19 @@ export function ForgotPasswordPage() {
             </div>
 
             {success && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+              <div className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-success-text)]">
                 If an account exists, reset instructions have been sent.
               </div>
             )}
 
             {error && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+              <div className="rounded-xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
                 {error}
               </div>
             )}
 
             <button
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white shadow-lg shadow-blue-600/25 transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center rounded-xl bg-cyan-600 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={loading}
             >
               {loading ? 'Sending...' : 'Send reset link'}
@@ -95,12 +101,12 @@ export function ForgotPasswordPage() {
           <button
             type="button"
             onClick={() => window.location.assign('/')}
-            className="mt-6 flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-slate-950"
+            className="mt-6 flex items-center gap-2 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:text-[var(--crm-text)]"
           >
             <ArrowLeft size={16} />
             Back to login
           </button>
-        </div>
+        </motion.div>
       </section>
     </main>
   )
