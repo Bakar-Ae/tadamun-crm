@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
 import { logout as logoutRequest } from '../services/authService'
+import { cn } from '../lib/cn'
 import {
   Bell,
   BarChart3,
@@ -7,16 +9,15 @@ import {
   ClipboardList,
   Contact,
   FileText,
+  KeyRound,
   LayoutDashboard,
   LogOut,
   Menu,
   NotebookText,
   ShieldCheck,
+  Sparkles,
   Users,
   X,
-  KeyRound,
-  
-
 } from 'lucide-react'
 
 type AppLayoutProps = {
@@ -62,10 +63,13 @@ export function AppLayout({ children }: AppLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-950">
+    <div className="min-h-screen overflow-hidden bg-[var(--crm-bg)] text-white">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(65,192,242,0.16),transparent_28rem),radial-gradient(circle_at_80%_0%,rgba(2,245,161,0.08),transparent_24rem)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,rgba(173,223,241,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(173,223,241,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
+
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed left-4 top-4 z-40 rounded-md border border-slate-200 bg-white p-2 text-slate-700 shadow-sm lg:hidden"
+        className="fixed left-4 top-4 z-40 rounded-xl border border-white/10 bg-white/10 p-2 text-white shadow-lg backdrop-blur lg:hidden"
         aria-label="Open navigation"
       >
         <Menu size={20} />
@@ -73,33 +77,34 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {sidebarOpen && (
         <button
-          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-label="Close navigation overlay"
         />
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-950 text-white shadow-xl transition-transform lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:z-30`}
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-white/10 bg-slate-950/85 text-white shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform lg:translate-x-0',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+          'lg:z-30',
+        )}
       >
         <div className="flex h-20 items-center justify-between border-b border-white/10 px-5">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white shadow-lg shadow-blue-950/30">
-                CRM
-              </div>
-              <div>
-                <h1 className="text-base font-semibold text-white">Enterprise CRM</h1>
-                <p className="text-xs text-slate-400">Sales operations</p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 text-sm font-bold text-cyan-100 ring-1 ring-cyan-300/25 shadow-[0_0_30px_rgba(65,192,242,0.18)]">
+              CRM
+              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(2,245,161,0.9)]" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-white">Enterprise CRM</h1>
+              <p className="text-xs text-slate-400">Revenue command center</p>
             </div>
           </div>
 
           <button
             onClick={() => setSidebarOpen(false)}
-            className="rounded-md p-2 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden"
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white lg:hidden"
             aria-label="Close navigation"
           >
             <X size={18} />
@@ -107,7 +112,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
-          <p className="px-3 pb-3 text-xs font-semibold uppercase text-slate-500">
+          <p className="px-3 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             Workspace
           </p>
 
@@ -119,28 +124,50 @@ export function AppLayout({ children }: AppLayoutProps) {
               <a
                 key={item.path}
                 href={item.path}
-                className={`mb-1 flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium transition ${
+                className={cn(
+                  'group relative mb-1 flex h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm font-medium transition',
                   active
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/30'
-                    : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                }`}
+                    ? 'bg-cyan-400/15 text-white ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]'
+                    : 'text-slate-400 hover:bg-white/8 hover:text-white',
+                )}
               >
-                <Icon size={18} />
-                <span>{item.label}</span>
+                {active && (
+                  <motion.span
+                    layoutId="active-nav"
+                    className="absolute inset-y-1 left-1 w-1 rounded-full bg-cyan-300"
+                  />
+                )}
+                <Icon
+                  size={18}
+                  className={cn(
+                    'relative z-10 transition',
+                    active ? 'text-cyan-200' : 'text-slate-500 group-hover:text-cyan-200',
+                  )}
+                />
+                <span className="relative z-10">{item.label}</span>
               </a>
             )
           })}
         </nav>
 
         <div className="border-t border-white/10 p-4">
-          <div className="mb-3 rounded-lg bg-white/5 p-3">
-            <p className="text-xs font-medium uppercase text-slate-500">Environment</p>
-            <p className="mt-1 text-sm font-medium text-slate-200">Local Docker</p>
+          <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-300/20">
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Environment
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-100">Local Docker</p>
+              </div>
+            </div>
           </div>
 
           <button
             onClick={logout}
-            className="flex h-11 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-300 transition hover:bg-red-500/15 hover:text-red-200"
+            className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-slate-400 transition hover:bg-red-500/15 hover:text-red-200"
           >
             <LogOut size={18} />
             Logout
@@ -148,11 +175,13 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </aside>
 
-      <div className="min-h-screen lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-6 py-4 shadow-sm backdrop-blur">
+      <div className="relative z-10 min-h-screen lg:pl-72">
+        <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/70 px-6 py-4 shadow-lg shadow-black/20 backdrop-blur-xl">
           <div className="ml-10 flex flex-col gap-1 lg:ml-0">
-            <p className="text-xs font-semibold uppercase text-blue-700">CRM Workspace</p>
-            <h2 className="text-xl font-semibold text-slate-950">{pageTitle}</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
+              CRM Workspace
+            </p>
+            <h2 className="text-xl font-semibold text-white">{pageTitle}</h2>
           </div>
         </header>
 
