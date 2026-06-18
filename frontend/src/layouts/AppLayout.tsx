@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { logout as logoutRequest } from '../services/authService'
 import { cn } from '../lib/cn'
+import { ThemeToggle } from '../components/ui'
 import {
   Bell,
   BarChart3,
@@ -63,7 +64,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[var(--crm-bg)] text-white">
+      <div className="min-h-screen overflow-hidden bg-[var(--crm-bg)] text-[var(--crm-text)]">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(65,192,242,0.16),transparent_28rem),radial-gradient(circle_at_80%_0%,rgba(2,245,161,0.08),transparent_24rem)]" />
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,rgba(173,223,241,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(173,223,241,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
@@ -93,12 +94,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="flex h-20 items-center justify-between border-b border-white/10 px-5">
           <div className="flex items-center gap-3">
             <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 text-sm font-bold text-cyan-100 ring-1 ring-cyan-300/25 shadow-[0_0_30px_rgba(65,192,242,0.18)]">
-              CRM
+              TD
               <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(2,245,161,0.9)]" />
             </div>
             <div>
-              <h1 className="text-base font-semibold text-white">Enterprise CRM</h1>
-              <p className="text-xs text-slate-400">Revenue command center</p>
+              <h1 className="text-base font-semibold text-white">Tadamun</h1>
+              <p className="text-xs text-slate-400">Sales command center</p>
             </div>
           </div>
 
@@ -176,14 +177,19 @@ export function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       <div className="relative z-10 min-h-screen lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/70 px-6 py-4 shadow-lg shadow-black/20 backdrop-blur-xl">
-          <div className="ml-10 flex flex-col gap-1 lg:ml-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
-              CRM Workspace
-            </p>
-            <h2 className="text-xl font-semibold text-white">{pageTitle}</h2>
-          </div>
-        </header>
+        <header className="sticky top-0 z-20 border-b border-[var(--crm-border)] bg-[var(--crm-surface-glass)] px-6 py-4 shadow-lg backdrop-blur-xl">
+          <div className="ml-10 flex items-center justify-between gap-4 lg:ml-0">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
+                Tadamun Workspace
+              </p>
+              <h2 className="text-xl font-semibold text-[var(--crm-text)]">{pageTitle}</h2>
+            </div>
+
+    <ThemeToggle />
+  </div>
+</header>
+        
 
         <main className="mx-auto w-full max-w-7xl p-4 sm:p-6">{children}</main>
       </div>

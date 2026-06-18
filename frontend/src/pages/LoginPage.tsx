@@ -100,12 +100,12 @@ export function LoginPage() {
             transition={{ duration: 0.45 }}
           >
             <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/15 font-bold text-cyan-100 ring-1 ring-cyan-300/25 shadow-[0_0_34px_rgba(65,192,242,0.2)]">
-              CRM
+              TD
               <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(2,245,161,0.9)]" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold">Enterprise CRM</h1>
-              <p className="text-sm text-slate-400">Revenue command center</p>
+              <h1 className="text-lg font-semibold">Tadamun</h1>
+              <p className="text-sm text-slate-400">Sales command center</p>
             </div>
           </motion.div>
 
@@ -117,7 +117,7 @@ export function LoginPage() {
           >
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1.5 text-sm text-cyan-100 shadow-[0_0_32px_rgba(65,192,242,0.12)]">
               <ShieldCheck size={16} />
-              Secure role-based CRM workspace
+              Secure role-based Tadamun workspace
             </div>
 
             <h2 className="max-w-3xl text-5xl font-semibold leading-tight tracking-normal xl:text-6xl">
@@ -190,7 +190,7 @@ export function LoginPage() {
                 Premium access
               </div>
 
-              <h2 className="text-3xl font-semibold tracking-normal">Sign in to CRM</h2>
+              <h2 className="text-3xl font-semibold tracking-normal">Sign in to Tadamun</h2>
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 Enter your account details to continue to the workspace.
               </p>

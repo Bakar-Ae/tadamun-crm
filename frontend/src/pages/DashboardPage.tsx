@@ -227,7 +227,7 @@ export function DashboardPage() {
                 <TrendingUp size={22} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-cyan-200">CRM Composition</p>
+                <p className="text-sm font-semibold text-cyan-200">Tadamun Composition</p>
                 <h2 className="text-xl font-semibold text-white">Workspace distribution</h2>
               </div>
             </div>
