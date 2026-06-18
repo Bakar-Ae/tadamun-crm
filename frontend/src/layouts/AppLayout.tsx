@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { logout as logoutRequest } from '../services/authService'
 import {
+  Bell,
   BarChart3,
   BriefcaseBusiness,
   ClipboardList,
@@ -14,6 +15,7 @@ import {
   Users,
   X,
   KeyRound,
+  
 
 } from 'lucide-react'
 
@@ -23,6 +25,7 @@ type AppLayoutProps = {
 
 const navItems = [
   { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { label: 'Notifications', path: '/notifications', icon: Bell },
   { label: 'Change Password', path: '/change-password', icon: KeyRound },
   { label: 'Users', path: '/users', icon: Users },
   { label: 'Customers', path: '/customers', icon: BriefcaseBusiness },

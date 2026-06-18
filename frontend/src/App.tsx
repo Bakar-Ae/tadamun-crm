@@ -11,6 +11,7 @@ import { ReportsPage } from './pages/ReportsPage'
 import { ChangePasswordPage } from './pages/ChangePasswordPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
 import { ResetPasswordPage } from './pages/ResetPasswordPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 
 function App() {
   const path = window.location.pathname
@@ -74,6 +75,9 @@ function App() {
   if (path === '/change-password') {
     return <ChangePasswordPage />
   }
+  if (path === '/notifications') {
+   return <NotificationsPage />
+ }
 
   if (path === '/dashboard') {
     return <DashboardPage />
