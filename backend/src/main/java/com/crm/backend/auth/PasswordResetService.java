@@ -1,6 +1,8 @@
 package com.crm.backend.auth;
 
 import com.crm.backend.email.EmailService;
+import com.crm.backend.notification.NotificationService;
+import com.crm.backend.notification.NotificationType;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,7 @@ public class PasswordResetService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
     private final EmailService emailService;
+    private final NotificationService notificationService;
     private final String frontendBaseUrl;
 
     public PasswordResetService(
@@ -32,6 +35,7 @@ public class PasswordResetService {
             PasswordEncoder passwordEncoder,
             RefreshTokenService refreshTokenService,
             EmailService emailService,
+            NotificationService notificationService,
             @Value("${app.frontend.base-url}") String frontendBaseUrl
     ) {
         this.passwordResetTokenRepository = passwordResetTokenRepository;
@@ -39,6 +43,7 @@ public class PasswordResetService {
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
         this.emailService = emailService;
+        this.notificationService = notificationService;
         this.frontendBaseUrl = frontendBaseUrl;
     }
 
@@ -47,6 +52,7 @@ public class PasswordResetService {
         userRepository.findByEmail(request.email())
                 .ifPresent(user -> {
                     revokeActiveResetTokens(user);
+
                     String rawToken = generateRawToken();
                     String tokenHash = hashToken(rawToken);
 
@@ -95,7 +101,15 @@ public class PasswordResetService {
         resetToken.setUsedAt(LocalDateTime.now());
 
         refreshTokenService.revokeAllRefreshTokensForUser(user.getId());
+
+        notificationService.createNotification(
+                user.getId(),
+                "Password reset completed",
+                "Your CRM password was reset successfully.",
+                NotificationType.PASSWORD_CHANGED
+        );
     }
+
     private void revokeActiveResetTokens(User user) {
         passwordResetTokenRepository.findByUserAndUsedFalse(user)
                 .forEach(token -> {

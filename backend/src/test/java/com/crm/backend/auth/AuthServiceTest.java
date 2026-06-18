@@ -1,5 +1,6 @@
 package com.crm.backend.auth;
 
+import com.crm.backend.notification.NotificationService;
 import com.crm.backend.role.Role;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.security.CustomUserDetails;
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 class AuthServiceTest {
 
+    private NotificationService notificationService;
     private AuthenticationManager authenticationManager;
     private CustomUserDetailsService customUserDetailsService;
     private JwtService jwtService;
@@ -43,6 +45,7 @@ class AuthServiceTest {
         refreshTokenService = mock(RefreshTokenService.class);
         userRepository = mock(UserRepository.class);
         passwordEncoder = mock(PasswordEncoder.class);
+        notificationService = mock(NotificationService.class);
 
         authService = new AuthService(
                 authenticationManager,
@@ -51,7 +54,8 @@ class AuthServiceTest {
                 loginAttemptService,
                 refreshTokenService,
                 userRepository,
-                passwordEncoder
+                passwordEncoder,
+                notificationService
         );
     }
 

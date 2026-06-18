@@ -1,5 +1,7 @@
 package com.crm.backend.auth;
 
+import com.crm.backend.notification.NotificationService;
+import com.crm.backend.notification.NotificationType;
 import com.crm.backend.security.CustomUserDetails;
 import com.crm.backend.security.CustomUserDetailsService;
 import com.crm.backend.security.JwtService;
@@ -26,6 +28,7 @@ public class AuthService {
     private final RefreshTokenService refreshTokenService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
     public AuthService(
             AuthenticationManager authenticationManager,
@@ -34,7 +37,8 @@ public class AuthService {
             LoginAttemptService loginAttemptService,
             RefreshTokenService refreshTokenService,
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            NotificationService notificationService
     ) {
         this.authenticationManager = authenticationManager;
         this.userDetailsService = userDetailsService;
@@ -43,6 +47,7 @@ public class AuthService {
         this.refreshTokenService = refreshTokenService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.notificationService = notificationService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -95,7 +100,15 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         user.setPasswordChangeRequired(false);
         userRepository.save(user);
+
         refreshTokenService.revokeAllRefreshTokensForUser(user.getId());
+
+        notificationService.createNotification(
+                user.getId(),
+                "Password changed",
+                "Your CRM password was changed successfully.",
+                NotificationType.PASSWORD_CHANGED
+        );
 
         log.info("Password changed for user {}", user.getEmail());
     }
