@@ -75,12 +75,11 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen overflow-hidden bg-[var(--crm-bg)] text-[var(--crm-text)]">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(6,74,92,0.18),transparent_28rem),radial-gradient(circle_at_80%_0%,rgba(178,138,46,0.12),transparent_24rem)]" />
-      <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,rgba(173,223,241,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(173,223,241,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_12%_4%,rgba(109,93,251,0.16),transparent_30rem),radial-gradient(circle_at_86%_0%,rgba(56,189,248,0.12),transparent_24rem)]" />
 
       <button
         onClick={() => setSidebarOpen(true)}
-        className="fixed left-4 top-4 z-40 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-glass)] p-2 text-[var(--crm-text)] shadow-lg backdrop-blur lg:hidden"
+        className="fixed left-4 top-4 z-40 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-glass)] p-2 text-[var(--crm-text)] shadow-lg backdrop-blur lg:hidden"
         aria-label="Open navigation"
       >
         <Menu size={20} />
@@ -96,7 +95,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[var(--crm-border)] bg-[var(--crm-surface-glass)] text-[var(--crm-text)] shadow-2xl backdrop-blur-xl transition-all lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[var(--crm-border)] bg-[var(--crm-surface-glass)] text-[var(--crm-text)] shadow-[var(--crm-shadow-card)] backdrop-blur-xl transition-all lg:translate-x-0",
           sidebarCompact ? "lg:w-20" : "lg:w-72",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
           "lg:z-30",
@@ -108,13 +107,13 @@ export function AppLayout({ children }: AppLayoutProps) {
             className="flex min-w-0 items-center gap-3"
             onClick={() => setSidebarOpen(false)}
           >
-            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-cyan-300/25 shadow-[0_0_30px_rgba(6,74,92,0.2)]">
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-violet-200 shadow-[0_16px_36px_rgba(109,93,251,0.16)]">
               <img
                 src={tadamunLogo}
                 alt="Tadamun logo"
                 className="h-10 w-10"
               />
-              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(2,245,161,0.9)]" />
+              <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-[var(--crm-success)] shadow-[0_0_16px_rgba(16,185,129,0.55)]" />
             </div>
             {!sidebarCompact && (
               <div className="min-w-0">
@@ -131,7 +130,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setSidebarCompact((value) => !value)}
-              className="hidden rounded-lg p-2 text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)] lg:grid"
+              className="hidden rounded-xl p-2 text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-primary)] lg:grid"
               aria-label={
                 sidebarCompact ? "Expand navigation" : "Collapse navigation"
               }
@@ -144,7 +143,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </button>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="rounded-lg p-2 text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)] lg:hidden"
+              className="rounded-xl p-2 text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-primary)] lg:hidden"
               aria-label="Close navigation"
             >
               <X size={18} />
@@ -175,14 +174,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                     "group relative mb-1 flex h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm font-medium transition",
                     sidebarCompact && "justify-center px-0",
                     active
-                      ? "bg-cyan-400/15 text-[var(--crm-text)] ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]"
-                      : "text-[var(--crm-text-muted)] hover:bg-cyan-400/10 hover:text-[var(--crm-text)]",
+                      ? "bg-[var(--crm-primary)] text-white shadow-[0_14px_34px_rgba(109,93,251,0.24)]"
+                      : "text-[var(--crm-text-muted)] hover:bg-violet-500/10 hover:text-[var(--crm-text)]",
                   )}
                 >
                   {active && (
                     <motion.span
                       layoutId="active-nav"
-                      className="absolute inset-y-1 left-1 w-1 rounded-full bg-cyan-300"
+                      className="absolute inset-y-1 left-1 w-1 rounded-full bg-white/80"
                     />
                   )}
                   <Icon
@@ -190,8 +189,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                     className={cn(
                       "relative z-10 transition",
                       active
-                        ? "text-cyan-200"
-                        : "text-[var(--crm-text-muted)] group-hover:text-cyan-200",
+                        ? "text-white"
+                        : "text-[var(--crm-text-muted)] group-hover:text-[var(--crm-primary)]",
                     )}
                   />
                   {!sidebarCompact && (
@@ -223,14 +222,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                     "group relative mb-1 flex h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm font-medium transition",
                     sidebarCompact && "justify-center px-0",
                     active
-                      ? "bg-cyan-400/15 text-[var(--crm-text)] ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]"
-                      : "text-[var(--crm-text-muted)] hover:bg-cyan-400/10 hover:text-[var(--crm-text)]",
+                      ? "bg-[var(--crm-primary)] text-white shadow-[0_14px_34px_rgba(109,93,251,0.24)]"
+                      : "text-[var(--crm-text-muted)] hover:bg-violet-500/10 hover:text-[var(--crm-text)]",
                   )}
                 >
                   {active && (
                     <motion.span
                       layoutId="active-nav"
-                      className="absolute inset-y-1 left-1 w-1 rounded-full bg-cyan-300"
+                      className="absolute inset-y-1 left-1 w-1 rounded-full bg-white/80"
                     />
                   )}
                   <Icon
@@ -238,8 +237,8 @@ export function AppLayout({ children }: AppLayoutProps) {
                     className={cn(
                       "relative z-10 transition",
                       active
-                        ? "text-cyan-200"
-                        : "text-[var(--crm-text-muted)] group-hover:text-cyan-200",
+                        ? "text-white"
+                        : "text-[var(--crm-text-muted)] group-hover:text-[var(--crm-primary)]",
                     )}
                   />
                   {!sidebarCompact && (
@@ -252,9 +251,9 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         {!sidebarCompact && (
           <div className="border-t border-[var(--crm-border)] p-4">
-            <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] p-4">
+            <div className="rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-soft-gradient)] p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-300/20">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/60 text-[var(--crm-primary)] ring-1 ring-violet-200">
                   <Sparkles size={18} />
                 </div>
                 <div>
@@ -277,11 +276,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           sidebarCompact ? "lg:pl-20" : "lg:pl-72",
         )}
       >
-        <header className="sticky top-0 z-20 border-b border-[var(--crm-border)] bg-[var(--crm-surface-glass)] px-4 py-4 shadow-lg backdrop-blur-xl sm:px-6">
+        <header className="sticky top-0 z-20 border-b border-[var(--crm-border)] bg-[var(--crm-surface-glass)] px-4 py-4 shadow-sm backdrop-blur-xl sm:px-6">
           <div className="ml-10 flex items-center justify-between gap-4 lg:ml-0">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--crm-accent-text)]">
-                Tadamun Workspace
+                Tadamun Business Suite
               </p>
               <h2 className="truncate text-xl font-semibold text-[var(--crm-text)]">
                 {pageTitle}

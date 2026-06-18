@@ -328,7 +328,7 @@ export function QuickCreateMenu() {
       <button
         type="button"
         onClick={() => setMenuOpen((value) => !value)}
-        className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--crm-brand-gradient)] px-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(6,74,92,0.22)] transition hover:-translate-y-0.5"
+        className="inline-flex h-10 items-center gap-2 rounded-2xl bg-[var(--crm-brand-gradient)] px-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5"
       >
         <Plus size={17} />
         <span className="hidden sm:inline">New</span>
@@ -342,7 +342,7 @@ export function QuickCreateMenu() {
             aria-label="Close quick create menu"
             onClick={() => setMenuOpen(false)}
           />
-          <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-2 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]">
+          <div className="absolute right-0 top-12 z-50 w-64 overflow-hidden rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-2 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]">
             <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--crm-text-muted)]">
               Quick create
             </p>
@@ -354,9 +354,9 @@ export function QuickCreateMenu() {
                   key={action.kind}
                   type="button"
                   onClick={() => openForm(action.kind)}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition hover:bg-cyan-400/10"
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-sm font-medium transition hover:bg-violet-500/10"
                 >
-                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200">
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-500/10 text-[var(--crm-primary)]">
                     <Icon size={17} />
                   </span>
                   Add {action.label}
@@ -370,7 +370,7 @@ export function QuickCreateMenu() {
       <Modal
         open={activeKind !== null}
         title={activeAction ? `Add ${activeAction.label}` : "Add record"}
-        description="Create a real CRM record using the existing backend API."
+        description="Create a CRM record using the existing backend API."
         onClose={closeForm}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -468,14 +468,14 @@ export function QuickCreateMenu() {
             <button
               type="button"
               onClick={() => closeForm()}
-              className="h-10 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)]"
+              className="h-10 rounded-2xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="h-10 rounded-xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(6,74,92,0.22)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              className="h-10 rounded-2xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {saving ? "Creating..." : "Create"}
             </button>

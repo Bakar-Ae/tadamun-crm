@@ -43,9 +43,9 @@ export function UserMenu({ onLogout }: UserMenuProps) {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex h-10 items-center gap-2 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] pl-2 pr-3 text-sm font-semibold text-[var(--crm-text)] transition hover:border-cyan-300/40"
+        className="flex h-10 items-center gap-2 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-2 pr-3 text-sm font-semibold text-[var(--crm-text)] shadow-sm transition hover:border-violet-300"
       >
-        <span className="grid h-7 w-7 place-items-center rounded-lg bg-cyan-400/15 text-xs text-cyan-100">
+        <span className="grid h-7 w-7 place-items-center rounded-xl bg-violet-500/12 text-xs text-[var(--crm-primary)]">
           {initials}
         </span>
         <span className="hidden max-w-28 truncate sm:inline">
@@ -61,7 +61,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
             aria-label="Close user menu"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]">
+          <div className="absolute right-0 top-12 z-50 w-72 rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]">
             <div className="rounded-xl bg-[var(--crm-surface-soft)] p-3">
               <p className="text-sm font-semibold">
                 {user?.fullName ?? "Tadamun user"}
@@ -70,7 +70,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
                 {user?.email ?? "Signed in"}
               </p>
               {user?.role && (
-                <p className="mt-2 inline-flex rounded-full bg-cyan-400/10 px-2 py-1 text-[10px] font-bold text-cyan-200">
+                <p className="mt-2 inline-flex rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-bold text-[var(--crm-accent-text)]">
                   {user.role.replace("ROLE_", "")}
                 </p>
               )}
@@ -82,7 +82,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
                 setOpen(false);
                 navigate("/change-password");
               }}
-              className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)]"
+              className="mt-2 flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
             >
               <KeyRound size={17} />
               Change password
@@ -91,7 +91,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
             <button
               type="button"
               onClick={onLogout}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/15"
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/15"
             >
               <LogOut size={17} />
               Logout

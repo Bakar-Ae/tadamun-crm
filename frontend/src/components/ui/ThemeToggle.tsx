@@ -1,25 +1,28 @@
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '../../lib/cn'
 
-type Theme = 'dark' | 'light'
+type Theme = 'luxe' | 'midnight'
 
 function getCurrentTheme(): Theme {
-  return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
+  return document.documentElement.dataset.theme === 'midnight' ||
+    document.documentElement.dataset.theme === 'dark'
+    ? 'midnight'
+    : 'luxe'
 }
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(getCurrentTheme)
 
   function toggleTheme() {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark'
+    const nextTheme = theme === 'midnight' ? 'luxe' : 'midnight'
 
     document.documentElement.dataset.theme = nextTheme
     localStorage.setItem('crm-theme', nextTheme)
     setTheme(nextTheme)
   }
 
-  const isLight = theme === 'light'
+  const isLuxe = theme === 'luxe'
 
   return (
     <button
@@ -28,12 +31,12 @@ export function ThemeToggle() {
       className={cn(
         'inline-flex h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition',
         'border-[var(--crm-border)] bg-[var(--crm-surface-glass)] text-[var(--crm-text)]',
-        'hover:border-cyan-300/40 hover:shadow-[0_0_24px_rgba(65,192,242,0.18)]',
+        'hover:border-violet-300/70 hover:shadow-[0_14px_32px_rgba(109,93,251,0.14)]',
       )}
-      aria-label="Toggle theme"
+      aria-label="Toggle theme preset"
     >
-      {isLight ? <Sun size={17} /> : <Moon size={17} />}
-      {isLight ? 'Light' : 'Dark'}
+      {isLuxe ? <Sparkles size={17} /> : <Moon size={17} />}
+      {isLuxe ? 'Luxe' : 'Midnight'}
     </button>
   )
 }

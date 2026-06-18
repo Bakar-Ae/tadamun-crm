@@ -39,7 +39,7 @@ export function Modal({
             aria-modal="true"
             aria-labelledby="modal-title"
             className={cn(
-              "relative max-h-[90dvh] w-full overflow-y-auto rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-5 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)] sm:max-w-xl",
+              "relative max-h-[90dvh] w-full overflow-y-auto rounded-[2rem] border border-[var(--crm-border)] bg-[var(--crm-surface)] p-5 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)] sm:max-w-xl",
               className,
             )}
             initial={{ opacity: 0, y: 24, scale: 0.97 }}
@@ -62,7 +62,7 @@ export function Modal({
               <button
                 type="button"
                 onClick={onClose}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)]"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                 aria-label="Close modal"
               >
                 <X size={18} />

@@ -6,11 +6,14 @@ import './index.css'
 import App from './App.tsx'
 
 const savedTheme = localStorage.getItem('crm-theme')
-const systemTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
-const initialTheme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : systemTheme
+const initialTheme =
+  savedTheme === 'midnight' || savedTheme === 'dark'
+    ? 'midnight'
+    : 'luxe'
 const savedDashboardPreferences = localStorage.getItem('crm-dashboard-preferences')
 
 document.documentElement.dataset.theme = initialTheme
+localStorage.setItem('crm-theme', initialTheme)
 
 if (savedDashboardPreferences) {
   try {

@@ -32,7 +32,7 @@ export function NotificationPanel() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="relative grid h-10 w-10 place-items-center rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] text-[var(--crm-text-muted)] transition hover:border-cyan-300/40 hover:text-[var(--crm-text)]"
+        className="relative grid h-10 w-10 place-items-center rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] text-[var(--crm-text-muted)] shadow-sm transition hover:border-violet-300 hover:text-[var(--crm-text)]"
         aria-label="Open notifications"
       >
         <Bell size={17} />
@@ -51,7 +51,7 @@ export function NotificationPanel() {
             aria-label="Close notifications"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-4 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]">
+          <div className="absolute right-0 top-12 z-50 w-80 rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-4 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold">Notifications</h3>
@@ -59,7 +59,7 @@ export function NotificationPanel() {
                   {unreadCount} unread
                 </p>
               </div>
-              <span className="rounded-full bg-cyan-400/10 px-2.5 py-1 text-xs font-semibold text-cyan-200">
+              <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-[var(--crm-accent-text)]">
                 Live
               </span>
             </div>
@@ -67,7 +67,7 @@ export function NotificationPanel() {
             <Link
               to="/notifications"
               onClick={() => setOpen(false)}
-              className="mt-4 flex h-11 items-center justify-center rounded-xl bg-[var(--crm-brand-gradient)] text-sm font-semibold text-white transition hover:-translate-y-0.5"
+              className="mt-4 flex h-11 items-center justify-center rounded-2xl bg-[var(--crm-brand-gradient)] text-sm font-semibold text-white transition hover:-translate-y-0.5"
             >
               Open notification center
             </Link>

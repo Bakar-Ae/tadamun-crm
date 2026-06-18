@@ -28,7 +28,7 @@ export function TextField({ label, error, className, ...props }: TextFieldProps)
     <FieldShell label={label} error={error}>
       <input
         {...props}
-        className={`crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] px-3 text-sm text-[var(--crm-text)] transition placeholder:text-[var(--crm-text-muted)] focus:border-cyan-400 ${className ?? ""}`}
+        className={`crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] shadow-sm transition placeholder:text-[var(--crm-text-muted)] focus:border-[var(--crm-primary)] ${className ?? ""}`}
       />
     </FieldShell>
   );
@@ -44,7 +44,7 @@ export function TextAreaField({ label, error, className, ...props }: TextAreaFie
     <FieldShell label={label} error={error}>
       <textarea
         {...props}
-        className={`crm-focus min-h-24 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] px-3 py-2 text-sm text-[var(--crm-text)] transition placeholder:text-[var(--crm-text-muted)] focus:border-cyan-400 ${className ?? ""}`}
+        className={`crm-focus min-h-24 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 py-2 text-sm text-[var(--crm-text)] shadow-sm transition placeholder:text-[var(--crm-text-muted)] focus:border-[var(--crm-primary)] ${className ?? ""}`}
       />
     </FieldShell>
   );
@@ -60,7 +60,7 @@ export function SelectField({ label, error, className, children, ...props }: Sel
     <FieldShell label={label} error={error}>
       <select
         {...props}
-        className={`crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] px-3 text-sm text-[var(--crm-text)] transition focus:border-cyan-400 ${className ?? ""}`}
+        className={`crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] shadow-sm transition focus:border-[var(--crm-primary)] ${className ?? ""}`}
       >
         {children}
       </select>

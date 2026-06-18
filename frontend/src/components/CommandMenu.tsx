@@ -57,7 +57,7 @@ export function CommandMenu() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden h-10 min-w-56 items-center justify-between rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] px-3 text-sm text-[var(--crm-text-muted)] transition hover:border-cyan-300/40 hover:text-[var(--crm-text)] md:inline-flex"
+        className="hidden h-10 min-w-56 items-center justify-between rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text-muted)] shadow-sm transition hover:border-violet-300 hover:text-[var(--crm-text)] md:inline-flex"
       >
         <span className="inline-flex items-center gap-2">
           <Search size={16} />
@@ -71,7 +71,7 @@ export function CommandMenu() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="grid h-10 w-10 place-items-center rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] text-[var(--crm-text-muted)] transition hover:border-cyan-300/40 hover:text-[var(--crm-text)] md:hidden"
+        className="grid h-10 w-10 place-items-center rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] text-[var(--crm-text-muted)] shadow-sm transition hover:border-violet-300 hover:text-[var(--crm-text)] md:hidden"
         aria-label="Open command menu"
       >
         <Search size={17} />
@@ -91,7 +91,7 @@ export function CommandMenu() {
             />
 
             <motion.div
-              className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface)] text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]"
+              className="relative w-full max-w-2xl overflow-hidden rounded-[2rem] border border-[var(--crm-border)] bg-[var(--crm-surface)] text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]"
               initial={{ opacity: 0, y: 18, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 14, scale: 0.98 }}
@@ -108,7 +108,7 @@ export function CommandMenu() {
                   <button
                     type="button"
                     onClick={() => setOpen(false)}
-                    className="grid h-9 w-9 place-items-center rounded-xl text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)]"
+                    className="grid h-9 w-9 place-items-center rounded-xl text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                     aria-label="Close command menu"
                   >
                     <X size={17} />
@@ -129,9 +129,9 @@ export function CommandMenu() {
                           key={item.path}
                           value={item.label}
                           onSelect={() => runCommand(item.path)}
-                          className="mt-1 flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[var(--crm-text)] outline-none aria-selected:bg-cyan-400/12"
+                          className="mt-1 flex cursor-pointer items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[var(--crm-text)] outline-none aria-selected:bg-violet-500/10"
                         >
-                          <span className="grid h-9 w-9 place-items-center rounded-xl bg-cyan-400/10 text-cyan-200 ring-1 ring-cyan-300/15">
+                          <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-500/10 text-[var(--crm-primary)] ring-1 ring-violet-300/20">
                             <Icon size={17} />
                           </span>
                           {item.label}

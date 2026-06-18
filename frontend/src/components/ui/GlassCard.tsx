@@ -10,7 +10,7 @@ type GlassCardProps = {
 export function GlassCard({ children, className }: GlassCardProps) {
   return (
     <motion.div
-      className={cn('crm-glass rounded-2xl p-5 text-[var(--crm-text)]', className)}
+      className={cn('crm-glass rounded-3xl p-5 text-[var(--crm-text)]', className)}
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2, ease: 'easeOut' }}
     >
