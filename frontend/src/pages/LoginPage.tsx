@@ -16,6 +16,8 @@ import {
 import { login } from '../services/authService'
 import { cn } from '../lib/cn'
 import bgCommandCenter from '../assets/login-bg-command-center.webp'
+import tadamunLogo from '../assets/tadamun-logo.svg'
+import { PreLoginIntro } from '../components/PreLoginIntro'
 
 type ApiError = {
   response?: {
@@ -33,11 +35,18 @@ const trustCards = [
 ]
 
 export function LoginPage() {
+  const [introDone, setIntroDone] = useState(
+    () => sessionStorage.getItem('crm-intro-seen') === 'true',
+  )
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  if (!introDone) {
+    return <PreLoginIntro onDone={() => setIntroDone(true)} />
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -99,8 +108,8 @@ export function LoginPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45 }}
           >
-            <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/15 font-bold text-cyan-100 ring-1 ring-cyan-300/25 shadow-[0_0_34px_rgba(65,192,242,0.2)]">
-              TD
+            <div className="relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-cyan-300/25 shadow-[0_0_34px_rgba(65,192,242,0.2)]">
+              <img src={tadamunLogo} alt="Tadamun logo" className="h-10 w-10" />
               <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(2,245,161,0.9)]" />
             </div>
             <div>
@@ -181,8 +190,8 @@ export function LoginPage() {
             transition={{ duration: 0.45, ease: 'easeOut' }}
           >
             <div className="mb-8">
-              <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-950 text-white shadow-lg shadow-slate-950/25">
-                <LockKeyhole size={24} />
+              <div className="mb-5 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white text-white shadow-lg shadow-slate-950/25 ring-1 ring-slate-200">
+                <img src={tadamunLogo} alt="Tadamun logo" className="h-11 w-11" />
               </div>
 
               <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800">

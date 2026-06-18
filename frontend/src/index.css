@@ -17,6 +17,8 @@
   --crm-surface-soft: #10242b;
   --crm-surface-glass: rgba(7, 25, 30, 0.78);
 
+  --crm-brand-teal: #064a5c;
+  --crm-brand-gold: #b28a2e;
   --crm-blue-900: #003152;
   --crm-blue-700: #08428c;
   --crm-blue-600: #0d518c;
@@ -26,7 +28,7 @@
 
   --crm-green: #02f5a1;
   --crm-lime: #c6ff34;
-  --crm-amber: #fdbf2d;
+  --crm-amber: #d5a63a;
   --crm-danger: #990000;
   --crm-success-text: #86efac;
   --crm-warning-text: #fcd34d;
@@ -40,20 +42,21 @@
 
   --crm-shadow-soft: 0 24px 80px rgba(0, 0, 0, 0.42);
   --crm-shadow-glow: 0 0 40px rgba(65, 192, 242, 0.18);
+  --crm-brand-gradient: linear-gradient(135deg, #064a5c, #0d7590 52%, #b28a2e);
 }
 
 html[data-theme="light"] {
   color-scheme: light;
 
-  --crm-bg: #f4f7fb;
+  --crm-bg: #f3f6f8;
   --crm-surface: #ffffff;
-  --crm-surface-soft: #edf3f8;
-  --crm-surface-glass: rgba(255, 255, 255, 0.84);
-  --crm-accent-text: #075985;
+  --crm-surface-soft: #eef4f6;
+  --crm-surface-glass: rgba(255, 255, 255, 0.9);
+  --crm-accent-text: #064a5c;
 
   --crm-text: #0f172a;
   --crm-text-muted: #64748b;
-  --crm-border: rgba(15, 23, 42, 0.12);
+  --crm-border: rgba(6, 74, 92, 0.14);
   --crm-chart-grid: rgba(15, 23, 42, 0.1);
   --crm-card-subtle: rgba(15, 23, 42, 0.04);
   --crm-success-text: #047857;
@@ -75,12 +78,12 @@ body {
   background:
     radial-gradient(
       circle at top left,
-      rgba(65, 192, 242, 0.14),
+      rgba(6, 74, 92, 0.12),
       transparent 34rem
     ),
     radial-gradient(
       circle at top right,
-      rgba(2, 245, 161, 0.08),
+      rgba(178, 138, 46, 0.11),
       transparent 28rem
     ),
     var(--crm-bg);
@@ -112,4 +115,19 @@ select {
 
 .crm-focus:focus-visible {
   box-shadow: 0 0 0 4px rgba(65, 192, 242, 0.22);
+}
+
+html[data-density="compact"] .crm-glass {
+  padding: 1rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

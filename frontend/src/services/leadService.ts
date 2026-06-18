@@ -19,6 +19,16 @@ export type LeadResponse = {
   updatedAt: string
 }
 
+export type CreateLeadRequest = {
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  companyName?: string | null
+  source?: string | null
+  estimatedValue?: number | null
+  assignedToUserId?: number | null
+}
+
 export async function getLeads(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<LeadResponse>>('/leads', {
     params: {
@@ -29,5 +39,10 @@ export async function getLeads(page = 0, size = 10, keyword = '') {
     },
   })
 
+  return response.data
+}
+
+export async function createLead(request: CreateLeadRequest) {
+  const response = await api.post<LeadResponse>('/leads', request)
   return response.data
 }

@@ -1,89 +1,239 @@
-import { DashboardPage } from './pages/DashboardPage'
-import { LoginPage } from './pages/LoginPage'
-import { UsersPage } from './pages/UsersPage'
-import { CustomersPage } from './pages/CustomersPage'
-import { LeadsPage } from './pages/LeadsPage'
-import { ContactsPage } from './pages/ContactsPage'
-import { TasksPage } from './pages/TasksPage'
-import { AuditLogsPage } from './pages/AuditLogsPage'
-import { NotesPage } from './pages/NotesPage'
-import { ReportsPage } from './pages/ReportsPage'
-import { ChangePasswordPage } from './pages/ChangePasswordPage'
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
-import { ResetPasswordPage } from './pages/ResetPasswordPage'
-import { NotificationsPage } from './pages/NotificationsPage'
+import { lazy, Suspense, type ReactNode } from "react";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router";
 
-function App() {
-  const path = window.location.pathname
-  const token = localStorage.getItem('token')
-  const storedUser = localStorage.getItem('user')
-  const user = storedUser ? JSON.parse(storedUser) : null
-  const passwordChangeRequired = user?.passwordChangeRequired === true
+const LoginPage = lazy(() =>
+  import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })),
+);
+const DashboardPage = lazy(() =>
+  import("./pages/DashboardPage").then((module) => ({
+    default: module.DashboardPage,
+  })),
+);
+const UsersPage = lazy(() =>
+  import("./pages/UsersPage").then((module) => ({ default: module.UsersPage })),
+);
+const CustomersPage = lazy(() =>
+  import("./pages/CustomersPage").then((module) => ({
+    default: module.CustomersPage,
+  })),
+);
+const LeadsPage = lazy(() =>
+  import("./pages/LeadsPage").then((module) => ({ default: module.LeadsPage })),
+);
+const ContactsPage = lazy(() =>
+  import("./pages/ContactsPage").then((module) => ({
+    default: module.ContactsPage,
+  })),
+);
+const TasksPage = lazy(() =>
+  import("./pages/TasksPage").then((module) => ({ default: module.TasksPage })),
+);
+const NotesPage = lazy(() =>
+  import("./pages/NotesPage").then((module) => ({ default: module.NotesPage })),
+);
+const ReportsPage = lazy(() =>
+  import("./pages/ReportsPage").then((module) => ({
+    default: module.ReportsPage,
+  })),
+);
+const AuditLogsPage = lazy(() =>
+  import("./pages/AuditLogsPage").then((module) => ({
+    default: module.AuditLogsPage,
+  })),
+);
+const NotificationsPage = lazy(() =>
+  import("./pages/NotificationsPage").then((module) => ({
+    default: module.NotificationsPage,
+  })),
+);
+const ChangePasswordPage = lazy(() =>
+  import("./pages/ChangePasswordPage").then((module) => ({
+    default: module.ChangePasswordPage,
+  })),
+);
+const ForgotPasswordPage = lazy(() =>
+  import("./pages/ForgotPasswordPage").then((module) => ({
+    default: module.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import("./pages/ResetPasswordPage").then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+);
 
-  if (path === '/forgot-password') {
-    return <ForgotPasswordPage />
-  }
-
-  if (path === '/reset-password') {
-    return <ResetPasswordPage />
-  }
-
-  if (!token) {
-    return <LoginPage />
-  }
-
-  if (passwordChangeRequired && path !== '/change-password') {
-    setTimeout(() => {
-      window.location.assign('/change-password')
-    }, 0)
-
-    return null
-  }
-
-  if (path === '/users') {
-    return <UsersPage />
-  }
-
-  if (path === '/contacts') {
-    return <ContactsPage />
-  }
-
-  if (path === '/notes') {
-    return <NotesPage />
-  }
-
-  if (path === '/reports') {
-    return <ReportsPage />
-  }
-
-  if (path === '/audit-logs') {
-    return <AuditLogsPage />
-  }
-
-  if (path === '/tasks') {
-    return <TasksPage />
-  }
-
-  if (path === '/customers') {
-    return <CustomersPage />
-  }
-
-  if (path === '/leads') {
-    return <LeadsPage />
-  }
-
-  if (path === '/change-password') {
-    return <ChangePasswordPage />
-  }
-  if (path === '/notifications') {
-   return <NotificationsPage />
- }
-
-  if (path === '/dashboard') {
-    return <DashboardPage />
-  }
-
-  return <DashboardPage />
+function PageLoader() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[var(--crm-bg)] text-[var(--crm-text)]">
+      <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-glass)] px-5 py-4 text-sm shadow-[var(--crm-shadow-soft)]">
+        Loading Tadamun...
+      </div>
+    </div>
+  );
 }
 
-export default App
+function getStoredUser() {
+  const storedUser = localStorage.getItem("user");
+
+  if (!storedUser) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(storedUser) as { passwordChangeRequired?: boolean };
+  } catch {
+    localStorage.removeItem("user");
+    return null;
+  }
+}
+
+function PublicOnly({ children }: { children: ReactNode }) {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const token = localStorage.getItem("token");
+  const user = getStoredUser();
+  const passwordChangeRequired = user?.passwordChangeRequired === true;
+
+  if (!token) {
+    return <Navigate to="/" replace state={{ from: location.pathname }} />;
+  }
+
+  if (passwordChangeRequired && location.pathname !== "/change-password") {
+    return <Navigate to="/change-password" replace />;
+  }
+
+  return children;
+}
+
+function App() {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <PublicOnly>
+              <LoginPage />
+            </PublicOnly>
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            <PublicOnly>
+              <LoginPage />
+            </PublicOnly>
+          }
+        />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <CustomersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leads"
+          element={
+            <ProtectedRoute>
+              <LeadsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contacts"
+          element={
+            <ProtectedRoute>
+              <ContactsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notes"
+          element={
+            <ProtectedRoute>
+              <NotesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/audit-logs"
+          element={
+            <ProtectedRoute>
+              <AuditLogsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <NotificationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePasswordPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
+export default App;

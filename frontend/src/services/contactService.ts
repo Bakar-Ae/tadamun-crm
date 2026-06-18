@@ -16,6 +16,14 @@ export type ContactResponse = {
   updatedAt: string
 }
 
+export type CreateContactRequest = {
+  customerId: number
+  fullName: string
+  email?: string | null
+  phone?: string | null
+  position?: string | null
+}
+
 export async function getContacts(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<ContactResponse>>('/contacts', {
     params: {
@@ -26,5 +34,10 @@ export async function getContacts(page = 0, size = 10, keyword = '') {
     },
   })
 
+  return response.data
+}
+
+export async function createContact(request: CreateContactRequest) {
+  const response = await api.post<ContactResponse>('/contacts', request)
   return response.data
 }

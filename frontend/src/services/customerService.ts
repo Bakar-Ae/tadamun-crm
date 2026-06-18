@@ -16,6 +16,14 @@ export type CustomerResponse = {
   updatedAt: string
 }
 
+export type CreateCustomerRequest = {
+  name: string
+  email?: string | null
+  phone?: string | null
+  companyName?: string | null
+  customerType: CustomerType
+}
+
 export async function getCustomers(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<CustomerResponse>>('/customers', {
     params: {
@@ -26,5 +34,10 @@ export async function getCustomers(page = 0, size = 10, keyword = '') {
     },
   })
 
+  return response.data
+}
+
+export async function createCustomer(request: CreateCustomerRequest) {
+  const response = await api.post<CustomerResponse>('/customers', request)
   return response.data
 }

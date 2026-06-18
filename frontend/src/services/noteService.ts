@@ -14,6 +14,12 @@ export type NoteResponse = {
   updatedAt: string
 }
 
+export type CreateNoteRequest = {
+  content: string
+  customerId?: number | null
+  leadId?: number | null
+}
+
 export async function getCustomerNotes(customerId: number, page = 0, size = 10) {
   const response = await api.get<PageResponse<NoteResponse>>(`/notes/customers/${customerId}`, {
     params: {
@@ -35,5 +41,10 @@ export async function getLeadNotes(leadId: number, page = 0, size = 10) {
     },
   })
 
+  return response.data
+}
+
+export async function createNote(request: CreateNoteRequest) {
+  const response = await api.post<NoteResponse>('/notes', request)
   return response.data
 }

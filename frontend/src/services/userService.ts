@@ -21,6 +21,13 @@ export type PageResponse<T> = {
   number: number
 }
 
+export type CreateUserRequest = {
+  fullName: string
+  email: string
+  password: string
+  role: RoleName
+}
+
 export async function getUsers(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<UserResponse>>('/users', {
     params: {
@@ -31,5 +38,10 @@ export async function getUsers(page = 0, size = 10, keyword = '') {
     },
   })
 
+  return response.data
+}
+
+export async function createUser(request: CreateUserRequest) {
+  const response = await api.post<UserResponse>('/users', request)
   return response.data
 }

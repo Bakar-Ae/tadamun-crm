@@ -1,18 +1,26 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
+import { Link, useLocation, useNavigate } from "react-router";
 import { logout as logoutRequest } from "../services/authService";
 import { cn } from "../lib/cn";
 import { ThemeToggle } from "../components/ui";
+import { CommandMenu } from "../components/CommandMenu";
+import { NotificationPanel } from "../components/NotificationPanel";
+import { QuickCreateMenu } from "../components/QuickCreateMenu";
+import { SettingsPanel } from "../components/SettingsPanel";
+import { UserMenu } from "../components/UserMenu";
+import tadamunLogo from "../assets/tadamun-logo.svg";
 import {
   Bell,
   BarChart3,
   BriefcaseBusiness,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Contact,
   FileText,
   KeyRound,
   LayoutDashboard,
-  LogOut,
   Menu,
   NotebookText,
   ShieldCheck,
@@ -28,7 +36,6 @@ type AppLayoutProps = {
 const navItems = [
   { label: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { label: "Notifications", path: "/notifications", icon: Bell },
-  { label: "Change Password", path: "/change-password", icon: KeyRound },
   { label: "Users", path: "/users", icon: Users },
   { label: "Customers", path: "/customers", icon: BriefcaseBusiness },
   { label: "Leads", path: "/leads", icon: ClipboardList },
@@ -37,18 +44,19 @@ const navItems = [
   { label: "Notes", path: "/notes", icon: FileText },
   { label: "Reports", path: "/reports", icon: BarChart3 },
   { label: "Audit Logs", path: "/audit-logs", icon: ShieldCheck },
+  { label: "Change Password", path: "/change-password", icon: KeyRound },
 ];
 
-function getPageTitle() {
-  const current = navItems.find(
-    (item) => item.path === window.location.pathname,
-  );
-  return current?.label ?? "Dashboard";
-}
+const favoritePaths = new Set(["/dashboard", "/customers", "/tasks"]);
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const pageTitle = getPageTitle();
+  const [sidebarCompact, setSidebarCompact] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const pageTitle =
+    navItems.find((item) => item.path === location.pathname)?.label ??
+    "Dashboard";
 
   async function logout() {
     const refreshToken = localStorage.getItem("refreshToken");
@@ -61,13 +69,13 @@ export function AppLayout({ children }: AppLayoutProps) {
       localStorage.removeItem("token");
       localStorage.removeItem("refreshToken");
       localStorage.removeItem("user");
-      window.location.href = "/";
+      navigate("/", { replace: true });
     }
   }
 
   return (
     <div className="min-h-screen overflow-hidden bg-[var(--crm-bg)] text-[var(--crm-text)]">
-      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(65,192,242,0.16),transparent_28rem),radial-gradient(circle_at_80%_0%,rgba(2,245,161,0.08),transparent_24rem)]" />
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,rgba(6,74,92,0.18),transparent_28rem),radial-gradient(circle_at_80%_0%,rgba(178,138,46,0.12),transparent_24rem)]" />
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(to_right,rgba(173,223,241,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(173,223,241,0.04)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <button
@@ -88,121 +96,212 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[var(--crm-border)] bg-[var(--crm-surface-glass)] text-[var(--crm-text)] shadow-2xl backdrop-blur-xl transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[var(--crm-border)] bg-[var(--crm-surface-glass)] text-[var(--crm-text)] shadow-2xl backdrop-blur-xl transition-all lg:translate-x-0",
+          sidebarCompact ? "lg:w-20" : "lg:w-72",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
           "lg:z-30",
         )}
       >
-        <div className="flex h-20 items-center justify-between border-b border-[var(--crm-border)] px-5">
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/15 text-sm font-bold text-cyan-100 ring-1 ring-cyan-300/25 shadow-[0_0_30px_rgba(65,192,242,0.18)]">
-              TD
+        <div className="flex h-20 items-center justify-between border-b border-[var(--crm-border)] px-4">
+          <Link
+            to="/dashboard"
+            className="flex min-w-0 items-center gap-3"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white ring-1 ring-cyan-300/25 shadow-[0_0_30px_rgba(6,74,92,0.2)]">
+              <img
+                src={tadamunLogo}
+                alt="Tadamun logo"
+                className="h-10 w-10"
+              />
               <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_16px_rgba(2,245,161,0.9)]" />
             </div>
-            <div>
-              <h1 className="text-base font-semibold text-[var(--crm-text)]">
-                Tadamun
-              </h1>
-              <p className="text-xs text-[var(--crm-text-muted)]">
-                Sales command center
-              </p>
-            </div>
-          </div>
+            {!sidebarCompact && (
+              <div className="min-w-0">
+                <h1 className="truncate text-base font-semibold text-[var(--crm-text)]">
+                  Tadamun
+                </h1>
+                <p className="truncate text-xs text-[var(--crm-text-muted)]">
+                  Business Solutions CRM
+                </p>
+              </div>
+            )}
+          </Link>
 
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="rounded-lg p-2 text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)] lg:hidden"
-            aria-label="Close navigation"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setSidebarCompact((value) => !value)}
+              className="hidden rounded-lg p-2 text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)] lg:grid"
+              aria-label={
+                sidebarCompact ? "Expand navigation" : "Collapse navigation"
+              }
+            >
+              {sidebarCompact ? (
+                <ChevronRight size={17} />
+              ) : (
+                <ChevronLeft size={17} />
+              )}
+            </button>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-lg p-2 text-[var(--crm-text-muted)] transition hover:bg-cyan-400/10 hover:text-[var(--crm-text)] lg:hidden"
+              aria-label="Close navigation"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
-          <p className="px-3 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Workspace
-          </p>
+          {!sidebarCompact && (
+            <p className="px-3 pb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--crm-text-muted)]">
+              Favorites
+            </p>
+          )}
 
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = window.location.pathname === item.path;
+          {navItems
+            .filter((item) => favoritePaths.has(item.path))
+            .map((item) => {
+              const Icon = item.icon;
+              const active = location.pathname === item.path;
 
-            return (
-              <a
-                key={item.path}
-                href={item.path}
-                className={cn(
-                  "group relative mb-1 flex h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm font-medium transition",
-                  active
-                    ? "bg-cyan-400/15 text-[var(--crm-text)] ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]"
-                    : "text-[var(--crm-text-muted)] hover:bg-cyan-400/10 hover:text-[var(--crm-text)]",
-                )}
-              >
-                {active && (
-                  <motion.span
-                    layoutId="active-nav"
-                    className="absolute inset-y-1 left-1 w-1 rounded-full bg-cyan-300"
-                  />
-                )}
-                <Icon
-                  size={18}
+              return (
+                <Link
+                  key={`favorite-${item.path}`}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  title={item.label}
                   className={cn(
-                    "relative z-10 transition",
+                    "group relative mb-1 flex h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm font-medium transition",
+                    sidebarCompact && "justify-center px-0",
                     active
-                      ? "text-cyan-200"
-                      : "text-slate-500 group-hover:text-cyan-200",
+                      ? "bg-cyan-400/15 text-[var(--crm-text)] ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]"
+                      : "text-[var(--crm-text-muted)] hover:bg-cyan-400/10 hover:text-[var(--crm-text)]",
                   )}
-                />
-                <span className="relative z-10">{item.label}</span>
-              </a>
-            );
-          })}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="active-nav"
+                      className="absolute inset-y-1 left-1 w-1 rounded-full bg-cyan-300"
+                    />
+                  )}
+                  <Icon
+                    size={18}
+                    className={cn(
+                      "relative z-10 transition",
+                      active
+                        ? "text-cyan-200"
+                        : "text-[var(--crm-text-muted)] group-hover:text-cyan-200",
+                    )}
+                  />
+                  {!sidebarCompact && (
+                    <span className="relative z-10">{item.label}</span>
+                  )}
+                </Link>
+              );
+            })}
+
+          {!sidebarCompact && (
+            <p className="px-3 pb-3 pt-5 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--crm-text-muted)]">
+              Workspace
+            </p>
+          )}
+
+          {navItems
+            .filter((item) => !favoritePaths.has(item.path))
+            .map((item) => {
+              const Icon = item.icon;
+              const active = location.pathname === item.path;
+
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setSidebarOpen(false)}
+                  title={item.label}
+                  className={cn(
+                    "group relative mb-1 flex h-11 items-center gap-3 overflow-hidden rounded-xl px-3 text-sm font-medium transition",
+                    sidebarCompact && "justify-center px-0",
+                    active
+                      ? "bg-cyan-400/15 text-[var(--crm-text)] ring-1 ring-cyan-300/20 shadow-[0_0_28px_rgba(65,192,242,0.12)]"
+                      : "text-[var(--crm-text-muted)] hover:bg-cyan-400/10 hover:text-[var(--crm-text)]",
+                  )}
+                >
+                  {active && (
+                    <motion.span
+                      layoutId="active-nav"
+                      className="absolute inset-y-1 left-1 w-1 rounded-full bg-cyan-300"
+                    />
+                  )}
+                  <Icon
+                    size={18}
+                    className={cn(
+                      "relative z-10 transition",
+                      active
+                        ? "text-cyan-200"
+                        : "text-[var(--crm-text-muted)] group-hover:text-cyan-200",
+                    )}
+                  />
+                  {!sidebarCompact && (
+                    <span className="relative z-10">{item.label}</span>
+                  )}
+                </Link>
+              );
+            })}
         </nav>
 
-        <div className="border-t border-[var(--crm-border)] p-4">
-          <div className="mb-3 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-300/20">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                  Environment
-                </p>
-                <p className="mt-1 text-sm font-medium text-[var(--crm-text)]">
-                  Local Docker
-                </p>
+        {!sidebarCompact && (
+          <div className="border-t border-[var(--crm-border)] p-4">
+            <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-300/20">
+                  <Sparkles size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--crm-text-muted)]">
+                    Environment
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-[var(--crm-text)]">
+                    Local Docker
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-
-          <button
-            onClick={logout}
-            className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-[var(--crm-text-muted)] transition hover:bg-red-500/15 hover:text-red-500"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
-        </div>
+        )}
       </aside>
 
-      <div className="relative z-10 min-h-screen lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-[var(--crm-border)] bg-[var(--crm-surface-glass)] px-6 py-4 shadow-lg backdrop-blur-xl">
+      <div
+        className={cn(
+          "relative z-10 min-h-screen transition-all",
+          sidebarCompact ? "lg:pl-20" : "lg:pl-72",
+        )}
+      >
+        <header className="sticky top-0 z-20 border-b border-[var(--crm-border)] bg-[var(--crm-surface-glass)] px-4 py-4 shadow-lg backdrop-blur-xl sm:px-6">
           <div className="ml-10 flex items-center justify-between gap-4 lg:ml-0">
-            <div className="flex flex-col gap-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--crm-accent-text)]">
                 Tadamun Workspace
               </p>
-              <h2 className="text-xl font-semibold text-[var(--crm-text)]">
+              <h2 className="truncate text-xl font-semibold text-[var(--crm-text)]">
                 {pageTitle}
               </h2>
             </div>
 
-            <ThemeToggle />
+            <div className="flex shrink-0 items-center gap-2">
+              <CommandMenu />
+              <QuickCreateMenu />
+              <NotificationPanel />
+              <SettingsPanel />
+              <ThemeToggle />
+              <UserMenu onLogout={logout} />
+            </div>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-7xl p-4 sm:p-6">{children}</main>
+        <main id="main-content" className="mx-auto w-full max-w-7xl p-4 sm:p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

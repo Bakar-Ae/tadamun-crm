@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Archive,
+  CalendarDays,
   CheckCircle2,
   ClipboardList,
+  Download,
   Target,
   TrendingUp,
   Users,
@@ -32,9 +34,9 @@ import {
   GlassCard,
   MetricCard,
   PageShell,
-  StatusBadge,
 } from "../components/ui";
 import { motion, type Variants } from "framer-motion";
+import { getDashboardPreferences } from "../lib/dashboardPreferences";
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -62,6 +64,7 @@ export function DashboardPage() {
   const [user, setUser] = useState<LoginResponse | null>(null);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [preferences, setPreferences] = useState(getDashboardPreferences);
 
   useEffect(() => {
     Promise.all([getMe(), getDashboardSummary()])
@@ -76,6 +79,19 @@ export function DashboardPage() {
         window.location.href = "/";
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    function syncPreferences() {
+      setPreferences(getDashboardPreferences());
+    }
+
+    window.addEventListener("crm-dashboard-settings-changed", syncPreferences);
+    return () =>
+      window.removeEventListener(
+        "crm-dashboard-settings-changed",
+        syncPreferences,
+      );
   }, []);
 
   const chartData = useMemo(
@@ -112,83 +128,167 @@ export function DashboardPage() {
     [summary],
   );
 
+  const firstName = user?.fullName?.split(" ")[0];
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const rangeLabel =
+    preferences.defaultRange === "today"
+      ? "Today"
+      : preferences.defaultRange === "7d"
+        ? "Last 7 days"
+        : "Last 30 days";
+  const compact = preferences.density === "compact";
+  const sectionGap = compact ? "gap-3" : "gap-4";
+  const visibleWidgets = Object.values(preferences.widgets).some(Boolean);
+
+  function exportDashboardSummary() {
+    if (!summary) {
+      return;
+    }
+
+    const rows = [
+      ["Metric", "Value"],
+      ["Total Users", summary.totalUsers],
+      ["Active Customers", summary.activeCustomers],
+      ["Archived Customers", summary.archivedCustomers],
+      ["Active Leads", summary.activeLeads],
+      ["Open Tasks", summary.openTasks],
+      ["Completed Tasks", summary.completedTasks],
+    ];
+
+    const csv = rows
+      .map((row) =>
+        row
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(","),
+      )
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `tadamun-dashboard-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <AppLayout>
       <PageShell
-        title={`Welcome back${user?.fullName ? `, ${user.fullName}` : ""}`}
-        description="Monitor customer growth, pipeline movement, task execution, and CRM health from one premium command center."
+        title={`${greeting}${firstName ? `, ${firstName}` : ""}`}
+        description="Customers, leads, tasks, and reports for today's work."
         action={
-          <StatusBadge variant="info">{user?.role ?? "Loading"}</StatusBadge>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm font-semibold text-[var(--crm-text)] shadow-sm">
+              <CalendarDays size={16} />
+              {rangeLabel}
+            </div>
+            <button
+              type="button"
+              onClick={exportDashboardSummary}
+              disabled={loading || !summary}
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[var(--crm-brand-gradient)] px-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(6,74,92,0.22)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+            >
+              <Download size={16} />
+              Export
+            </button>
+          </div>
         }
       >
-        <motion.section
-          className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-          variants={containerAnimation}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.div variants={cardAnimation}>
-            <MetricCard
-              label="Active Customers"
-              value={loading ? "-" : (summary?.activeCustomers ?? 0)}
-              icon={UserRound}
-              tone="green"
-              trend="Live customer base"
-            />
-          </motion.div>
+        {!visibleWidgets && (
+          <GlassCard>
+            <p className="text-sm font-semibold text-[var(--crm-text)]">
+              No dashboard widgets selected
+            </p>
+            <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
+              Open workspace settings and enable the widgets you want to see.
+            </p>
+          </GlassCard>
+        )}
 
-          <motion.div variants={cardAnimation}>
-            <MetricCard
-              label="Active Leads"
-              value={loading ? "-" : (summary?.activeLeads ?? 0)}
-              icon={Target}
-              tone="blue"
-              trend="Pipeline in motion"
-            />
-          </motion.div>
+        {preferences.widgets.kpis && (
+          <motion.section
+            className={`grid ${sectionGap} sm:grid-cols-2 xl:grid-cols-4`}
+            variants={containerAnimation}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.div variants={cardAnimation}>
+              <MetricCard
+                label="Active Customers"
+                value={loading ? "-" : (summary?.activeCustomers ?? 0)}
+                icon={UserRound}
+                tone="green"
+                trend="Customer records"
+              />
+            </motion.div>
 
-          <motion.div variants={cardAnimation}>
-            <MetricCard
-              label="Open Tasks"
-              value={loading ? "-" : (summary?.openTasks ?? 0)}
-              icon={ClipboardList}
-              tone="amber"
-              trend="Execution queue"
-            />
-          </motion.div>
+            <motion.div variants={cardAnimation}>
+              <MetricCard
+                label="Active Leads"
+                value={loading ? "-" : (summary?.activeLeads ?? 0)}
+                icon={Target}
+                tone="blue"
+                trend="Open opportunities"
+              />
+            </motion.div>
 
-          <motion.div variants={cardAnimation}>
-            <MetricCard
-              label="Team Users"
-              value={loading ? "-" : (summary?.totalUsers ?? 0)}
-              icon={Users}
-              tone="slate"
-              trend="Workspace access"
-            />
-          </motion.div>
-        </motion.section>
+            <motion.div variants={cardAnimation}>
+              <MetricCard
+                label="Open Tasks"
+                value={loading ? "-" : (summary?.openTasks ?? 0)}
+                icon={ClipboardList}
+                tone="amber"
+                trend="Need follow-up"
+              />
+            </motion.div>
 
-        <motion.section
-          className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]"
-          variants={containerAnimation}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.div variants={cardAnimation}>
+            <motion.div variants={cardAnimation}>
+              <MetricCard
+                label="Team Users"
+                value={loading ? "-" : (summary?.totalUsers ?? 0)}
+                icon={Users}
+                tone="slate"
+                trend="Team members"
+              />
+            </motion.div>
+          </motion.section>
+        )}
+
+        {(preferences.widgets.pipeline || preferences.widgets.tasks) && (
+          <motion.section
+            className={`grid ${sectionGap} ${
+              preferences.widgets.pipeline && preferences.widgets.tasks
+                ? "xl:grid-cols-[1.35fr_0.65fr]"
+                : "xl:grid-cols-1"
+            }`}
+            variants={containerAnimation}
+            initial="hidden"
+            animate="show"
+          >
+            {preferences.widgets.pipeline && (
+              <motion.div variants={cardAnimation}>
             <GlassCard className="min-h-[360px]">
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                 <div>
                   <p className="text-sm font-semibold text-[var(--crm-accent-text)]">
-                    Pipeline Momentum
+                    Pipeline
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">
-                    Sales activity trend
+                    Sales activity
                   </h2>
                   <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
-                    Weekly lead and customer movement overview.
+                    Weekly lead and customer movement.
                   </p>
                 </div>
-                <StatusBadge variant="success">Healthy</StatusBadge>
+                <span className="rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] px-3 py-2 text-xs font-semibold text-[var(--crm-text-muted)]">
+                  {rangeLabel}
+                </span>
               </div>
 
               <div className="mt-8 h-64">
@@ -267,18 +367,20 @@ export function DashboardPage() {
                 </ResponsiveContainer>
               </div>
             </GlassCard>
-          </motion.div>
+              </motion.div>
+            )}
 
-          <motion.div variants={cardAnimation}>
+            {preferences.widgets.tasks && (
+              <motion.div variants={cardAnimation}>
             <GlassCard className="min-h-[360px]">
               <p className="text-sm font-semibold text-[var(--crm-accent-text)]">
-                Task Status
+                Tasks
               </p>
               <h2 className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">
-                Work completion
+                Completion
               </h2>
               <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
-                Open vs completed task balance.
+                Open and completed tasks.
               </p>
 
               <div className="mt-8 h-56">
@@ -325,16 +427,24 @@ export function DashboardPage() {
                 </div>
               </div>
             </GlassCard>
-          </motion.div>
-        </motion.section>
+              </motion.div>
+            )}
+          </motion.section>
+        )}
 
-        <motion.section
-          className="grid gap-4 xl:grid-cols-[0.85fr_1.15fr]"
-          variants={containerAnimation}
-          initial="hidden"
-          animate="show"
-        >
-          <motion.div variants={cardAnimation}>
+        {(preferences.widgets.distribution || preferences.widgets.focus) && (
+          <motion.section
+            className={`grid ${sectionGap} ${
+              preferences.widgets.distribution && preferences.widgets.focus
+                ? "xl:grid-cols-[0.85fr_1.15fr]"
+                : "xl:grid-cols-1"
+            }`}
+            variants={containerAnimation}
+            initial="hidden"
+            animate="show"
+          >
+            {preferences.widgets.distribution && (
+              <motion.div variants={cardAnimation}>
             <GlassCard>
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-cyan-400/10 p-3 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
@@ -342,7 +452,7 @@ export function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-[var(--crm-accent-text)]">
-                    Tadamun Composition
+                    CRM data
                   </p>
                   <h2 className="text-xl font-semibold text-[var(--crm-text)]">
                     Workspace distribution
@@ -385,22 +495,24 @@ export function DashboardPage() {
                 </ResponsiveContainer>
               </div>
             </GlassCard>
-          </motion.div>
+              </motion.div>
+            )}
 
-          <motion.div variants={cardAnimation}>
+            {preferences.widgets.focus && (
+              <motion.div variants={cardAnimation}>
             <GlassCard>
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                 <div>
                   <p className="text-sm font-semibold text-[var(--crm-accent-text)]">
-                    Operational Focus
+                    Focus
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-[var(--crm-text)]">
                     What needs attention
                   </h2>
                 </div>
-                <StatusBadge variant="neutral">
-                  {user?.email ?? "Loading"}
-                </StatusBadge>
+                <span className="rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] px-3 py-2 text-xs font-semibold text-[var(--crm-text-muted)]">
+                  Today
+                </span>
               </div>
 
               <div className="mt-6 space-y-3">
@@ -415,7 +527,7 @@ export function DashboardPage() {
                         Open tasks
                       </p>
                       <p className="text-sm text-[var(--crm-text-muted)]">
-                        Work still waiting for execution
+                        Waiting for follow-up
                       </p>
                     </div>
                   </div>
@@ -435,7 +547,7 @@ export function DashboardPage() {
                         Active leads
                       </p>
                       <p className="text-sm text-[var(--crm-text-muted)]">
-                        Pipeline opportunities to follow up
+                        Opportunities to contact
                       </p>
                     </div>
                   </div>
@@ -455,7 +567,7 @@ export function DashboardPage() {
                         Archived customers
                       </p>
                       <p className="text-sm text-[var(--crm-text-muted)]">
-                        Records removed from active workspace
+                        Not shown in active work
                       </p>
                     </div>
                   </div>
@@ -475,7 +587,7 @@ export function DashboardPage() {
                         Completed tasks
                       </p>
                       <p className="text-sm text-[var(--crm-text-muted)]">
-                        Execution progress this workspace can show
+                        Finished follow-ups
                       </p>
                     </div>
                   </div>
@@ -485,8 +597,10 @@ export function DashboardPage() {
                 </div>
               </div>
             </GlassCard>
-          </motion.div>
-        </motion.section>
+              </motion.div>
+            )}
+          </motion.section>
+        )}
       </PageShell>
     </AppLayout>
   );

@@ -21,6 +21,16 @@ export type TaskResponse = {
   updatedAt: string
 }
 
+export type CreateTaskRequest = {
+  title: string
+  description?: string | null
+  priority: TaskPriority
+  dueDate?: string | null
+  assignedToUserId?: number | null
+  customerId?: number | null
+  leadId?: number | null
+}
+
 export async function getTasks(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<TaskResponse>>('/tasks', {
     params: {
@@ -31,5 +41,10 @@ export async function getTasks(page = 0, size = 10, keyword = '') {
     },
   })
 
+  return response.data
+}
+
+export async function createTask(request: CreateTaskRequest) {
+  const response = await api.post<TaskResponse>('/tasks', request)
   return response.data
 }
