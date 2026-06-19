@@ -37,8 +37,8 @@ export function ForgotPasswordPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[var(--crm-bg)] text-[var(--crm-text)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(65,192,242,0.2),transparent_30rem),radial-gradient(circle_at_80%_0%,rgba(2,245,161,0.1),transparent_24rem)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(173,223,241,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(173,223,241,0.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(109,93,251,0.18),transparent_30rem),radial-gradient(circle_at_80%_0%,rgba(56,189,248,0.12),transparent_24rem)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(109,93,251,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(109,93,251,0.05)_1px,transparent_1px)] bg-[size:48px_48px]" />
 
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <motion.div
@@ -48,7 +48,7 @@ export function ForgotPasswordPage() {
           transition={{ duration: 0.35, ease: 'easeOut' }}
         >
           <div className="mb-8">
-            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)] ring-1 ring-violet-300/25">
               <ShieldCheck size={24} />
             </div>
 
@@ -68,7 +68,7 @@ export function ForgotPasswordPage() {
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]"
                 />
                 <input
-                  className="crm-focus h-12 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-3 text-sm text-[var(--crm-text)] transition focus:border-cyan-400"
+                  className="crm-focus h-12 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-3 text-sm text-[var(--crm-text)] transition focus:border-[var(--crm-primary)]"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   type="email"
@@ -91,7 +91,7 @@ export function ForgotPasswordPage() {
             )}
 
             <button
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-cyan-600 px-4 text-sm font-semibold text-white shadow-lg shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex h-12 w-full items-center justify-center rounded-xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={loading}
             >
               {loading ? 'Sending...' : 'Send reset link'}

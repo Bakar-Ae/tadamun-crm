@@ -61,7 +61,7 @@ export function ReportsPage() {
     <AppLayout>
       <PageShell
         title="Reports"
-        description="View high-level Tadamun totals for customers, leads, and tasks."
+        description="View current totals for customers, leads, and tasks."
       >
         {error && (
           <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
@@ -145,7 +145,7 @@ export function ReportsPage() {
 
               <GlassCard>
                 <div className="mb-5 flex items-center gap-3">
-                  <div className="rounded-xl bg-cyan-400/10 p-3 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+                  <div className="rounded-xl bg-[var(--crm-soft-gradient)] p-3 text-[var(--crm-primary)] ring-1 ring-violet-300/25">
                     <BarChart3 size={22} />
                   </div>
                   <div>

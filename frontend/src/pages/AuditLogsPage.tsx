@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { Clock, Database, ShieldCheck, UserRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { GlassCard, PageShell, StatTile } from '../components/ui'
+import { EmptyState, GlassCard, PageShell, StatTile } from '../components/ui'
 import { getAuditLogs, type AuditLogResponse } from '../services/auditLogService'
 import type { PageResponse } from '../services/userService'
 
@@ -65,7 +65,7 @@ export function AuditLogsPage() {
     <AppLayout>
       <PageShell
         title="Audit Logs"
-        description="Review important actions performed inside Tadamun for security and compliance."
+        description="Review important actions for security and compliance."
       >
         <motion.section
           className="grid gap-4 sm:grid-cols-3"
@@ -129,7 +129,7 @@ export function AuditLogsPage() {
 
                 {!loading &&
                   visibleLogs.map((log) => (
-                    <tr key={log.id} className="transition hover:bg-cyan-400/5">
+                    <tr key={log.id} className="transition hover:bg-violet-500/5">
                       <td className="px-5 py-4">
                         <span className="inline-flex rounded-full border border-red-400/30 bg-red-400/10 px-2.5 py-1 text-xs font-semibold text-[var(--crm-danger-text)] ring-1 ring-red-300/20">
                           {log.action}
@@ -164,11 +164,12 @@ export function AuditLogsPage() {
                   ))}
 
                 {!loading && visibleLogs.length === 0 && (
-                  <tr>
-                    <td className="px-5 py-10 text-center text-[var(--crm-text-muted)]" colSpan={5}>
-                      No audit logs found
-                    </td>
-                  </tr>
+                  <EmptyState
+                    icon={ShieldCheck}
+                    title="No audit logs found"
+                    message="Important system actions will appear here."
+                    colSpan={5}
+                  />
                 )}
               </tbody>
             </table>

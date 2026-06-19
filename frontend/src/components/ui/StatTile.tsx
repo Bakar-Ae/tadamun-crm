@@ -9,7 +9,7 @@ type StatTileProps = {
 }
 
 const tones = {
-  blue: 'bg-cyan-400/10 text-[var(--crm-accent-text)] ring-cyan-300/20',
+  blue: 'bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)] ring-violet-300/25',
   green: 'bg-emerald-400/10 text-[var(--crm-success-text)] ring-emerald-300/20',
   amber: 'bg-amber-400/10 text-[var(--crm-warning-text)] ring-amber-300/20',
   red: 'bg-red-400/10 text-[var(--crm-danger-text)] ring-red-300/20',

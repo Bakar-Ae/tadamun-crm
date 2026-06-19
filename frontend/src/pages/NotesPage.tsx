@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { FileText, NotebookText, Search, UserRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { GlassCard, PageShell, StatTile } from '../components/ui'
+import { EmptyState, GlassCard, PageShell, SearchPanel, StatTile } from '../components/ui'
 import { getCustomerNotes, getLeadNotes, type NoteResponse } from '../services/noteService'
 import type { PageResponse } from '../services/userService'
 
@@ -93,7 +93,7 @@ export function NotesPage() {
     <AppLayout>
       <PageShell
         title="Notes"
-        description="Review activity notes connected to customers and leads."
+        description="Review notes attached to customers and leads."
       >
         <motion.section
           className="grid gap-4 sm:grid-cols-3"
@@ -114,37 +114,23 @@ export function NotesPage() {
           </motion.div>
         </motion.section>
 
-        <GlassCard>
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-3 md:flex-row">
-              <select
-                value={targetType}
-                onChange={(event) => setTargetType(event.target.value as 'customer' | 'lead')}
-                className="crm-focus h-11 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] transition focus:border-cyan-400"
-              >
-                <option value="customer">Customer</option>
-                <option value="lead">Lead</option>
-              </select>
-
-              <div className="relative flex-1">
-                <Search
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]"
-                />
-                <input
-                  value={targetId}
-                  onChange={(event) => setTargetId(event.target.value)}
-                  placeholder="Record ID"
-                  className="crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-3 text-sm text-[var(--crm-text)] transition placeholder:text-[var(--crm-text-muted)] focus:border-cyan-400"
-                />
-              </div>
-
-              <button className="h-11 rounded-xl bg-cyan-600 px-5 text-sm font-semibold text-white shadow-sm shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700">
-                Load Notes
-              </button>
-            </div>
-          </form>
-        </GlassCard>
+        <SearchPanel
+          value={targetId}
+          onChange={setTargetId}
+          onSubmit={handleSubmit}
+          placeholder="Enter customer or lead ID"
+          submitLabel="Load notes"
+        >
+          <select
+            value={targetType}
+            onChange={(event) => setTargetType(event.target.value as 'customer' | 'lead')}
+            aria-label="Note target type"
+            className="crm-focus h-11 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] shadow-sm transition focus:border-[var(--crm-primary)]"
+          >
+            <option value="customer">Customer</option>
+            <option value="lead">Lead</option>
+          </select>
+        </SearchPanel>
 
         {error && (
           <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
@@ -161,7 +147,7 @@ export function NotesPage() {
               </p>
             </div>
 
-            <div className="rounded-xl bg-cyan-400/10 p-3 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+            <div className="rounded-xl bg-[var(--crm-soft-gradient)] p-3 text-[var(--crm-primary)] ring-1 ring-violet-300/25">
               <NotebookText size={22} />
             </div>
           </div>
@@ -181,7 +167,7 @@ export function NotesPage() {
                   animate="show"
                 >
                   <div className="flex gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)] ring-1 ring-violet-300/25">
                       <FileText size={18} />
                     </div>
 
@@ -196,8 +182,12 @@ export function NotesPage() {
               ))}
 
             {!loading && visibleNotes.length === 0 && (
-              <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-8 text-center text-sm text-[var(--crm-text-muted)]">
-                No notes found
+              <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)]">
+                <EmptyState
+                  icon={NotebookText}
+                  title="No notes found"
+                  message="Choose another customer or lead ID."
+                />
               </div>
             )}
           </div>

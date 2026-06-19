@@ -76,11 +76,11 @@ export function ChangePasswordPage() {
     <AppLayout>
       <PageShell
         title="Account Security"
-        description="Update your password to keep your Tadamun account secure."
+        description="Update your password."
       >
         <GlassCard className="mx-auto max-w-3xl">
           <div className="mb-6 flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)] ring-1 ring-violet-300/25">
               <ShieldCheck size={24} />
             </div>
 
@@ -132,14 +132,14 @@ export function ChangePasswordPage() {
                 type="checkbox"
                 checked={showPasswords}
                 onChange={(event) => setShowPasswords(event.target.checked)}
-                className="h-4 w-4 rounded border-[var(--crm-border)] text-cyan-600"
+                className="h-4 w-4 rounded border-[var(--crm-border)] text-[var(--crm-primary)]"
               />
               Show passwords
             </label>
 
             <button
               disabled={loading}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-cyan-600 px-5 text-sm font-semibold text-white shadow-sm shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--crm-brand-gradient)] px-5 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.2)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {loading ? 'Updating...' : 'Update password'}
             </button>
@@ -169,7 +169,7 @@ function PasswordInput({ label, value, show, onChange, autoComplete }: PasswordI
         />
 
         <input
-          className="crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-10 text-sm text-[var(--crm-text)] transition focus:border-cyan-400"
+          className="crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-10 text-sm text-[var(--crm-text)] transition focus:border-[var(--crm-primary)]"
           type={show ? 'text' : 'password'}
           value={value}
           onChange={(event) => onChange(event.target.value)}

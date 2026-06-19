@@ -29,7 +29,7 @@ type ApiError = {
 }
 
 const trustCards = [
-  { label: 'Customer View', value: '360', icon: UsersRound, tone: 'text-cyan-200' },
+  { label: 'Customer View', value: '360', icon: UsersRound, tone: 'text-[var(--crm-primary)]' },
   { label: 'Activity', value: 'Live', icon: Activity, tone: 'text-emerald-200' },
   { label: 'Insights', value: 'Reports', icon: BarChart3, tone: 'text-amber-200' },
 ]
@@ -167,8 +167,8 @@ export function LoginPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold">System Status</p>
-                <p className="mt-1 text-sm text-[var(--crm-text-muted)]">Backend, database, and API are ready</p>
+                <p className="text-sm font-semibold">Workspace</p>
+                <p className="mt-1 text-sm text-[var(--crm-text-muted)]">Core CRM modules are ready</p>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/10 text-[var(--crm-primary)] ring-1 ring-violet-300/20">
                 <Database size={22} />
@@ -253,7 +253,7 @@ export function LoginPage() {
                 <button
                   type="button"
                   onClick={() => window.location.assign('/forgot-password')}
-                    className="text-sm font-semibold text-[var(--crm-accent-text)] transition hover:text-[var(--crm-primary)]"
+                  className="text-sm font-semibold text-[var(--crm-accent-text)] transition hover:text-[var(--crm-primary)]"
                 >
                   Forgot password?
                 </button>

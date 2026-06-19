@@ -12,7 +12,7 @@ type MetricCardProps = {
 };
 
 const tones = {
-  blue: "bg-cyan-400/10 text-cyan-200 ring-cyan-300/20",
+  blue: "bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)] ring-violet-300/25",
   green: "bg-emerald-400/10 text-[var(--crm-success-text)] ring-emerald-300/20",
   amber: "bg-amber-400/10 text-[var(--crm-warning-text)] ring-amber-300/20",
   slate: "bg-slate-400/10 text-[var(--crm-text-muted)] ring-slate-300/20",

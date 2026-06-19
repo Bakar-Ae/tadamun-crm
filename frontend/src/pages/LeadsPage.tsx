@@ -4,13 +4,12 @@ import {
   BriefcaseBusiness,
   DollarSign,
   Mail,
-  Search,
   Target,
   UserRound,
   UsersRound,
 } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { GlassCard, PageShell, StatTile } from '../components/ui'
+import { EmptyState, GlassCard, PageShell, SearchPanel, StatTile } from '../components/ui'
 import { getLeads, type LeadResponse } from '../services/leadService'
 import type { PageResponse } from '../services/userService'
 
@@ -38,7 +37,7 @@ const cardAnimation: Variants = {
 
 function statusBadgeClass(status: string) {
   if (status === 'NEW') {
-    return 'border-cyan-400/30 bg-cyan-400/10 text-[var(--crm-accent-text)]'
+    return 'border-blue-400/30 bg-blue-500/10 text-[var(--crm-primary)]'
   }
 
   if (status === 'QUALIFIED' || status === 'CONVERTED') {
@@ -118,7 +117,7 @@ export function LeadsPage() {
     <AppLayout>
       <PageShell
         title="Leads"
-        description="Track opportunities, lead status, assigned owners, and estimated deal value."
+        description="Track leads, owners, status, and estimated value."
       >
         <motion.section
           className="grid gap-4 sm:grid-cols-3"
@@ -139,28 +138,12 @@ export function LeadsPage() {
           </motion.div>
         </motion.section>
 
-        <GlassCard>
-          <form onSubmit={handleSearch}>
-            <div className="flex flex-col gap-3 md:flex-row">
-              <div className="relative flex-1">
-                <Search
-                  size={18}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--crm-text-muted)]"
-                />
-                <input
-                  value={keyword}
-                  onChange={(event) => setKeyword(event.target.value)}
-                  placeholder="Search by name, email, company, or source"
-                  className="crm-focus h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-10 pr-3 text-sm text-[var(--crm-text)] transition placeholder:text-[var(--crm-text-muted)] focus:border-cyan-400"
-                />
-              </div>
-
-              <button className="h-11 rounded-xl bg-cyan-600 px-5 text-sm font-semibold text-white shadow-sm shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700">
-                Search
-              </button>
-            </div>
-          </form>
-        </GlassCard>
+        <SearchPanel
+          value={keyword}
+          onChange={setKeyword}
+          onSubmit={handleSearch}
+          placeholder="Search leads by name, email, company, or source"
+        />
 
         {error && (
           <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
@@ -177,7 +160,7 @@ export function LeadsPage() {
               </p>
             </div>
 
-            <div className="rounded-xl bg-cyan-400/10 p-3 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+            <div className="rounded-xl bg-[var(--crm-soft-gradient)] p-3 text-[var(--crm-primary)] ring-1 ring-violet-300/25">
               <Target size={22} />
             </div>
           </div>
@@ -206,10 +189,10 @@ export function LeadsPage() {
 
                 {!loading &&
                   visibleLeads.map((lead) => (
-                    <tr key={lead.id} className="transition hover:bg-cyan-400/5">
+                    <tr key={lead.id} className="transition hover:bg-violet-500/5">
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-400/10 text-[var(--crm-accent-text)] ring-1 ring-cyan-300/20">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)] ring-1 ring-violet-300/25">
                             <UserRound size={18} />
                           </div>
                           <div>
@@ -257,11 +240,12 @@ export function LeadsPage() {
                   ))}
 
                 {!loading && visibleLeads.length === 0 && (
-                  <tr>
-                    <td className="px-5 py-10 text-center text-[var(--crm-text-muted)]" colSpan={6}>
-                      No leads found
-                    </td>
-                  </tr>
+                  <EmptyState
+                    icon={Target}
+                    title="No leads found"
+                    message="Try another name, email, company, or source."
+                    colSpan={6}
+                  />
                 )}
               </tbody>
             </table>
