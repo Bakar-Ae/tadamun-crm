@@ -29,6 +29,7 @@ import {
   getEmptyMessage,
   statusVariant,
 } from '../lib/formatters'
+import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
@@ -66,9 +67,10 @@ export function LeadsPage() {
 
     getLeads(0, 10, search)
       .then(setLeads)
-      .catch(() => setError('Pipeline could not be loaded. Please try again.'))
+      .catch(() => setError(getLoadErrorMessage('leads')))
       .finally(() => setLoading(false))
   }, [])
+  
 
   useEffect(() => {
     let ignore = false
@@ -121,7 +123,7 @@ export function LeadsPage() {
       toast.success(`${lead.fullName} archived`)
       loadLeads(keyword)
     } catch {
-      toast.error('Could not archive this lead.')
+      toast.error(getSaveErrorMessage('lead'))
     } finally {
       setActionLoadingId(null)
     }
