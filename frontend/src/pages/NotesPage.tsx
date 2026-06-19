@@ -108,7 +108,7 @@ export function NotesPage() {
           animate="show"
         >
           <motion.div variants={cardAnimation}>
-            <StatTile label="Notes shown" value={visibleNotes.length} icon={NotebookText} tone="blue" />
+            <StatTile label="Notes" value={visibleNotes.length} icon={NotebookText} tone="blue" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>
@@ -118,7 +118,7 @@ export function NotesPage() {
           <motion.div variants={cardAnimation}>
             <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-[var(--crm-text-muted)]">
-                Selected record
+                Selected customer or lead
               </p>
               <p className="mt-2 text-lg font-semibold text-[var(--crm-text)]">{selectedRecordLabel}</p>
             </div>
@@ -129,7 +129,7 @@ export function NotesPage() {
           value={targetId}
           onChange={setTargetId}
           onSubmit={handleSubmit}
-          placeholder="Enter customer or lead ID"
+          placeholder="Enter customer or lead number"
           submitLabel="Load notes"
         >
           <select
@@ -152,7 +152,7 @@ export function NotesPage() {
         <GlassCard>
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold text-[var(--crm-text)]">Record notes</h3>
+              <h3 className="font-semibold text-[var(--crm-text)]">Notes list</h3>
               <p className="text-sm text-[var(--crm-text-muted)]">
                 Load a customer or lead to review its note history.
               </p>
@@ -193,7 +193,7 @@ export function NotesPage() {
               <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)]">
                 <EmptyState
                   icon={NotebookText}
-                  title={hasLoaded ? 'No notes for this record' : 'Choose a record to view notes'}
+                  title={hasLoaded ? 'No notes yet' : 'Choose a customer or lead to view notes'}
                   message={
                     hasLoaded
                       ? 'Add a note when there is a useful customer conversation to remember.'

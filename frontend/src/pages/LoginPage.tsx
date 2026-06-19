@@ -113,7 +113,7 @@ export function LoginPage() {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-[var(--crm-text)]">Tadamun</h1>
-              <p className="text-sm text-[var(--crm-text-muted)]">Sales command center</p>
+              <p className="text-sm text-[var(--crm-text-muted)]">Sales CRM </p>
             </div>
           </motion.div>
 
@@ -129,11 +129,11 @@ export function LoginPage() {
             </div>
 
             <h2 className="max-w-3xl text-5xl font-semibold leading-tight tracking-normal xl:text-6xl">
-              Run customers, leads, tasks, and reports from one premium system.
+              Manage customers, leads, tasks, and reports in one place.
             </h2>
 
             <p className="mt-5 max-w-2xl text-base leading-7 text-[var(--crm-text-muted)]">
-              A focused operating center for sales teams, managers, support staff, and business owners who need clarity, control, and speed.
+               Built for sales teams, managers, support staff, and business owners who need clear customer information.
             </p>
 
             <div className="mt-8 grid max-w-2xl grid-cols-3 gap-3">
@@ -168,7 +168,7 @@ export function LoginPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold">Workspace</p>
-                <p className="mt-1 text-sm text-[var(--crm-text-muted)]">Core CRM modules are ready</p>
+                <p className="mt-1 text-sm text-[var(--crm-text-muted)]">Customer, lead, task, and report tools are ready</p>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-violet-500/10 text-[var(--crm-primary)] ring-1 ring-violet-300/20">
                 <Database size={22} />

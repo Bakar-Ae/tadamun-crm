@@ -151,7 +151,7 @@ export function CustomersPage() {
           animate="show"
         >
           <motion.div variants={cardAnimation}>
-            <StatTile label="Customers shown" value={visibleCustomers.length} icon={UsersRound} tone="blue" />
+            <StatTile label="Customers" value={visibleCustomers.length} icon={UsersRound} tone="blue" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>

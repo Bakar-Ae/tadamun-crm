@@ -96,7 +96,7 @@ export function AuditLogsPage() {
           animate="show"
         >
           <motion.div variants={cardAnimation}>
-            <StatTile label="Events shown" value={visibleLogs.length} icon={ShieldCheck} tone="red" />
+            <StatTile label="Audit Events" value={visibleLogs.length} icon={ShieldCheck} tone="red" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>

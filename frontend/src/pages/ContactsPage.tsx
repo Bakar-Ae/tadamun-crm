@@ -140,7 +140,7 @@ export function ContactsPage() {
           animate="show"
         >
           <motion.div variants={cardAnimation}>
-            <StatTile label="Contacts shown" value={visibleContacts.length} icon={UsersRound} tone="blue" />
+            <StatTile label="Contacts" value={visibleContacts.length} icon={UsersRound} tone="blue" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>

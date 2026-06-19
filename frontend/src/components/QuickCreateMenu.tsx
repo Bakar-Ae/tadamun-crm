@@ -63,7 +63,7 @@ const requiredNumber = z
   .trim()
   .min(1, "Required")
   .refine((value) => Number.isInteger(Number(value)) && Number(value) > 0, {
-    message: "Choose a valid record",
+    message: "Choose a customer or lead",
   });
 
 const schemas = {
@@ -239,7 +239,7 @@ export function QuickCreateMenu() {
         setUserOptions(users.content);
       }
     } catch {
-      toast.error("Could not load record choices");
+      toast.error("Could not load options");
     } finally {
       setOptionsLoading(false);
     }
@@ -433,8 +433,8 @@ export function QuickCreateMenu() {
 
       <Modal
         open={activeKind !== null}
-        title={activeAction ? `Add ${activeAction.label}` : "Add record"}
-        description="Add the essential details now. You can refine the record later."
+        title={activeAction ? `Add ${activeAction.label}` : "Create item"}
+        description= "Fill in the required fields."
         onClose={closeForm}
       >
         <form onSubmit={handleSubmit} className="space-y-4">

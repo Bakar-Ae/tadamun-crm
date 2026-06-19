@@ -150,7 +150,7 @@ export function LeadsPage() {
           animate="show"
         >
           <motion.div variants={cardAnimation}>
-            <StatTile label="Leads shown" value={visibleLeads.length} icon={Target} tone="blue" />
+            <StatTile label="Leads" value={visibleLeads.length} icon={Target} tone="blue" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>

@@ -11,7 +11,7 @@ const floatingCards = [
   { label: "Customers", icon: UsersRound, className: "left-[8%] top-[26%]" },
   { label: "Leads", icon: BarChart3, className: "right-[10%] top-[22%]" },
   { label: "Contacts", icon: Contact, className: "left-[13%] bottom-[24%]" },
-  { label: "Secure API", icon: ShieldCheck, className: "right-[14%] bottom-[27%]" },
+  { label: "Secure access", icon: ShieldCheck, className: "right-[14%] bottom-[27%]" },
 ];
 
 export function PreLoginIntro({ onDone }: PreLoginIntroProps) {
@@ -91,7 +91,7 @@ export function PreLoginIntro({ onDone }: PreLoginIntroProps) {
         >
           <p className="mt-8 inline-flex items-center gap-2 rounded-full border border-violet-300/30 bg-violet-500/10 px-4 py-2 text-sm font-semibold text-[var(--crm-accent-text)]">
             <Database size={16} />
-            Initializing command center
+             Opening workspace
           </p>
           <h1 className="mt-5 text-4xl font-semibold tracking-normal sm:text-6xl">
             Tadamun CRM
