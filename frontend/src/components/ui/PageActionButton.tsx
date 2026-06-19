@@ -16,7 +16,7 @@ export function PageActionButton({
     <button
       type="button"
       className={cn(
-        'inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.2)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
+        'crm-primary-action inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:hover:translate-y-0',
         className,
       )}
       {...props}

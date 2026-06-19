@@ -43,6 +43,7 @@
   --crm-shadow-card: 0 14px 36px rgba(79, 70, 229, 0.11);
   --crm-shadow-glow: 0 24px 80px rgba(109, 93, 251, 0.18);
   --crm-brand-gradient: linear-gradient(135deg, #6d5dfb 0%, #4f46e5 48%, #2563eb 100%);
+  --crm-action-gradient: linear-gradient(135deg, #312e81 0%, #4f46e5 48%, #1d4ed8 100%);
   --crm-soft-gradient: linear-gradient(135deg, rgba(109, 93, 251, 0.18), rgba(37, 99, 235, 0.12));
 }
 
@@ -80,6 +81,7 @@ html[data-theme="midnight"] {
   --crm-shadow-card: 0 18px 48px rgba(0, 0, 0, 0.28);
   --crm-shadow-glow: 0 0 50px rgba(124, 58, 237, 0.24);
   --crm-brand-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 48%, #38bdf8 100%);
+  --crm-action-gradient: linear-gradient(135deg, #6d28d9 0%, #4f46e5 52%, #0284c7 100%);
   --crm-soft-gradient: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(56, 189, 248, 0.12));
 }
 
@@ -113,6 +115,7 @@ html[data-theme="dark"] {
   --crm-shadow-card: 0 18px 48px rgba(0, 0, 0, 0.28);
   --crm-shadow-glow: 0 0 50px rgba(124, 58, 237, 0.24);
   --crm-brand-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 48%, #38bdf8 100%);
+  --crm-action-gradient: linear-gradient(135deg, #6d28d9 0%, #4f46e5 52%, #0284c7 100%);
   --crm-soft-gradient: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(56, 189, 248, 0.12));
 }
 
@@ -173,6 +176,34 @@ html[data-theme="dark"] .crm-glass {
 
 .crm-focus:focus-visible {
   box-shadow: 0 0 0 4px rgba(109, 93, 251, 0.18);
+}
+
+.crm-primary-action {
+  background: var(--crm-action-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 14px 34px rgba(79, 70, 229, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(15, 23, 42, 0.35);
+  transform: translateZ(0);
+}
+
+.crm-primary-action:hover:not(:disabled) {
+  filter: brightness(1.04) saturate(1.08);
+}
+
+.crm-primary-action:focus-visible {
+  outline: none;
+  box-shadow:
+    0 14px 34px rgba(79, 70, 229, 0.28),
+    0 0 0 4px rgba(79, 70, 229, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.crm-primary-action:disabled {
+  filter: grayscale(0.1);
+  opacity: 0.55;
 }
 
 .crm-luxe-panel {

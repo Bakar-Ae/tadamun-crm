@@ -64,7 +64,7 @@ export function NotificationPanel() {
             <Link
               to="/notifications"
               onClick={() => setOpen(false)}
-              className="mt-4 flex h-11 items-center justify-center rounded-2xl bg-[var(--crm-brand-gradient)] text-sm font-semibold text-white transition hover:-translate-y-0.5"
+              className="crm-primary-action mt-4 flex h-11 items-center justify-center rounded-2xl text-sm font-semibold transition hover:-translate-y-0.5"
             >
               Open inbox
             </Link>

@@ -106,7 +106,7 @@ export function ResetPasswordPage() {
             )}
 
             <button
-              className="flex h-12 w-full items-center justify-center rounded-xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="crm-primary-action flex h-12 w-full items-center justify-center rounded-xl px-4 text-sm font-semibold transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed"
               disabled={loading || !token}
             >
               {loading ? 'Resetting...' : 'Reset password'}

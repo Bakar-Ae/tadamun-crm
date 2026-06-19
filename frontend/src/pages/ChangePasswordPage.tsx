@@ -139,7 +139,7 @@ export function ChangePasswordPage() {
 
             <button
               disabled={loading}
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--crm-brand-gradient)] px-5 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.2)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
+              className="crm-primary-action inline-flex h-11 items-center justify-center rounded-xl px-5 text-sm font-semibold transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed"
             >
               {loading ? 'Updating...' : 'Update password'}
             </button>

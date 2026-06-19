@@ -392,10 +392,10 @@ export function QuickCreateMenu() {
       <button
         type="button"
         onClick={() => setMenuOpen((value) => !value)}
-        className="inline-flex h-10 items-center gap-2 rounded-2xl bg-[var(--crm-brand-gradient)] px-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5"
+        className="crm-primary-action inline-flex h-10 items-center gap-2 rounded-2xl px-3 text-sm font-semibold transition hover:-translate-y-0.5"
       >
         <Plus size={17} />
-        <span className="hidden sm:inline">New</span>
+        <span>New</span>
       </button>
 
       {menuOpen && (
@@ -588,7 +588,7 @@ export function QuickCreateMenu() {
             <button
               type="submit"
               disabled={saving}
-              className="h-10 rounded-2xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+              className="crm-primary-action h-10 rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               {saving ? "Creating..." : "Create"}
             </button>

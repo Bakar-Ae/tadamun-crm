@@ -99,7 +99,7 @@ function EmptyPanel({ icon: Icon, title, message, actionLabel, to }: EmptyPanelP
         </div>
         <Link
           to={to}
-          className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)]"
+          className="crm-primary-action inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5"
         >
           {actionLabel}
           <ArrowRight size={15} />
@@ -683,7 +683,7 @@ export function DashboardPage() {
               type="button"
               onClick={exportDashboardSummary}
               disabled={loading || !summary}
-              className="inline-flex h-10 items-center gap-2 rounded-2xl bg-[var(--crm-brand-gradient)] px-3 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+              className="crm-primary-action inline-flex h-10 items-center gap-2 rounded-2xl px-3 text-sm font-semibold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
               <Download size={16} />
               Export

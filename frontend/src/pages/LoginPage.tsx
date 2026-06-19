@@ -267,7 +267,7 @@ export function LoginPage() {
 
               <button
                 className={cn(
-                  'group flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--crm-brand-gradient)] px-4 text-sm font-semibold text-white shadow-[0_14px_34px_rgba(109,93,251,0.22)] transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60',
+                  'crm-primary-action group flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5 disabled:translate-y-0 disabled:cursor-not-allowed',
                 )}
                 disabled={loading}
               >
