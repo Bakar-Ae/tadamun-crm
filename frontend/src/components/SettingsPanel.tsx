@@ -5,16 +5,7 @@ import {
   getDashboardPreferences,
   saveDashboardPreferences,
   type DashboardPreferences,
-  type DashboardWidgetKey,
 } from "../lib/dashboardPreferences";
-
-const widgetLabels: Array<{ key: DashboardWidgetKey; label: string }> = [
-  { key: "kpis", label: "KPI grid" },
-  { key: "pipeline", label: "Task status" },
-  { key: "tasks", label: "Account status" },
-  { key: "distribution", label: "CRM totals" },
-  { key: "focus", label: "Review list" },
-];
 
 export function SettingsPanel() {
   const [open, setOpen] = useState(false);
@@ -26,16 +17,6 @@ export function SettingsPanel() {
   function updatePreferences(next: DashboardPreferences) {
     setPreferences(next);
     saveDashboardPreferences(next);
-  }
-
-  function updateWidget(key: DashboardWidgetKey, checked: boolean) {
-    updatePreferences({
-      ...preferences,
-      widgets: {
-        ...preferences.widgets,
-        [key]: checked,
-      },
-    });
   }
 
   function updateTheme(nextTheme: "luxe" | "midnight") {
@@ -61,7 +42,7 @@ export function SettingsPanel() {
       <Modal
         open={open}
         title="Workspace settings"
-        description="Customize dashboard density and visible widgets."
+        description="Set the workspace theme and display density."
         onClose={() => setOpen(false)}
       >
         <div className="space-y-6">
@@ -118,30 +99,6 @@ export function SettingsPanel() {
                 >
                   {density}
                 </button>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-sm font-semibold text-[var(--crm-text)]">
-              Dashboard widgets
-            </h3>
-            <div className="mt-3 space-y-2">
-              {widgetLabels.map((widget) => (
-                <label
-                  key={widget.key}
-                  className="flex cursor-pointer items-center justify-between rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] px-3 py-3 text-sm font-medium text-[var(--crm-text)]"
-                >
-                  {widget.label}
-                  <input
-                    type="checkbox"
-                    checked={preferences.widgets[widget.key]}
-                    onChange={(event) =>
-                      updateWidget(widget.key, event.target.checked)
-                    }
-                    className="h-4 w-4 accent-violet-500"
-                  />
-                </label>
               ))}
             </div>
           </section>

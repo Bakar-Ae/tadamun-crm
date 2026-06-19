@@ -19,7 +19,6 @@ import {
   ClipboardList,
   Contact,
   FileText,
-  KeyRound,
   LayoutDashboard,
   Menu,
   NotebookText,
@@ -44,8 +43,11 @@ const navItems = [
   { label: "Notes", path: "/notes", icon: FileText },
   { label: "Reports", path: "/reports", icon: BarChart3 },
   { label: "Audit Logs", path: "/audit-logs", icon: ShieldCheck },
-  { label: "Change Password", path: "/change-password", icon: KeyRound },
 ];
+
+const pageTitles: Record<string, string> = {
+  "/change-password": "Account Security",
+};
 
 const favoritePaths = new Set(["/dashboard", "/customers", "/tasks"]);
 
@@ -56,6 +58,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const pageTitle =
     navItems.find((item) => item.path === location.pathname)?.label ??
+    pageTitles[location.pathname] ??
     "Dashboard";
 
   async function logout() {

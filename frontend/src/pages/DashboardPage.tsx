@@ -24,7 +24,6 @@ import {
   YAxis,
 } from "recharts";
 import { AppLayout } from "../layouts/AppLayout";
-import { getMe, type LoginResponse } from "../services/authService";
 import {
   getDashboardSummary,
   type DashboardSummary,
@@ -467,7 +466,6 @@ function SalesTable({ rows }: { rows: SalesRow[] }) {
 
 export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [user, setUser] = useState<LoginResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -475,10 +473,9 @@ export function DashboardPage() {
   const loadDashboard = useCallback(() => {
     setLoading(true);
 
-    Promise.all([getDashboardSummary(), getMe()])
-      .then(([summaryData, userData]) => {
+    getDashboardSummary()
+      .then((summaryData) => {
         setSummary(summaryData);
-        setUser(userData);
         setUpdatedAt(new Date());
       })
       .catch(() => {
@@ -493,11 +490,10 @@ export function DashboardPage() {
   useEffect(() => {
     let ignore = false;
 
-    Promise.all([getDashboardSummary(), getMe()])
-      .then(([summaryData, userData]) => {
+    getDashboardSummary()
+      .then((summaryData) => {
         if (!ignore) {
           setSummary(summaryData);
-          setUser(userData);
           setUpdatedAt(new Date());
         }
       })
@@ -541,20 +537,6 @@ export function DashboardPage() {
   const hasRealActivity = Boolean(
     activeCustomers + archivedCustomers + activeLeads + openTasks + completedTasks,
   );
-
-  const greeting = (() => {
-    const hour = new Date().getHours();
-
-    if (hour < 12) {
-      return "Good morning";
-    }
-
-    if (hour < 18) {
-      return "Good afternoon";
-    }
-
-    return "Good evening";
-  })();
 
   const kpis = [
     {
@@ -671,7 +653,7 @@ export function DashboardPage() {
   return (
     <AppLayout>
       <PageShell
-        title={`${greeting}, ${user?.fullName?.split(" ")[0] ?? "Admin"}`}
+        title="Dashboard"
         description="Customers, leads, tasks, and team activity without noise."
         action={
           <div className="flex flex-wrap items-center gap-2">

@@ -75,7 +75,7 @@ export function ChangePasswordPage() {
   return (
     <AppLayout>
       <PageShell
-        title="Change Password"
+        title="Account Security"
         description="Update your password to keep your Tadamun account secure."
       >
         <GlassCard className="mx-auto max-w-3xl">
@@ -141,7 +141,7 @@ export function ChangePasswordPage() {
               disabled={loading}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-cyan-600 px-5 text-sm font-semibold text-white shadow-sm shadow-cyan-900/20 transition hover:-translate-y-0.5 hover:bg-cyan-700 disabled:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? 'Changing...' : 'Change Password'}
+              {loading ? 'Updating...' : 'Update password'}
             </button>
           </form>
         </GlassCard>

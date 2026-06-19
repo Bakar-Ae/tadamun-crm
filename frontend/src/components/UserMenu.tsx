@@ -22,6 +22,16 @@ function getStoredUser() {
   }
 }
 
+function formatRole(role?: string) {
+  if (!role) {
+    return null;
+  }
+
+  const cleanRole = role.replace("ROLE_", "").replaceAll("_", " ").toLowerCase();
+
+  return `${cleanRole.charAt(0).toUpperCase()}${cleanRole.slice(1)} access`;
+}
+
 type UserMenuProps = {
   onLogout: () => void;
 };
@@ -30,27 +40,17 @@ export function UserMenu({ onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const user = getStoredUser();
   const navigate = useNavigate();
-  const initials =
-    user?.fullName
-      ?.split(" ")
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase() || "TD";
+  const roleLabel = formatRole(user?.role);
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex h-10 items-center gap-2 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] pl-2 pr-3 text-sm font-semibold text-[var(--crm-text)] shadow-sm transition hover:border-violet-300"
+        className="grid h-10 w-10 place-items-center rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] text-[var(--crm-text)] shadow-sm transition hover:border-violet-300 hover:text-[var(--crm-primary)]"
+        aria-label="Open account menu"
       >
-        <span className="grid h-7 w-7 place-items-center rounded-xl bg-violet-500/12 text-xs text-[var(--crm-primary)]">
-          {initials}
-        </span>
-        <span className="hidden max-w-28 truncate sm:inline">
-          {user?.fullName ?? "Account"}
-        </span>
+        <UserRound size={18} />
       </button>
 
       {open && (
@@ -64,14 +64,14 @@ export function UserMenu({ onLogout }: UserMenuProps) {
           <div className="absolute right-0 top-12 z-50 w-72 rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)]">
             <div className="rounded-xl bg-[var(--crm-surface-soft)] p-3">
               <p className="text-sm font-semibold">
-                {user?.fullName ?? "Tadamun user"}
+                My account
               </p>
               <p className="mt-1 truncate text-xs text-[var(--crm-text-muted)]">
-                {user?.email ?? "Signed in"}
+                {user?.email ?? user?.fullName ?? "Signed in"}
               </p>
-              {user?.role && (
+              {roleLabel && (
                 <p className="mt-2 inline-flex rounded-full bg-violet-500/10 px-2 py-1 text-[10px] font-bold text-[var(--crm-accent-text)]">
-                  {user.role.replace("ROLE_", "")}
+                  {roleLabel}
                 </p>
               )}
             </div>
@@ -85,7 +85,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
               className="mt-2 flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
             >
               <KeyRound size={17} />
-              Change password
+              Account security
             </button>
 
             <button
@@ -99,7 +99,7 @@ export function UserMenu({ onLogout }: UserMenuProps) {
 
             <div className="mt-3 flex items-center gap-2 border-t border-[var(--crm-border)] pt-3 text-xs text-[var(--crm-text-muted)]">
               <UserRound size={14} />
-              Secure local workspace
+              Account options
             </div>
           </div>
         </>

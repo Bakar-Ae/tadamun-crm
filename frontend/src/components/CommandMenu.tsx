@@ -28,7 +28,7 @@ const commandItems = [
   { label: "Notes", path: "/notes", icon: FileText },
   { label: "Reports", path: "/reports", icon: LayoutDashboard },
   { label: "Audit Logs", path: "/audit-logs", icon: ShieldCheck },
-  { label: "Change Password", path: "/change-password", icon: KeyRound },
+  { label: "Account Security", path: "/change-password", icon: KeyRound },
 ];
 
 export function CommandMenu() {
