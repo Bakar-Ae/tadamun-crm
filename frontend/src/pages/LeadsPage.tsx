@@ -20,6 +20,7 @@ import {
   SearchPanel,
   StatTile,
   StatusBadge,
+  ErrorState,
 } from '../components/ui'
 import { archiveLead, getLeads, type LeadResponse } from '../services/leadService'
 import type { PageResponse } from '../services/userService'
@@ -171,11 +172,7 @@ export function LeadsPage() {
           placeholder="Search leads by name, email, company, or source"
         />
 
-        {error && (
-          <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
-            {error}
-          </div>
-        )}
+        {error && <ErrorState message={error} onRetry={() => loadLeads(keyword)} />}
 
         <GlassCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
