@@ -28,6 +28,7 @@ import {
 } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
 import { formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
+import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
@@ -63,10 +64,10 @@ export function CustomersPage() {
     setLoading(true)
     setError('')
 
-    getCustomers(0, 10, search)
-      .then(setCustomers)
-      .catch(() => setError('Customer accounts could not be loaded. Please try again.'))
-      .finally(() => setLoading(false))
+     getCustomers(0, 10, search)
+    .then(setCustomers)
+    .catch(() => setError(getLoadErrorMessage('customers')))
+    .finally(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -80,7 +81,7 @@ export function CustomersPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Customer accounts could not be loaded. Please try again.')
+          setError(getLoadErrorMessage('customers'))
         }
       })
       .finally(() => {
@@ -120,7 +121,7 @@ export function CustomersPage() {
       toast.success(`${customer.name} archived`)
       loadCustomers(keyword)
     } catch {
-      toast.error('Could not archive this customer.')
+      toast.error(getSaveErrorMessage('customer'))
     } finally {
       setActionLoadingId(null)
     }
