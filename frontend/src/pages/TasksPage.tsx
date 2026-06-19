@@ -1,10 +1,35 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
-import { Activity, AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, UserRound } from 'lucide-react'
+import toast from 'react-hot-toast'
+import {
+  Activity,
+  AlertTriangle,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Plus,
+  UserRound,
+} from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, PageShell, SearchPanel, StatTile } from '../components/ui'
-import { getTasks, type TaskResponse } from '../services/taskService'
+import {
+  EmptyState,
+  GlassCard,
+  PageActionButton,
+  PageShell,
+  SearchPanel,
+  StatTile,
+  StatusBadge,
+} from '../components/ui'
+import { getTasks, updateTask, type TaskResponse } from '../services/taskService'
 import type { PageResponse } from '../services/userService'
+import {
+  formatDateTime,
+  formatStatus,
+  getEmptyMessage,
+  priorityVariant,
+  statusVariant,
+} from '../lib/formatters'
+import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -28,44 +53,12 @@ const cardAnimation: Variants = {
   },
 }
 
-function statusBadgeClass(status: string) {
-  if (status === 'COMPLETED') {
-    return 'border-emerald-400/30 bg-emerald-400/10 text-[var(--crm-success-text)]'
+function isOverdue(task: TaskResponse) {
+  if (!task.dueDate || task.status === 'COMPLETED' || task.status === 'CANCELLED') {
+    return false
   }
 
-  if (status === 'IN_PROGRESS') {
-    return 'border-blue-400/30 bg-blue-500/10 text-[var(--crm-primary)]'
-  }
-
-  if (status === 'CANCELLED') {
-    return 'border-slate-400/20 bg-slate-400/10 text-[var(--crm-text-muted)]'
-  }
-
-  return 'border-amber-400/30 bg-amber-400/10 text-[var(--crm-warning-text)]'
-}
-
-function priorityBadgeClass(priority: string) {
-  if (priority === 'URGENT') {
-    return 'border-red-400/30 bg-red-400/10 text-[var(--crm-danger-text)]'
-  }
-
-  if (priority === 'HIGH') {
-    return 'border-orange-400/30 bg-orange-400/10 text-orange-500'
-  }
-
-  if (priority === 'MEDIUM') {
-    return 'border-blue-400/30 bg-blue-500/10 text-[var(--crm-primary)]'
-  }
-
-  return 'border-slate-400/20 bg-slate-400/10 text-[var(--crm-text-muted)]'
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return '-'
-  }
-
-  return new Date(value).toLocaleString()
+  return new Date(task.dueDate).getTime() < Date.now()
 }
 
 export function TasksPage() {
@@ -73,16 +66,17 @@ export function TasksPage() {
   const [keyword, setKeyword] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  function loadTasks(search: string) {
+  const loadTasks = useCallback((search: string) => {
     setLoading(true)
     setError('')
 
     getTasks(0, 10, search)
       .then(setTasks)
-      .catch(() => setError('Could not load tasks. Please try again.'))
+      .catch(() => setError('Tasks could not be loaded. Please try again.'))
       .finally(() => setLoading(false))
-  }
+  }, [])
 
   useEffect(() => {
     let ignore = false
@@ -95,7 +89,7 @@ export function TasksPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Could not load tasks. Please try again.')
+          setError('Tasks could not be loaded. Please try again.')
         }
       })
       .finally(() => {
@@ -109,24 +103,63 @@ export function TasksPage() {
     }
   }, [])
 
+  useEffect(() => {
+    function refreshAfterCreate() {
+      loadTasks(keyword)
+    }
+
+    window.addEventListener('crm-data-changed', refreshAfterCreate)
+    return () => window.removeEventListener('crm-data-changed', refreshAfterCreate)
+  }, [keyword, loadTasks])
+
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     loadTasks(keyword)
+  }
+
+  async function handleComplete(task: TaskResponse) {
+    setActionLoadingId(task.id)
+
+    try {
+      await updateTask(task.id, {
+        title: task.title,
+        description: task.description,
+        status: 'COMPLETED',
+        priority: task.priority,
+        dueDate: task.dueDate,
+        assignedToUserId: task.assignedToUserId,
+        customerId: task.customerId,
+        leadId: task.leadId,
+      })
+      toast.success('Task completed')
+      loadTasks(keyword)
+    } catch {
+      toast.error('Could not complete this task.')
+    } finally {
+      setActionLoadingId(null)
+    }
   }
 
   const visibleTasks = tasks?.content ?? []
   const openTasks = visibleTasks.filter((task) => task.status === 'OPEN').length
   const completedTasks = visibleTasks.filter((task) => task.status === 'COMPLETED').length
   const urgentTasks = visibleTasks.filter((task) => task.priority === 'URGENT').length
+  const overdueTasks = visibleTasks.filter(isOverdue).length
+  const hasSearch = keyword.trim().length > 0
 
   return (
     <AppLayout>
       <PageShell
         title="Tasks"
-        description="Track work, owners, due dates, and priority."
+        description="Plan follow-ups, assign work, and keep customer activity moving."
+        action={
+          <PageActionButton icon={Plus} onClick={() => openQuickCreate('task')}>
+            New task
+          </PageActionButton>
+        }
       >
         <motion.section
-          className="grid gap-4 sm:grid-cols-3"
+          className="grid gap-4 sm:grid-cols-4"
           variants={containerAnimation}
           initial="hidden"
           animate="show"
@@ -136,11 +169,15 @@ export function TasksPage() {
           </motion.div>
 
           <motion.div variants={cardAnimation}>
-            <StatTile label="Done" value={completedTasks} icon={CheckCircle2} tone="green" />
+            <StatTile label="Completed" value={completedTasks} icon={CheckCircle2} tone="green" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>
             <StatTile label="Urgent" value={urgentTasks} icon={AlertTriangle} tone="red" />
+          </motion.div>
+
+          <motion.div variants={cardAnimation}>
+            <StatTile label="Overdue" value={overdueTasks} icon={CalendarClock} tone="red" />
           </motion.div>
         </motion.section>
 
@@ -148,7 +185,7 @@ export function TasksPage() {
           value={keyword}
           onChange={setKeyword}
           onSubmit={handleSearch}
-          placeholder="Search tasks by title, customer, lead, or assignee"
+          placeholder="Search tasks by title, customer, lead, or owner"
         />
 
         {error && (
@@ -160,34 +197,31 @@ export function TasksPage() {
         <GlassCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
             <div>
-              <h3 className="font-semibold text-[var(--crm-text)]">Task Board</h3>
+              <h3 className="font-semibold text-[var(--crm-text)]">Work list</h3>
               <p className="text-sm text-[var(--crm-text-muted)]">
                 Showing {visibleTasks.length} of {tasks?.totalElements ?? 0} tasks
               </p>
             </div>
-
-            <div className="rounded-xl bg-[var(--crm-soft-gradient)] p-3 text-[var(--crm-primary)] ring-1 ring-violet-300/25">
-              <ClipboardList size={22} />
-            </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[1040px] border-collapse text-left text-sm">
               <thead className="bg-[var(--crm-card-subtle)] text-xs uppercase text-[var(--crm-text-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Task</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
                   <th className="px-5 py-3 font-semibold">Priority</th>
-                  <th className="px-5 py-3 font-semibold">Assigned To</th>
-                  <th className="px-5 py-3 font-semibold">Related Record</th>
-                  <th className="px-5 py-3 font-semibold">Due Date</th>
+                  <th className="px-5 py-3 font-semibold">Owner</th>
+                  <th className="px-5 py-3 font-semibold">Related record</th>
+                  <th className="px-5 py-3 font-semibold">Due</th>
+                  <th className="px-5 py-3 text-right font-semibold">Action</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-[var(--crm-border)]">
                 {loading && (
                   <tr>
-                    <td className="px-5 py-8 text-center text-[var(--crm-text-muted)]" colSpan={6}>
+                    <td className="px-5 py-8 text-center text-[var(--crm-text-muted)]" colSpan={7}>
                       Loading tasks...
                     </td>
                   </tr>
@@ -203,47 +237,57 @@ export function TasksPage() {
                           </div>
                           <div>
                             <p className="font-semibold text-[var(--crm-text)]">{task.title}</p>
-                            <p className="text-xs text-[var(--crm-text-muted)]">ID #{task.id}</p>
+                            {task.description && (
+                              <p className="mt-1 line-clamp-1 max-w-xs text-xs text-[var(--crm-text-muted)]">
+                                {task.description}
+                              </p>
+                            )}
                           </div>
                         </div>
                       </td>
 
                       <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ring-1 ${statusBadgeClass(
-                            task.status,
-                          )}`}
-                        >
-                          {task.status}
-                        </span>
+                        <StatusBadge variant={statusVariant(task.status)}>
+                          {formatStatus(task.status)}
+                        </StatusBadge>
                       </td>
 
                       <td className="px-5 py-4">
-                        <span
-                          className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ring-1 ${priorityBadgeClass(
-                            task.priority,
-                          )}`}
-                        >
-                          {task.priority}
-                        </span>
+                        <StatusBadge variant={priorityVariant(task.priority)}>
+                          {formatStatus(task.priority)}
+                        </StatusBadge>
                       </td>
 
                       <td className="px-5 py-4 text-[var(--crm-text-muted)]">
                         <div className="flex items-center gap-2">
                           <UserRound size={16} />
-                          {task.assignedToUserName ?? '-'}
+                          {task.assignedToUserName ?? 'Unassigned'}
                         </div>
                       </td>
 
                       <td className="px-5 py-4 text-[var(--crm-text-muted)]">
-                        {task.customerName ?? task.leadName ?? '-'}
+                        {task.customerName ?? task.leadName ?? 'No linked record'}
                       </td>
 
                       <td className="px-5 py-4 text-[var(--crm-text-muted)]">
                         <div className="flex items-center gap-2">
                           <CalendarClock size={16} />
-                          {formatDate(task.dueDate)}
+                          <span className={isOverdue(task) ? 'font-semibold text-[var(--crm-danger-text)]' : ''}>
+                            {formatDateTime(task.dueDate)}
+                          </span>
                         </div>
+                      </td>
+
+                      <td className="px-5 py-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleComplete(task)}
+                          disabled={task.status === 'COMPLETED' || actionLoadingId === task.id}
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={14} />
+                          {actionLoadingId === task.id ? 'Saving...' : 'Complete'}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -251,9 +295,16 @@ export function TasksPage() {
                 {!loading && visibleTasks.length === 0 && (
                   <EmptyState
                     icon={ClipboardList}
-                    title="No tasks found"
-                    message="Try another title, customer, lead, or assignee."
-                    colSpan={6}
+                    title={hasSearch ? 'No tasks found' : 'No tasks yet'}
+                    message={getEmptyMessage(hasSearch, 'tasks', 'New task')}
+                    colSpan={7}
+                    action={
+                      !hasSearch && (
+                        <PageActionButton icon={Plus} onClick={() => openQuickCreate('task')}>
+                          New task
+                        </PageActionButton>
+                      )
+                    }
                   />
                 )}
               </tbody>

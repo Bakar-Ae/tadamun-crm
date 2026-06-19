@@ -24,6 +24,10 @@ export type CreateContactRequest = {
   position?: string | null
 }
 
+export type UpdateContactRequest = Omit<CreateContactRequest, 'customerId'> & {
+  status: ContactStatus
+}
+
 export async function getContacts(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<ContactResponse>>('/contacts', {
     params: {
@@ -39,5 +43,15 @@ export async function getContacts(page = 0, size = 10, keyword = '') {
 
 export async function createContact(request: CreateContactRequest) {
   const response = await api.post<ContactResponse>('/contacts', request)
+  return response.data
+}
+
+export async function updateContact(id: number, request: UpdateContactRequest) {
+  const response = await api.put<ContactResponse>(`/contacts/${id}`, request)
+  return response.data
+}
+
+export async function archiveContact(id: number) {
+  const response = await api.patch<ContactResponse>(`/contacts/${id}/archive`)
   return response.data
 }

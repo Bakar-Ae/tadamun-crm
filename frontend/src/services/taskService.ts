@@ -31,6 +31,10 @@ export type CreateTaskRequest = {
   leadId?: number | null
 }
 
+export type UpdateTaskRequest = CreateTaskRequest & {
+  status: TaskStatus
+}
+
 export async function getTasks(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<TaskResponse>>('/tasks', {
     params: {
@@ -46,5 +50,10 @@ export async function getTasks(page = 0, size = 10, keyword = '') {
 
 export async function createTask(request: CreateTaskRequest) {
   const response = await api.post<TaskResponse>('/tasks', request)
+  return response.data
+}
+
+export async function updateTask(id: number, request: UpdateTaskRequest) {
+  const response = await api.put<TaskResponse>(`/tasks/${id}`, request)
   return response.data
 }

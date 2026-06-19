@@ -59,9 +59,6 @@ export function NotificationPanel() {
                   {unreadCount} unread
                 </p>
               </div>
-              <span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-[var(--crm-accent-text)]">
-                Live
-              </span>
             </div>
 
             <Link
@@ -69,7 +66,7 @@ export function NotificationPanel() {
               onClick={() => setOpen(false)}
               className="mt-4 flex h-11 items-center justify-center rounded-2xl bg-[var(--crm-brand-gradient)] text-sm font-semibold text-white transition hover:-translate-y-0.5"
             >
-              Open notification center
+              Open inbox
             </Link>
           </div>
         </>

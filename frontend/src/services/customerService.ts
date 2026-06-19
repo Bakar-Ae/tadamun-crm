@@ -24,6 +24,10 @@ export type CreateCustomerRequest = {
   customerType: CustomerType
 }
 
+export type UpdateCustomerRequest = CreateCustomerRequest & {
+  status: CustomerStatus
+}
+
 export async function getCustomers(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<CustomerResponse>>('/customers', {
     params: {
@@ -39,5 +43,15 @@ export async function getCustomers(page = 0, size = 10, keyword = '') {
 
 export async function createCustomer(request: CreateCustomerRequest) {
   const response = await api.post<CustomerResponse>('/customers', request)
+  return response.data
+}
+
+export async function updateCustomer(id: number, request: UpdateCustomerRequest) {
+  const response = await api.put<CustomerResponse>(`/customers/${id}`, request)
+  return response.data
+}
+
+export async function archiveCustomer(id: number) {
+  const response = await api.patch<CustomerResponse>(`/customers/${id}/archive`)
   return response.data
 }

@@ -28,6 +28,13 @@ export type CreateUserRequest = {
   role: RoleName
 }
 
+export type UpdateUserRequest = {
+  fullName: string
+  email: string
+  role: RoleName
+  status: UserStatus
+}
+
 export async function getUsers(page = 0, size = 10, keyword = '') {
   const response = await api.get<PageResponse<UserResponse>>('/users', {
     params: {
@@ -43,5 +50,15 @@ export async function getUsers(page = 0, size = 10, keyword = '') {
 
 export async function createUser(request: CreateUserRequest) {
   const response = await api.post<UserResponse>('/users', request)
+  return response.data
+}
+
+export async function updateUser(id: number, request: UpdateUserRequest) {
+  const response = await api.put<UserResponse>(`/users/${id}`, request)
+  return response.data
+}
+
+export async function deactivateUser(id: number) {
+  const response = await api.patch<UserResponse>(`/users/${id}/deactivate`)
   return response.data
 }

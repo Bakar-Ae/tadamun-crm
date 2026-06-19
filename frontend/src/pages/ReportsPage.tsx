@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
-import { Archive, BarChart3, CheckCircle2, ClipboardList, Target, UsersRound, XCircle } from 'lucide-react'
+import {
+  Archive,
+  BarChart3,
+  CheckCircle2,
+  ClipboardList,
+  Download,
+  Target,
+  UsersRound,
+  XCircle,
+} from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { GlassCard, MetricCard, PageShell, StatTile } from '../components/ui'
+import { EmptyState, GlassCard, MetricCard, PageActionButton, PageShell, StatTile } from '../components/ui'
 import { getReportSummary, type ReportSummary } from '../services/reportService'
 
 const containerAnimation: Variants = {
@@ -27,6 +36,22 @@ const cardAnimation: Variants = {
   },
 }
 
+function reportHasData(report: ReportSummary) {
+  return Object.values(report).some((value) => Number(value) > 0)
+}
+
+function downloadReportCsv(report: ReportSummary) {
+  const rows = Object.entries(report).map(([key, value]) => [key, String(value)])
+  const csv = ['metric,value', ...rows.map((row) => row.join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'tadamun-report-summary.csv'
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
 export function ReportsPage() {
   const [report, setReport] = useState<ReportSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,7 +68,7 @@ export function ReportsPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Could not load reports. Please try again.')
+          setError('Report summary could not be loaded. Please try again.')
         }
       })
       .finally(() => {
@@ -61,7 +86,14 @@ export function ReportsPage() {
     <AppLayout>
       <PageShell
         title="Reports"
-        description="View current totals for customers, leads, and tasks."
+        description="Review the current customer, lead, and task totals your team is working from."
+        action={
+          report && (
+            <PageActionButton icon={Download} onClick={() => downloadReportCsv(report)}>
+              Export CSV
+            </PageActionButton>
+          )
+        }
       >
         {error && (
           <div className="rounded-2xl border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm font-medium text-[var(--crm-danger-text)]">
@@ -71,11 +103,21 @@ export function ReportsPage() {
 
         {loading ? (
           <GlassCard className="py-10 text-center text-sm text-[var(--crm-text-muted)]">
-            Loading reports...
+            Loading report summary...
           </GlassCard>
         ) : (
           report && (
             <>
+              {!reportHasData(report) && (
+                <GlassCard>
+                  <EmptyState
+                    icon={BarChart3}
+                    title="No report data yet"
+                    message="Reports will become useful after customers, leads, and tasks are added."
+                  />
+                </GlassCard>
+              )}
+
               <motion.section
                 className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
                 variants={containerAnimation}
@@ -84,61 +126,31 @@ export function ReportsPage() {
               >
                 <motion.div variants={cardAnimation}>
                   <MetricCard
-                    label="Total Customers"
+                    label="Customer accounts"
                     value={report.totalCustomers}
                     icon={UsersRound}
                     tone="green"
-                    trend="Customer base"
+                    trend={`${report.activeCustomers} active`}
                   />
                 </motion.div>
 
                 <motion.div variants={cardAnimation}>
                   <MetricCard
-                    label="Active Customers"
-                    value={report.activeCustomers}
-                    icon={UsersRound}
-                    tone="blue"
-                    trend="Current accounts"
-                  />
-                </motion.div>
-
-                <motion.div variants={cardAnimation}>
-                  <MetricCard
-                    label="Total Leads"
+                    label="Lead pipeline"
                     value={report.totalLeads}
                     icon={Target}
                     tone="blue"
-                    trend="Pipeline volume"
+                    trend={`${report.qualifiedLeads} qualified`}
                   />
                 </motion.div>
 
                 <motion.div variants={cardAnimation}>
                   <MetricCard
-                    label="Qualified Leads"
-                    value={report.qualifiedLeads}
-                    icon={Target}
-                    tone="green"
-                    trend="Sales ready"
-                  />
-                </motion.div>
-
-                <motion.div variants={cardAnimation}>
-                  <MetricCard
-                    label="Total Tasks"
+                    label="Team tasks"
                     value={report.totalTasks}
                     icon={ClipboardList}
                     tone="amber"
-                    trend="Execution load"
-                  />
-                </motion.div>
-
-                <motion.div variants={cardAnimation}>
-                  <MetricCard
-                    label="Completed Tasks"
-                    value={report.completedTasks}
-                    icon={CheckCircle2}
-                    tone="green"
-                    trend="Work completed"
+                    trend={`${report.completedTasks} completed`}
                   />
                 </motion.div>
               </motion.section>
@@ -149,8 +161,10 @@ export function ReportsPage() {
                     <BarChart3 size={22} />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-[var(--crm-text)]">Detailed Breakdown</h3>
-                    <p className="text-sm text-[var(--crm-text-muted)]">Additional report counters</p>
+                    <h3 className="font-semibold text-[var(--crm-text)]">Operational snapshot</h3>
+                    <p className="text-sm text-[var(--crm-text-muted)]">
+                      These totals come from the current CRM database.
+                    </p>
                   </div>
                 </div>
 
@@ -162,7 +176,7 @@ export function ReportsPage() {
                 >
                   <motion.div variants={cardAnimation}>
                     <StatTile
-                      label="Archived Customers"
+                      label="Archived customers"
                       value={report.archivedCustomers}
                       icon={Archive}
                       tone="amber"
@@ -170,18 +184,18 @@ export function ReportsPage() {
                   </motion.div>
 
                   <motion.div variants={cardAnimation}>
-                    <StatTile label="New Leads" value={report.newLeads} icon={Target} tone="blue" />
+                    <StatTile label="New leads" value={report.newLeads} icon={Target} tone="blue" />
                   </motion.div>
 
                   <motion.div variants={cardAnimation}>
-                    <StatTile label="Lost Leads" value={report.lostLeads} icon={XCircle} tone="red" />
+                    <StatTile label="Lost leads" value={report.lostLeads} icon={XCircle} tone="red" />
                   </motion.div>
 
                   <motion.div variants={cardAnimation}>
                     <StatTile
-                      label="Cancelled Tasks"
+                      label="Cancelled tasks"
                       value={report.cancelledTasks}
-                      icon={XCircle}
+                      icon={CheckCircle2}
                       tone="red"
                     />
                   </motion.div>

@@ -37,7 +37,7 @@ export function MetricCard({
           </p>
 
           {trend && (
-            <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-300">
+            <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--crm-success-text)]">
               <ArrowUpRight size={14} />
               {trend}
             </p>

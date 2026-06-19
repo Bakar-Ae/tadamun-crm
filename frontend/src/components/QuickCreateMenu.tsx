@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router";
 import { z } from "zod";
@@ -12,14 +12,20 @@ import {
   UserPlus,
 } from "lucide-react";
 import { createContact } from "../services/contactService";
-import { createCustomer, type CustomerType } from "../services/customerService";
-import { createLead } from "../services/leadService";
+import {
+  createCustomer,
+  getCustomers,
+  type CustomerResponse,
+  type CustomerType,
+} from "../services/customerService";
+import { createLead, getLeads, type LeadResponse } from "../services/leadService";
 import { createNote } from "../services/noteService";
 import { createTask, type TaskPriority } from "../services/taskService";
-import { createUser, type RoleName } from "../services/userService";
+import { createUser, getUsers, type RoleName, type UserResponse } from "../services/userService";
 import { Modal, SelectField, TextAreaField, TextField } from "./ui";
+import { quickCreateEventName } from "../lib/quickCreate";
 
-type QuickCreateKind =
+export type QuickCreateKind =
   | "customer"
   | "lead"
   | "contact"
@@ -57,7 +63,7 @@ const requiredNumber = z
   .trim()
   .min(1, "Required")
   .refine((value) => Number.isInteger(Number(value)) && Number(value) > 0, {
-    message: "Use a valid ID",
+    message: "Choose a valid record",
   });
 
 const schemas = {
@@ -100,7 +106,7 @@ const schemas = {
       leadId: optionalNumber,
     })
     .refine((value) => value.customerId !== "" || value.leadId !== "", {
-      message: "Add a customer ID or lead ID",
+      message: "Choose a customer or lead",
       path: ["customerId"],
     }),
   user: z.object({
@@ -191,6 +197,10 @@ export function QuickCreateMenu() {
   const [formValues, setFormValues] = useState<FormValues>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [customerOptions, setCustomerOptions] = useState<CustomerResponse[]>([]);
+  const [leadOptions, setLeadOptions] = useState<LeadResponse[]>([]);
+  const [userOptions, setUserOptions] = useState<UserResponse[]>([]);
+  const [optionsLoading, setOptionsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -199,11 +209,48 @@ export function QuickCreateMenu() {
     [activeKind],
   );
 
+  async function loadRecordOptions(kind: QuickCreateKind) {
+    const needsCustomers = kind === "contact" || kind === "task" || kind === "note";
+    const needsLeads = kind === "task" || kind === "note";
+    const needsUsers = kind === "lead" || kind === "task";
+
+    if (!needsCustomers && !needsLeads && !needsUsers) {
+      return;
+    }
+
+    setOptionsLoading(true);
+
+    try {
+      const [customers, leads, users] = await Promise.all([
+        needsCustomers ? getCustomers(0, 50, "") : Promise.resolve(null),
+        needsLeads ? getLeads(0, 50, "") : Promise.resolve(null),
+        needsUsers ? getUsers(0, 50, "") : Promise.resolve(null),
+      ]);
+
+      if (customers) {
+        setCustomerOptions(customers.content);
+      }
+
+      if (leads) {
+        setLeadOptions(leads.content);
+      }
+
+      if (users) {
+        setUserOptions(users.content);
+      }
+    } catch {
+      toast.error("Could not load record choices");
+    } finally {
+      setOptionsLoading(false);
+    }
+  }
+
   function openForm(kind: QuickCreateKind) {
     setActiveKind(kind);
     setFormValues(initialValues[kind]);
     setErrors({});
     setMenuOpen(false);
+    void loadRecordOptions(kind);
   }
 
   function closeForm(force = false) {
@@ -224,6 +271,24 @@ export function QuickCreateMenu() {
       return next;
     });
   }
+
+  useEffect(() => {
+    function onOpenQuickCreate(event: Event) {
+      const customEvent = event as CustomEvent<{ kind?: QuickCreateKind }>;
+      const kind = customEvent.detail?.kind;
+
+      if (kind && quickActions.some((action) => action.kind === kind)) {
+        setActiveKind(kind);
+        setFormValues(initialValues[kind]);
+        setErrors({});
+        setMenuOpen(false);
+        void loadRecordOptions(kind);
+      }
+    }
+
+    window.addEventListener(quickCreateEventName, onOpenQuickCreate);
+    return () => window.removeEventListener(quickCreateEventName, onOpenQuickCreate);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -311,11 +376,10 @@ export function QuickCreateMenu() {
       toast.success(`${activeAction?.label ?? "Record"} created`);
       window.dispatchEvent(new Event("crm-data-changed"));
       if (location.pathname === successPath[activeKind]) {
-        window.location.reload();
+        closeForm(true);
       } else {
         navigate(successPath[activeKind]);
       }
-      closeForm(true);
     } catch (error) {
       toast.error(getApiMessage(error));
     } finally {
@@ -370,7 +434,7 @@ export function QuickCreateMenu() {
       <Modal
         open={activeKind !== null}
         title={activeAction ? `Add ${activeAction.label}` : "Add record"}
-        description="Create a CRM record using the existing backend API."
+        description="Add the essential details now. You can refine the record later."
         onClose={closeForm}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -402,14 +466,28 @@ export function QuickCreateMenu() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField label="Estimated value" inputMode="decimal" value={formValues.estimatedValue ?? ""} onChange={(event) => updateField("estimatedValue", event.target.value)} error={errors.estimatedValue} />
-                <TextField label="Assigned user ID" inputMode="numeric" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId} />
+                <SelectField label="Owner" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId}>
+                  <option value="">{optionsLoading ? "Loading team..." : "Unassigned"}</option>
+                  {userOptions.map((user) => (
+                    <option key={user.id} value={String(user.id)}>
+                      {user.fullName}
+                    </option>
+                  ))}
+                </SelectField>
               </div>
             </>
           )}
 
           {activeKind === "contact" && (
             <>
-              <TextField label="Customer ID" inputMode="numeric" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId} />
+              <SelectField label="Customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
+                <option value="">{optionsLoading ? "Loading customers..." : "Select customer"}</option>
+                {customerOptions.map((customer) => (
+                  <option key={customer.id} value={String(customer.id)}>
+                    {customer.name}
+                  </option>
+                ))}
+              </SelectField>
               <TextField label="Contact name" value={formValues.fullName ?? ""} onChange={(event) => updateField("fullName", event.target.value)} error={errors.fullName} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField label="Email" type="email" value={formValues.email ?? ""} onChange={(event) => updateField("email", event.target.value)} error={errors.email} />
@@ -433,9 +511,30 @@ export function QuickCreateMenu() {
                 <TextField label="Due date" type="datetime-local" value={formValues.dueDate ?? ""} onChange={(event) => updateField("dueDate", event.target.value)} />
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
-                <TextField label="Assigned user ID" inputMode="numeric" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId} />
-                <TextField label="Customer ID" inputMode="numeric" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId} />
-                <TextField label="Lead ID" inputMode="numeric" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId} />
+                <SelectField label="Owner" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId}>
+                  <option value="">{optionsLoading ? "Loading team..." : "Unassigned"}</option>
+                  {userOptions.map((user) => (
+                    <option key={user.id} value={String(user.id)}>
+                      {user.fullName}
+                    </option>
+                  ))}
+                </SelectField>
+                <SelectField label="Customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
+                  <option value="">{optionsLoading ? "Loading customers..." : "No customer"}</option>
+                  {customerOptions.map((customer) => (
+                    <option key={customer.id} value={String(customer.id)}>
+                      {customer.name}
+                    </option>
+                  ))}
+                </SelectField>
+                <SelectField label="Lead" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId}>
+                  <option value="">{optionsLoading ? "Loading leads..." : "No lead"}</option>
+                  {leadOptions.map((lead) => (
+                    <option key={lead.id} value={String(lead.id)}>
+                      {lead.fullName}
+                    </option>
+                  ))}
+                </SelectField>
               </div>
             </>
           )}
@@ -444,8 +543,22 @@ export function QuickCreateMenu() {
             <>
               <TextAreaField label="Note" value={formValues.content ?? ""} onChange={(event) => updateField("content", event.target.value)} error={errors.content} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <TextField label="Customer ID" inputMode="numeric" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId} />
-                <TextField label="Lead ID" inputMode="numeric" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId} />
+                <SelectField label="Customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
+                  <option value="">{optionsLoading ? "Loading customers..." : "No customer"}</option>
+                  {customerOptions.map((customer) => (
+                    <option key={customer.id} value={String(customer.id)}>
+                      {customer.name}
+                    </option>
+                  ))}
+                </SelectField>
+                <SelectField label="Lead" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId}>
+                  <option value="">{optionsLoading ? "Loading leads..." : "No lead"}</option>
+                  {leadOptions.map((lead) => (
+                    <option key={lead.id} value={String(lead.id)}>
+                      {lead.fullName}
+                    </option>
+                  ))}
+                </SelectField>
               </div>
             </>
           )}

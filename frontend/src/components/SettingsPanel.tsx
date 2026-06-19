@@ -33,7 +33,7 @@ export function SettingsPanel() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="grid h-10 w-10 place-items-center rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] text-[var(--crm-text-muted)] transition hover:border-cyan-300/40 hover:text-[var(--crm-text)]"
+        className="grid h-10 w-10 place-items-center rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface-soft)] text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:text-[var(--crm-text)]"
         aria-label="Open workspace settings"
       >
         <SlidersHorizontal size={17} />

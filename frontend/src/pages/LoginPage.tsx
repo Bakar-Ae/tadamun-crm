@@ -30,7 +30,7 @@ type ApiError = {
 
 const trustCards = [
   { label: 'Customer View', value: '360', icon: UsersRound, tone: 'text-[var(--crm-primary)]' },
-  { label: 'Activity', value: 'Live', icon: Activity, tone: 'text-emerald-200' },
+  { label: 'Activity', value: 'Ready', icon: Activity, tone: 'text-emerald-200' },
   { label: 'Insights', value: 'Reports', icon: BarChart3, tone: 'text-amber-200' },
 ]
 

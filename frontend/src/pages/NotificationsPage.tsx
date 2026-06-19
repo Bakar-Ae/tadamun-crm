@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { Bell, CheckCircle2, Inbox, ShieldCheck } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, PageShell, StatTile } from '../components/ui'
+import { EmptyState, GlassCard, PageShell, StatTile, StatusBadge } from '../components/ui'
 import {
   getNotifications,
   getUnreadNotificationCount,
   markNotificationAsRead,
   type NotificationResponse,
 } from '../services/notificationService'
+import { formatDateTime, humanizeEnum } from '../lib/formatters'
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -102,7 +103,7 @@ export function NotificationsPage() {
     <AppLayout>
       <PageShell
         title="Notifications"
-        description="Review account and system updates."
+        description="Review messages about account security and CRM activity."
       >
         <motion.section
           className="grid gap-4 sm:grid-cols-3"
@@ -119,21 +120,17 @@ export function NotificationsPage() {
           </motion.div>
 
           <motion.div variants={cardAnimation}>
-            <StatTile label="Total" value={notifications.length} icon={Inbox} tone="blue" />
+            <StatTile label="Messages" value={notifications.length} icon={Inbox} tone="blue" />
           </motion.div>
         </motion.section>
 
         <GlassCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
             <div>
-              <h3 className="font-semibold text-[var(--crm-text)]">Notification Inbox</h3>
+              <h3 className="font-semibold text-[var(--crm-text)]">Inbox</h3>
               <p className="text-sm text-[var(--crm-text-muted)]">
-                System messages and account events
+                Security alerts and record updates for this workspace
               </p>
-            </div>
-
-            <div className="rounded-xl bg-[var(--crm-soft-gradient)] p-3 text-[var(--crm-primary)] ring-1 ring-violet-300/25">
-              <ShieldCheck size={22} />
             </div>
           </div>
 
@@ -143,7 +140,7 @@ export function NotificationsPage() {
             <EmptyState
               icon={Bell}
               title="No notifications yet"
-              message="Account and system updates will appear here."
+              message="Important account and workspace messages will appear here."
             />
           ) : (
             <motion.div
@@ -171,24 +168,26 @@ export function NotificationsPage() {
                         }
                       />
                       <h3 className="font-semibold text-[var(--crm-text)]">{notification.title}</h3>
+                      {!notification.readStatus && <StatusBadge variant="info">Unread</StatusBadge>}
                     </div>
 
                     <p className="mt-2 text-sm leading-6 text-[var(--crm-text-muted)]">
                       {notification.message}
                     </p>
 
-                    <p className="mt-3 text-xs font-medium uppercase text-[var(--crm-text-muted)]">
-                      {notification.type} - {new Date(notification.createdAt).toLocaleString()}
+                    <p className="mt-3 text-xs font-medium text-[var(--crm-text-muted)]">
+                      {humanizeEnum(notification.type)} · {formatDateTime(notification.createdAt)}
                     </p>
                   </div>
 
                   {!notification.readStatus && (
                     <button
+                      type="button"
                       onClick={() => handleMarkAsRead(notification.id)}
                       disabled={actionLoadingId === notification.id}
                       className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-violet-300/30 bg-violet-500/10 px-3 text-sm font-semibold text-[var(--crm-primary)] transition hover:bg-violet-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <CheckCircle2 size={16} />
+                      <ShieldCheck size={16} />
                       {actionLoadingId === notification.id ? 'Saving...' : 'Mark read'}
                     </button>
                   )}

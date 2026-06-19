@@ -213,7 +213,7 @@ function PipelineCard({ summary }: PipelineCardProps) {
               Sales pipeline
             </h2>
             <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
-              Real customer and lead counts from the backend.
+              Current customer and lead counts.
             </p>
           </div>
           <Link
@@ -292,7 +292,7 @@ function TaskFocusCard({ openTasks, completedTasks }: TaskFocusCardProps) {
               Task focus
             </h2>
             <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
-              Open and completed work your team needs to move.
+              Open and completed work across the team.
             </p>
           </div>
           <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)]">
@@ -363,7 +363,7 @@ type SalesRow = {
   name: string;
   metric: string;
   value: string | number;
-  signal: string;
+  status: string;
   path: string;
 };
 
@@ -372,7 +372,7 @@ function SalesTable({ rows }: { rows: SalesRow[] }) {
   const normalizedQuery = query.trim().toLowerCase();
   const visibleRows = normalizedQuery
     ? rows.filter((row) =>
-        [row.name, row.metric, row.value, row.signal].some((field) =>
+        [row.name, row.metric, row.value, row.status].some((field) =>
           String(field).toLowerCase().includes(normalizedQuery),
         ),
       )
@@ -384,10 +384,10 @@ function SalesTable({ rows }: { rows: SalesRow[] }) {
         <div className="flex flex-col justify-between gap-4 border-b border-[var(--crm-border)] p-5 sm:flex-row sm:items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--crm-text-muted)]">
-              Modules
+              Workspace
             </p>
             <h2 className="mt-2 text-xl font-semibold text-[var(--crm-text)]">
-              CRM operating table
+              CRM areas
             </h2>
           </div>
           <div className="relative">
@@ -412,7 +412,7 @@ function SalesTable({ rows }: { rows: SalesRow[] }) {
                 <th className="px-5 py-3 font-semibold">Area</th>
                 <th className="px-5 py-3 font-semibold">Metric</th>
                 <th className="px-5 py-3 font-semibold">Value</th>
-                <th className="px-5 py-3 font-semibold">Signal</th>
+                <th className="px-5 py-3 font-semibold">Status</th>
                 <th className="px-5 py-3 font-semibold"></th>
               </tr>
             </thead>
@@ -432,7 +432,7 @@ function SalesTable({ rows }: { rows: SalesRow[] }) {
                   <td className="px-5 py-4 text-[var(--crm-text)]">{row.value}</td>
                   <td className="px-5 py-4">
                     <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-[var(--crm-success-text)]">
-                      {row.signal}
+                      {row.status}
                     </span>
                   </td>
                   <td className="px-5 py-4 text-right">
@@ -589,28 +589,28 @@ export function DashboardPage() {
       name: "Customers",
       metric: "Active accounts",
       value: activeCustomers,
-      signal: activeCustomers > 0 ? "Live" : "Empty",
+      status: activeCustomers > 0 ? "Has records" : "No records",
       path: "/customers",
     },
     {
       name: "Leads",
       metric: "Open pipeline",
       value: activeLeads,
-      signal: activeLeads > 0 ? "Live" : "Empty",
+      status: activeLeads > 0 ? "Has records" : "No records",
       path: "/leads",
     },
     {
       name: "Tasks",
       metric: "Open follow-ups",
       value: openTasks,
-      signal: openTasks > 0 ? "Action" : "Clear",
+      status: openTasks > 0 ? "Open work" : "No open work",
       path: "/tasks",
     },
     {
       name: "Team",
       metric: "Users",
       value: totalUsers,
-      signal: totalUsers > 0 ? "Ready" : "Empty",
+      status: totalUsers > 0 ? "Configured" : "No users",
       path: "/users",
     },
   ];
@@ -654,7 +654,7 @@ export function DashboardPage() {
     <AppLayout>
       <PageShell
         title="Dashboard"
-        description="Customers, leads, tasks, and team activity without noise."
+        description="Current CRM totals, pipeline movement, and team follow-up activity."
         action={
           <div className="flex flex-wrap items-center gap-2">
             <button

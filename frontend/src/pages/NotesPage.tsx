@@ -1,10 +1,20 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
-import { FileText, NotebookText, Search, UserRound } from 'lucide-react'
+import { FileText, NotebookText, Plus, UserRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, PageShell, SearchPanel, StatTile } from '../components/ui'
+import {
+  EmptyState,
+  GlassCard,
+  PageActionButton,
+  PageShell,
+  SearchPanel,
+  StatTile,
+  StatusBadge,
+} from '../components/ui'
 import { getCustomerNotes, getLeadNotes, type NoteResponse } from '../services/noteService'
 import type { PageResponse } from '../services/userService'
+import { formatDateTime } from '../lib/formatters'
+import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -31,55 +41,43 @@ const cardAnimation: Variants = {
 export function NotesPage() {
   const [notes, setNotes] = useState<PageResponse<NoteResponse> | null>(null)
   const [targetType, setTargetType] = useState<'customer' | 'lead'>('customer')
-  const [targetId, setTargetId] = useState('1')
-  const [loading, setLoading] = useState(true)
+  const [targetId, setTargetId] = useState('')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   function loadNotes(type = targetType, rawId = targetId) {
     const id = Number(rawId)
 
-    if (!id) {
-      setError('Please enter a valid record ID.')
+    if (!Number.isInteger(id) || id <= 0) {
+      setError('Enter a valid customer or lead ID.')
       setNotes(null)
-      setLoading(false)
+      setHasLoaded(false)
       return
     }
 
     setLoading(true)
     setError('')
+    setHasLoaded(true)
 
     const request = type === 'customer' ? getCustomerNotes(id) : getLeadNotes(id)
 
     request
       .then(setNotes)
-      .catch(() => setError('Could not load notes. Please try again.'))
+      .catch(() => setError('Notes could not be loaded. Please try again.'))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
-    let ignore = false
-
-    getCustomerNotes(1)
-      .then((data) => {
-        if (!ignore) {
-          setNotes(data)
-        }
-      })
-      .catch(() => {
-        if (!ignore) {
-          setError('Could not load notes. Please try again.')
-        }
-      })
-      .finally(() => {
-        if (!ignore) {
-          setLoading(false)
-        }
-      })
-
-    return () => {
-      ignore = true
+    function refreshAfterCreate() {
+      if (targetId.trim()) {
+        loadNotes()
+      }
     }
-  }, [])
+
+    window.addEventListener('crm-data-changed', refreshAfterCreate)
+    return () => window.removeEventListener('crm-data-changed', refreshAfterCreate)
+  })
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -88,12 +86,20 @@ export function NotesPage() {
 
   const visibleNotes = notes?.content ?? []
   const authors = new Set(visibleNotes.map((note) => note.createdByUserId)).size
+  const selectedRecordLabel = targetId.trim()
+    ? `${targetType === 'customer' ? 'Customer' : 'Lead'} ${targetId}`
+    : 'No record selected'
 
   return (
     <AppLayout>
       <PageShell
         title="Notes"
-        description="Review notes attached to customers and leads."
+        description="Review conversation notes attached to customer and lead records."
+        action={
+          <PageActionButton icon={Plus} onClick={() => openQuickCreate('note')}>
+            Add note
+          </PageActionButton>
+        }
       >
         <motion.section
           className="grid gap-4 sm:grid-cols-3"
@@ -102,15 +108,20 @@ export function NotesPage() {
           animate="show"
         >
           <motion.div variants={cardAnimation}>
-            <StatTile label="Loaded Notes" value={visibleNotes.length} icon={NotebookText} tone="blue" />
+            <StatTile label="Notes shown" value={visibleNotes.length} icon={NotebookText} tone="blue" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>
-            <StatTile label="Authors" value={authors} icon={UserRound} tone="green" />
+            <StatTile label="Contributors" value={authors} icon={UserRound} tone="green" />
           </motion.div>
 
           <motion.div variants={cardAnimation}>
-            <StatTile label="Target" value={targetType === 'customer' ? 'Customer' : 'Lead'} icon={Search} tone="amber" />
+            <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--crm-text-muted)]">
+                Selected record
+              </p>
+              <p className="mt-2 text-lg font-semibold text-[var(--crm-text)]">{selectedRecordLabel}</p>
+            </div>
           </motion.div>
         </motion.section>
 
@@ -124,7 +135,7 @@ export function NotesPage() {
           <select
             value={targetType}
             onChange={(event) => setTargetType(event.target.value as 'customer' | 'lead')}
-            aria-label="Note target type"
+            aria-label="Note record type"
             className="crm-focus h-11 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] shadow-sm transition focus:border-[var(--crm-primary)]"
           >
             <option value="customer">Customer</option>
@@ -141,15 +152,12 @@ export function NotesPage() {
         <GlassCard>
           <div className="mb-5 flex items-center justify-between gap-4">
             <div>
-              <h3 className="font-semibold text-[var(--crm-text)]">Note Timeline</h3>
+              <h3 className="font-semibold text-[var(--crm-text)]">Record notes</h3>
               <p className="text-sm text-[var(--crm-text-muted)]">
-                Latest notes for the selected record
+                Load a customer or lead to review its note history.
               </p>
             </div>
-
-            <div className="rounded-xl bg-[var(--crm-soft-gradient)] p-3 text-[var(--crm-primary)] ring-1 ring-violet-300/25">
-              <NotebookText size={22} />
-            </div>
+            <StatusBadge variant="info">{selectedRecordLabel}</StatusBadge>
           </div>
 
           <div className="space-y-3">
@@ -174,7 +182,7 @@ export function NotesPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm leading-6 text-[var(--crm-text)]">{note.content}</p>
                       <p className="mt-3 text-xs text-[var(--crm-text-muted)]">
-                        By {note.createdByUserName} - {new Date(note.createdAt).toLocaleString()}
+                        {note.createdByUserName} · {formatDateTime(note.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -185,8 +193,17 @@ export function NotesPage() {
               <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)]">
                 <EmptyState
                   icon={NotebookText}
-                  title="No notes found"
-                  message="Choose another customer or lead ID."
+                  title={hasLoaded ? 'No notes for this record' : 'Choose a record to view notes'}
+                  message={
+                    hasLoaded
+                      ? 'Add a note when there is a useful customer conversation to remember.'
+                      : 'Select customer or lead, enter its ID, then load the note history.'
+                  }
+                  action={
+                    <PageActionButton icon={Plus} onClick={() => openQuickCreate('note')}>
+                      Add note
+                    </PageActionButton>
+                  }
                 />
               </div>
             )}

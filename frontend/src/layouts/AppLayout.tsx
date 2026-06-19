@@ -12,7 +12,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { NavLink, useLocation, useNavigate } from 'react-router'
+import { NavLink, useNavigate } from 'react-router'
 import { CommandMenu } from '../components/CommandMenu'
 import { NotificationPanel } from '../components/NotificationPanel'
 import { QuickCreateMenu } from '../components/QuickCreateMenu'
@@ -85,6 +85,17 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    title: 'Insights',
+    items: [
+      {
+        label: 'Reports',
+        path: '/reports',
+        icon: BarChart3,
+        description: 'CRM totals and reports',
+      },
+    ],
+  },
+  {
     title: 'Admin',
     items: [
       {
@@ -92,12 +103,6 @@ const navGroups: NavGroup[] = [
         path: '/users',
         icon: Users,
         description: 'Team accounts and access',
-      },
-      {
-        label: 'Reports',
-        path: '/reports',
-        icon: BarChart3,
-        description: 'CRM totals and reports',
       },
       {
         label: 'Audit Logs',
@@ -109,17 +114,9 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-const allNavItems = navGroups.flatMap((group) => group.items)
-
-function getCurrentNavItem(pathname: string) {
-  return allNavItems.find((item) => item.path === pathname) ?? allNavItems[0]
-}
-
 export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const location = useLocation()
   const navigate = useNavigate()
-  const currentNav = getCurrentNavItem(location.pathname)
 
   async function logout() {
     const refreshToken = localStorage.getItem('refreshToken')
@@ -239,16 +236,10 @@ export function AppLayout({ children }: AppLayoutProps) {
             </button>
 
             <div className="min-w-0 flex-1">
-              <h2 className="truncate text-lg font-semibold text-[var(--crm-text)] sm:text-xl">
-                {currentNav.label}
-              </h2>
-              <p className="mt-0.5 hidden truncate text-sm text-[var(--crm-text-muted)] sm:block">
-                {currentNav.description}
-              </p>
+              <CommandMenu />
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <CommandMenu />
               <QuickCreateMenu />
               <NotificationPanel />
               <SettingsPanel />

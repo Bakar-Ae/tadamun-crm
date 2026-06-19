@@ -26,10 +26,7 @@ export function PageShell({
     >
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--crm-accent-text)]">
-            Tadamun CRM
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-normal text-[var(--crm-text)]">
+          <h1 className="text-3xl font-semibold tracking-normal text-[var(--crm-text)]">
             {title}
           </h1>
           {description && (
