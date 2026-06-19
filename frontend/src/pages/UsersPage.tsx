@@ -11,6 +11,7 @@ import {
   SearchPanel,
   StatTile,
   StatusBadge,
+  LoadingState
 } from '../components/ui'
 import {
   deactivateUser,
@@ -191,8 +192,8 @@ export function UsersPage() {
               <tbody className="divide-y divide-[var(--crm-border)]">
                 {loading && (
                   <tr>
-                    <td className="px-5 py-8 text-center text-[var(--crm-text-muted)]" colSpan={5}>
-                      Loading team members...
+                    <td colSpan={7}>
+                      <LoadingState message="Loading leads..." />
                     </td>
                   </tr>
                 )}

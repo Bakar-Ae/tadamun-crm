@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { Clock, Database, ShieldCheck, UserRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, PageShell, StatTile, StatusBadge } from '../components/ui'
+import { EmptyState, GlassCard, PageShell, StatTile, StatusBadge, LoadingState } from '../components/ui'
 import { getAuditLogs, type AuditLogResponse } from '../services/auditLogService'
 import type { PageResponse } from '../services/userService'
 import {
@@ -140,8 +140,8 @@ export function AuditLogsPage() {
               <tbody className="divide-y divide-[var(--crm-border)]">
                 {loading && (
                   <tr>
-                    <td className="px-5 py-8 text-center text-[var(--crm-text-muted)]" colSpan={5}>
-                      Loading audit history...
+                    <td colSpan={5}>
+                      <LoadingState message="Loading audit history..." />
                     </td>
                   </tr>
                 )}

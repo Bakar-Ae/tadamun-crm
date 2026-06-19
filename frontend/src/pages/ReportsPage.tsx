@@ -11,7 +11,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, MetricCard, PageActionButton, PageShell, StatTile } from '../components/ui'
+import { EmptyState, GlassCard, MetricCard, PageActionButton, PageShell, StatTile, LoadingState } from '../components/ui'
 import { getReportSummary, type ReportSummary } from '../services/reportService'
 import { getLoadErrorMessage } from '../lib/errors'
 
@@ -103,8 +103,7 @@ export function ReportsPage() {
         )}
 
         {loading ? (
-          <GlassCard className="py-10 text-center text-sm text-[var(--crm-text-muted)]">
-            Loading report summary...
+          <GlassCard ><LoadingState message="Loading report summary..." />
           </GlassCard>
         ) : (
           report && (

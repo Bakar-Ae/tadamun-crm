@@ -10,6 +10,7 @@ import {
   Plus,
   UserRound,
   UsersRound,
+  
 } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
@@ -20,6 +21,7 @@ import {
   SearchPanel,
   StatTile,
   StatusBadge,
+  LoadingState,
 } from '../components/ui'
 import {
   archiveCustomer,
@@ -204,8 +206,8 @@ export function CustomersPage() {
               <tbody className="divide-y divide-[var(--crm-border)]">
                 {loading && (
                   <tr>
-                    <td className="px-5 py-8 text-center text-[var(--crm-text-muted)]" colSpan={7}>
-                      Loading customers...
+                    <td colSpan={7}>
+                      <LoadingState message="Loading customers..." />
                     </td>
                   </tr>
                 )}

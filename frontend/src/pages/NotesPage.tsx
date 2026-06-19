@@ -10,6 +10,7 @@ import {
   SearchPanel,
   StatTile,
   StatusBadge,
+  LoadingState
 } from '../components/ui'
 import { getCustomerNotes, getLeadNotes, type NoteResponse } from '../services/noteService'
 import type { PageResponse } from '../services/userService'
@@ -163,7 +164,7 @@ export function NotesPage() {
 
           <div className="space-y-3">
             {loading && (
-              <p className="py-8 text-center text-sm text-[var(--crm-text-muted)]">Loading notes...</p>
+              <p ><LoadingState message="Loading notes..." /></p>
             )}
 
             {!loading &&

@@ -19,6 +19,7 @@ import {
   SearchPanel,
   StatTile,
   StatusBadge,
+  LoadingState
 } from '../components/ui'
 import { getTasks, updateTask, type TaskResponse } from '../services/taskService'
 import type { PageResponse } from '../services/userService'
@@ -222,8 +223,9 @@ export function TasksPage() {
               <tbody className="divide-y divide-[var(--crm-border)]">
                 {loading && (
                   <tr>
-                    <td className="px-5 py-8 text-center text-[var(--crm-text-muted)]" colSpan={7}>
-                      Loading tasks...
+                    <td colSpan={7}>
+                      <LoadingState message="Loading tasks ... " />
+
                     </td>
                   </tr>
                 )}

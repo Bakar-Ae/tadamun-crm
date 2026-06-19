@@ -11,6 +11,7 @@ import {
 } from '../services/notificationService'
 import { formatDateTime, humanizeEnum } from '../lib/formatters'
 
+
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
   show: {
