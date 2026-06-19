@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "../../lib/cn";
 
 type ModalProps = {
@@ -20,13 +21,24 @@ export function Modal({
   onClose,
   className,
 }: ModalProps) {
-  return (
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[80] flex items-end justify-center p-3 sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-[999] flex items-end justify-center overflow-y-auto p-3 sm:items-start sm:p-6 sm:pt-10">
           <motion.button
             type="button"
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-950/55 backdrop-blur-sm"
             aria-label="Close modal"
             onClick={onClose}
             initial={{ opacity: 0 }}
@@ -39,40 +51,46 @@ export function Modal({
             aria-modal="true"
             aria-labelledby="modal-title"
             className={cn(
-              "relative max-h-[90dvh] w-full overflow-y-auto rounded-[2rem] border border-[var(--crm-border)] bg-[var(--crm-surface)] p-5 text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)] sm:max-w-xl",
+              "relative z-10 flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-[2rem] border border-[var(--crm-border)] bg-[var(--crm-surface)] text-[var(--crm-text)] shadow-[var(--crm-shadow-soft)] sm:max-h-[calc(100dvh-5rem)] sm:max-w-xl",
               className,
             )}
-            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            initial={{ opacity: 0, y: 28, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.98 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <h2 id="modal-title" className="text-xl font-semibold">
-                  {title}
-                </h2>
-                {description && (
-                  <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
-                    {description}
-                  </p>
-                )}
-              </div>
+            <div className="shrink-0 border-b border-[var(--crm-border)] p-5 pb-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 id="modal-title" className="text-xl font-semibold">
+                    {title}
+                  </h2>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
-                aria-label="Close modal"
-              >
-                <X size={18} />
-              </button>
+                  {description && (
+                    <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
+                      {description}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
+                  aria-label="Close modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
-            {children}
+            <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              {children}
+            </div>
           </motion.section>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
