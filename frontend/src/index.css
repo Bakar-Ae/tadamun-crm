@@ -12,11 +12,11 @@
 
   color-scheme: light;
 
-  --crm-bg: #f8fafc;
-  --crm-bg-soft: #f6f7fb;
+  --crm-bg: #f3f6ff;
+  --crm-bg-soft: #eef2ff;
   --crm-surface: #ffffff;
-  --crm-surface-soft: #f1f5f9;
-  --crm-surface-glass: rgba(255, 255, 255, 0.82);
+  --crm-surface-soft: #eef2ff;
+  --crm-surface-glass: rgba(255, 255, 255, 0.96);
   --crm-surface-elevated: #ffffff;
 
   --crm-primary: #6d5dfb;
@@ -30,20 +30,20 @@
   --crm-accent-text: #5b4df3;
   --crm-text: #0f172a;
   --crm-text-muted: #64748b;
-  --crm-border: #e5e7eb;
-  --crm-border-strong: #d1d5db;
+  --crm-border: #d7ddea;
+  --crm-border-strong: #b8c2d6;
   --crm-chart-grid: rgba(100, 116, 139, 0.14);
-  --crm-card-subtle: rgba(109, 93, 251, 0.045);
+  --crm-card-subtle: rgba(79, 70, 229, 0.07);
 
   --crm-success-text: #047857;
   --crm-warning-text: #b45309;
   --crm-danger-text: #dc2626;
 
-  --crm-shadow-soft: 0 18px 55px rgba(15, 23, 42, 0.09);
-  --crm-shadow-card: 0 12px 32px rgba(79, 70, 229, 0.08);
+  --crm-shadow-soft: 0 20px 60px rgba(15, 23, 42, 0.12);
+  --crm-shadow-card: 0 14px 36px rgba(79, 70, 229, 0.11);
   --crm-shadow-glow: 0 24px 80px rgba(109, 93, 251, 0.18);
-  --crm-brand-gradient: linear-gradient(135deg, #6d5dfb 0%, #4f46e5 48%, #38bdf8 100%);
-  --crm-soft-gradient: linear-gradient(135deg, rgba(109, 93, 251, 0.14), rgba(56, 189, 248, 0.1));
+  --crm-brand-gradient: linear-gradient(135deg, #6d5dfb 0%, #4f46e5 48%, #2563eb 100%);
+  --crm-soft-gradient: linear-gradient(135deg, rgba(109, 93, 251, 0.18), rgba(37, 99, 235, 0.12));
 }
 
 html[data-theme="midnight"] {
@@ -153,9 +153,18 @@ button:disabled {
 
 .crm-glass {
   border: 1px solid var(--crm-border);
-  background: var(--crm-surface-glass);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.94)),
+    var(--crm-surface-glass);
   box-shadow: var(--crm-shadow-card);
   backdrop-filter: blur(18px);
+}
+
+html[data-theme="midnight"] .crm-glass,
+html[data-theme="dark"] .crm-glass {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)),
+    var(--crm-surface-glass);
 }
 
 .crm-focus {

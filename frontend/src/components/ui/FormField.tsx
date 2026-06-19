@@ -13,7 +13,11 @@ function FieldShell({ label, error, children }: FieldShellProps) {
         {label}
       </span>
       {children}
-      {error && <span className="mt-1 block text-xs font-medium text-red-300">{error}</span>}
+      {error && (
+        <span className="mt-1 block text-xs font-semibold text-[var(--crm-danger-text)]">
+          {error}
+        </span>
+      )}
     </label>
   );
 }

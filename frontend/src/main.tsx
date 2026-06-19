@@ -39,7 +39,9 @@ createRoot(document.getElementById('root')!).render(
         style: {
           background: 'var(--crm-surface)',
           color: 'var(--crm-text)',
-          border: '1px solid var(--crm-border)',
+          border: '1px solid var(--crm-border-strong)',
+          boxShadow: 'var(--crm-shadow-soft)',
+          fontWeight: 600,
         },
       }}
     />
