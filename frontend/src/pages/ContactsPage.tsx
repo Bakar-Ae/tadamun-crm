@@ -13,6 +13,8 @@ import {
   StatusBadge,
   LoadingState,
   ErrorState,
+  PaginationBar,
+
 } from '../components/ui'
 import {
   archiveContact,
@@ -49,24 +51,26 @@ const cardAnimation: Variants = {
 export function ContactsPage() {
   const [contacts, setContacts] = useState<PageResponse<ContactResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(0)
+  const pageSize = 10
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadContacts = useCallback((search: string) => {
+  const loadContacts = useCallback((search: string, pageNumber = page) => {
     setLoading(true)
     setError('')
 
-    getContacts(0, 10, search)
+    getContacts(pageNumber, pageSize, search)
       .then(setContacts)
       .catch(() => setError(getLoadErrorMessage('contacts')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page, pageSize])
 
   useEffect(() => {
     let ignore = false
 
-    getContacts(0, 10, '')
+    getContacts(0, pageSize, '')
       .then((data) => {
         if (!ignore) {
           setContacts(data)
@@ -99,7 +103,8 @@ export function ContactsPage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    loadContacts(keyword)
+    setPage(0)
+    loadContacts(keyword, 0)
   }
 
   async function handleArchive(contact: ContactResponse) {
@@ -118,6 +123,18 @@ export function ContactsPage() {
     } finally {
       setActionLoadingId(null)
     }
+  }
+
+  function goToPreviousPage() {
+    const previousPage = Math.max(page - 1, 0)
+    setPage(previousPage)
+    loadContacts(keyword, previousPage)
+  }
+
+  function goToNextPage() {
+    const nextPage = page + 1
+    setPage(nextPage)
+    loadContacts(keyword, nextPage)
   }
 
   const visibleContacts = contacts?.content ?? []
@@ -273,6 +290,17 @@ export function ContactsPage() {
               </tbody>
             </table>
           </div>
+          {contacts && (
+            <PaginationBar
+              page={page}
+              totalPages={contacts.totalPages}
+              totalElements={contacts.totalElements}
+              pageSize={pageSize}
+              onPrevious={goToPreviousPage}
+              onNext={goToNextPage}
+              disabled={loading}
+            />
+          )}
         </GlassCard>
       </PageShell>
     </AppLayout>

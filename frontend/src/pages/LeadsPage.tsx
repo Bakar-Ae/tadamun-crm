@@ -21,6 +21,7 @@ import {
   StatTile,
   StatusBadge,
   ErrorState,
+  PaginationBar,
 } from '../components/ui'
 import { archiveLead, getLeads, type LeadResponse } from '../services/leadService'
 import type { PageResponse } from '../services/userService'
@@ -58,25 +59,27 @@ const cardAnimation: Variants = {
 export function LeadsPage() {
   const [leads, setLeads] = useState<PageResponse<LeadResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(0)
+  const pageSize = 10
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadLeads = useCallback((search: string) => {
+  const loadLeads = useCallback((search: string, pageNumber = page) => {
     setLoading(true)
     setError('')
 
-    getLeads(0, 10, search)
+    getLeads(pageNumber, pageSize, search)
       .then(setLeads)
       .catch(() => setError(getLoadErrorMessage('leads')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page, pageSize])
   
 
   useEffect(() => {
     let ignore = false
 
-    getLeads(0, 10, '')
+    getLeads(0, pageSize, '')
       .then((data) => {
         if (!ignore) {
           setLeads(data)
@@ -84,7 +87,7 @@ export function LeadsPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Pipeline could not be loaded. Please try again.')
+          setError(getLoadErrorMessage('leads'))
         }
       })
       .finally(() => {
@@ -109,7 +112,8 @@ export function LeadsPage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    loadLeads(keyword)
+    setPage(0)
+    loadLeads(keyword, 0)
   }
 
   async function handleArchive(lead: LeadResponse) {
@@ -128,6 +132,18 @@ export function LeadsPage() {
     } finally {
       setActionLoadingId(null)
     }
+  }
+
+  function goToPreviousPage() {
+    const previousPage = Math.max(page - 1, 0)
+    setPage(previousPage)
+    loadLeads(keyword, previousPage)
+  }
+
+  function goToNextPage() {
+    const nextPage = page + 1
+    setPage(nextPage)
+    loadLeads(keyword, nextPage)
   }
 
   const visibleLeads = leads?.content ?? []
@@ -282,6 +298,17 @@ export function LeadsPage() {
               </tbody>
             </table>
           </div>
+          {leads && (
+            <PaginationBar
+              page={page}
+              totalPages={leads.totalPages}
+              totalElements={leads.totalElements}
+              pageSize={pageSize}
+              onPrevious={goToPreviousPage}
+              onNext={goToNextPage}
+              disabled={loading}
+            />
+          )}
         </GlassCard>
       </PageShell>
     </AppLayout>

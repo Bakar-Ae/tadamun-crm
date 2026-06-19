@@ -12,7 +12,8 @@ import {
   StatTile,
   StatusBadge,
   LoadingState,
-  ErrorState
+  ErrorState,
+  PaginationBar,
 } from '../components/ui'
 import {
   deactivateUser,
@@ -49,24 +50,26 @@ const cardAnimation: Variants = {
 export function UsersPage() {
   const [users, setUsers] = useState<PageResponse<UserResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(0)
+  const pageSize = 10
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadUsers = useCallback((search: string) => {
+  const loadUsers = useCallback((search: string, pageNumber = page) => {
     setLoading(true)
     setError('')
 
-    getUsers(0, 10, search)
+    getUsers(pageNumber, pageSize, search)
       .then(setUsers)
       .catch(() => setError(getLoadErrorMessage('team members')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page,pageSize])
 
   useEffect(() => {
     let ignore = false
 
-    getUsers(0, 10, '')
+    getUsers(0, pageSize, '')
       .then((data) => {
         if (!ignore) {
           setUsers(data)
@@ -98,9 +101,10 @@ export function UsersPage() {
   }, [keyword, loadUsers])
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    loadUsers(keyword)
-  }
+   event.preventDefault()
+   setPage(0)
+   loadUsers(keyword, 0)
+}
 
   async function handleDeactivate(user: UserResponse) {
     if (!window.confirm(`Deactivate ${user.fullName}? They will no longer be able to sign in.`)) {
@@ -119,7 +123,18 @@ export function UsersPage() {
       setActionLoadingId(null)
     }
   }
+  function goToPreviousPage() {
+   const previousPage = Math.max(page - 1, 0)
+   setPage(previousPage)
+   loadUsers(keyword, previousPage)
+}
 
+ function goToNextPage() {
+  const nextPage = page + 1
+  setPage(nextPage)
+  loadUsers(keyword, nextPage)
+}
+  
   const visibleUsers = users?.content ?? []
   const activeUsers = visibleUsers.filter((user) => user.status === 'ACTIVE').length
   const adminUsers = visibleUsers.filter((user) => user.role.includes('ADMIN')).length
@@ -189,8 +204,8 @@ export function UsersPage() {
               <tbody className="divide-y divide-[var(--crm-border)]">
                 {loading && (
                   <tr>
-                    <td colSpan={7}>
-                      <LoadingState message="Loading leads..." />
+                    <td colSpan={5}>
+                      <LoadingState message="Loading team members..." />
                     </td>
                   </tr>
                 )}
@@ -256,6 +271,17 @@ export function UsersPage() {
               </tbody>
             </table>
           </div>
+          {users && (
+          <PaginationBar
+            page={page}
+            totalPages={users.totalPages}
+            totalElements={users.totalElements}
+            pageSize={pageSize}
+            onPrevious={goToPreviousPage}
+            onNext={goToNextPage}
+            disabled={loading}
+           />
+         )}
         </GlassCard>
       </PageShell>
     </AppLayout>

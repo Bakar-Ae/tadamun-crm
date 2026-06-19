@@ -21,6 +21,7 @@ import {
   StatusBadge,
   LoadingState,
   ErrorState,
+  PaginationBar,
 } from '../components/ui'
 import { getTasks, updateTask, type TaskResponse } from '../services/taskService'
 import type { PageResponse } from '../services/userService'
@@ -67,24 +68,26 @@ function isOverdue(task: TaskResponse) {
 export function TasksPage() {
   const [tasks, setTasks] = useState<PageResponse<TaskResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(0)
+  const pageSize = 10
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadTasks = useCallback((search: string) => {
+  const loadTasks = useCallback((search: string, pageNumber = page) => {
     setLoading(true)
     setError('')
 
-    getTasks(0, 10, search)
+    getTasks(pageNumber, pageSize, search)
       .then(setTasks)
       .catch(() => setError(getLoadErrorMessage('tasks')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [page, pageSize])
 
   useEffect(() => {
     let ignore = false
 
-    getTasks(0, 10, '')
+    getTasks(0, pageSize, '')
       .then((data) => {
         if (!ignore) {
           setTasks(data)
@@ -99,7 +102,9 @@ export function TasksPage() {
         if (!ignore) {
           setLoading(false)
         }
+
       })
+      
 
     return () => {
       ignore = true
@@ -117,7 +122,8 @@ export function TasksPage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    loadTasks(keyword)
+    setPage(0)
+    loadTasks(keyword,0)
   }
 
   async function handleComplete(task: TaskResponse) {
@@ -141,6 +147,17 @@ export function TasksPage() {
     } finally {
       setActionLoadingId(null)
     }
+  }
+  function goToPreviousPage() {
+    const previousPage = Math.max(page - 1, 0)
+    setPage(previousPage)
+    loadTasks(keyword, previousPage)
+  }
+
+  function goToNextPage() {
+    const nextPage = page + 1
+    setPage(nextPage)
+    loadTasks(keyword, nextPage)
   }
 
   const visibleTasks = tasks?.content ?? []
@@ -310,6 +327,17 @@ export function TasksPage() {
               </tbody>
             </table>
           </div>
+          {tasks && (
+            <PaginationBar
+              page={page}
+              totalPages={tasks.totalPages}
+              totalElements={tasks.totalElements}
+              pageSize={pageSize}
+              onPrevious={goToPreviousPage}
+              onNext={goToNextPage}
+              disabled={loading}
+            />
+          )}
         </GlassCard>
       </PageShell>
     </AppLayout>
