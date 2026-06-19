@@ -23,6 +23,7 @@ import {
   StatusBadge,
   LoadingState,
   ErrorState,
+  PaginationBar,
   
 } from '../components/ui'
 import {
@@ -60,24 +61,26 @@ const cardAnimation: Variants = {
 export function CustomersPage() {
   const [customers, setCustomers] = useState<PageResponse<CustomerResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [page, setPage] = useState(0)
+  const pageSize = 10
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadCustomers = useCallback((search: string) => {
+  const loadCustomers = useCallback((search: string, pageNumber = page) => {
     setLoading(true)
     setError('')
 
-     getCustomers(0, 10, search)
+     getCustomers(pageNumber, pageSize, search)
     .then(setCustomers)
     .catch(() => setError(getLoadErrorMessage('customers')))
     .finally(() => setLoading(false))
-  }, [])
+  }, [page,pageSize])
 
   useEffect(() => {
     let ignore = false
 
-    getCustomers(0, 10, '')
+    getCustomers(0, pageSize, '')
       .then((data) => {
         if (!ignore) {
           setCustomers(data)
@@ -110,14 +113,14 @@ export function CustomersPage() {
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    loadCustomers(keyword)
+    setPage(0)
+    loadCustomers(keyword, 0)
   }
 
   async function handleArchive(customer: CustomerResponse) {
     if (!window.confirm(`Archive ${customer.name}? You can keep the history, but it will leave active work lists.`)) {
       return
     }
-
     setActionLoadingId(customer.id)
 
     try {
@@ -130,6 +133,17 @@ export function CustomersPage() {
       setActionLoadingId(null)
     }
   }
+  function goToPreviousPage() {
+    const previousPage = Math.max(page - 1, 0)
+    setPage(previousPage)
+    loadCustomers(keyword, previousPage)
+  }
+
+function goToNextPage() {
+  const nextPage = page + 1
+  setPage(nextPage)
+  loadCustomers(keyword, nextPage)
+}
 
   const visibleCustomers = customers?.content ?? []
   const activeCustomers = visibleCustomers.filter((customer) => customer.status === 'ACTIVE').length
@@ -288,6 +302,17 @@ export function CustomersPage() {
               </tbody>
             </table>
           </div>
+        {customers && (
+          <PaginationBar
+            page={page}
+            totalPages={customers.totalPages}
+            totalElements={customers.totalElements}
+            pageSize={pageSize}
+            onPrevious={goToPreviousPage}
+            onNext={goToNextPage}
+            disabled={loading}
+          />
+       )}
         </GlassCard>
       </PageShell>
     </AppLayout>
