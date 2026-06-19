@@ -14,6 +14,7 @@ import {
 import { getCustomerNotes, getLeadNotes, type NoteResponse } from '../services/noteService'
 import type { PageResponse } from '../services/userService'
 import { formatDateTime } from '../lib/formatters'
+import { getLoadErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
@@ -64,7 +65,7 @@ export function NotesPage() {
 
     request
       .then(setNotes)
-      .catch(() => setError('Notes could not be loaded. Please try again.'))
+      .catch(() => setError(getLoadErrorMessage('notes')))
       .finally(() => setLoading(false))
   }
 

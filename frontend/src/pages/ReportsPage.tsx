@@ -13,6 +13,7 @@ import {
 import { AppLayout } from '../layouts/AppLayout'
 import { EmptyState, GlassCard, MetricCard, PageActionButton, PageShell, StatTile } from '../components/ui'
 import { getReportSummary, type ReportSummary } from '../services/reportService'
+import { getLoadErrorMessage } from '../lib/errors'
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -68,7 +69,7 @@ export function ReportsPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Report summary could not be loaded. Please try again.')
+          setError(getLoadErrorMessage('report summary'))
         }
       })
       .finally(() => {

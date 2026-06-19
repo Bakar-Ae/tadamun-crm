@@ -11,6 +11,7 @@ import {
   formatDateTime,
   formatEntityName,
 } from '../lib/formatters'
+import { getLoadErrorMessage } from '../lib/errors'
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -66,7 +67,7 @@ export function AuditLogsPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Audit history could not be loaded. Please try again.')
+          setError(getLoadErrorMessage('audit history'))
         }
       })
       .finally(() => {

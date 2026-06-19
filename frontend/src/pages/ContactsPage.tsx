@@ -19,6 +19,7 @@ import {
 } from '../services/contactService'
 import type { PageResponse } from '../services/userService'
 import { formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
+import { getLoadErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
@@ -56,7 +57,7 @@ export function ContactsPage() {
 
     getContacts(0, 10, search)
       .then(setContacts)
-      .catch(() => setError('Contacts could not be loaded. Please try again.'))
+      .catch(() => setError(getLoadErrorMessage('contacts')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -71,7 +72,7 @@ export function ContactsPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Contacts could not be loaded. Please try again.')
+          setError(getLoadErrorMessage('contacts'))
         }
       })
       .finally(() => {
@@ -111,7 +112,7 @@ export function ContactsPage() {
       toast.success(`${contact.fullName} archived`)
       loadContacts(keyword)
     } catch {
-      toast.error('Could not archive this contact.')
+      toast.error(getLoadErrorMessage('contacts'))
     } finally {
       setActionLoadingId(null)
     }

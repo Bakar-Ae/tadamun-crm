@@ -29,6 +29,7 @@ import {
   priorityVariant,
   statusVariant,
 } from '../lib/formatters'
+import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
@@ -74,7 +75,7 @@ export function TasksPage() {
 
     getTasks(0, 10, search)
       .then(setTasks)
-      .catch(() => setError('Tasks could not be loaded. Please try again.'))
+      .catch(() => setError(getLoadErrorMessage('tasks')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -89,7 +90,7 @@ export function TasksPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Tasks could not be loaded. Please try again.')
+          setError(getLoadErrorMessage('tasks'))
         }
       })
       .finally(() => {
@@ -134,7 +135,7 @@ export function TasksPage() {
       toast.success('Task completed')
       loadTasks(keyword)
     } catch {
-      toast.error('Could not complete this task.')
+      toast.error(getSaveErrorMessage('task'))
     } finally {
       setActionLoadingId(null)
     }

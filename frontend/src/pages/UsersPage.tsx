@@ -20,6 +20,7 @@ import {
 } from '../services/userService'
 import { formatRole, formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
 import { openQuickCreate } from '../lib/quickCreate'
+import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -56,7 +57,7 @@ export function UsersPage() {
 
     getUsers(0, 10, search)
       .then(setUsers)
-      .catch(() => setError('Team accounts could not be loaded. Please try again.'))
+      .catch(() => setError(getLoadErrorMessage('team members')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -71,7 +72,7 @@ export function UsersPage() {
       })
       .catch(() => {
         if (!ignore) {
-          setError('Team accounts could not be loaded. Please try again.')
+          setError(getLoadErrorMessage('team members'))
         }
       })
       .finally(() => {
@@ -110,11 +111,8 @@ export function UsersPage() {
       await deactivateUser(user.id)
       toast.success(`${user.fullName} deactivated`)
       loadUsers(keyword)
-    } catch (actionError) {
-      const message =
-        (actionError as { response?: { data?: { message?: string } } }).response?.data?.message ??
-        'Could not deactivate this user.'
-      toast.error(message)
+    } catch {
+      toast.error(getSaveErrorMessage('user'))
     } finally {
       setActionLoadingId(null)
     }
