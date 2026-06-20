@@ -23,6 +23,7 @@ import {
   StatusBadge,
   LoadingState,
   ErrorState,
+  DetailDrawer,
   PaginationBar,
   
 } from '../components/ui'
@@ -32,7 +33,7 @@ import {
   type CustomerResponse,
 } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
-import { formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
+import {formatDateTime,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
@@ -65,6 +66,7 @@ export function CustomersPage() {
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadCustomers = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -276,17 +278,27 @@ function goToNextPage() {
                         </StatusBadge>
                       </td>
 
-                      <td className="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleArchive(customer)}
-                          disabled={customer.status !== 'ACTIVE' || actionLoadingId === customer.id}
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <Archive size={14} />
-                          {actionLoadingId === customer.id ? 'Saving...' : 'Archive'}
-                        </button>
-                      </td>
+                  <td className="px-5 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCustomer(customer)}
+                        className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
+                      >
+                        View
+                      </button>
+                  
+                      <button
+                        type="button"
+                        onClick={() => handleArchive(customer)}
+                        disabled={customer.status !== 'ACTIVE' || actionLoadingId === customer.id}
+                        className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Archive size={14} />
+                        {actionLoadingId === customer.id ? 'Saving...' : 'Archive'}
+                      </button>
+                    </div>
+                     </td>
                     </tr>
                   ))}
 
@@ -321,6 +333,74 @@ function goToNextPage() {
           />
        )}
         </GlassCard>
+        <DetailDrawer
+           open={selectedCustomer !== null}
+           title={selectedCustomer?.name ?? 'Customer details'}
+           description={selectedCustomer?.companyName ?? 'Customer account'}
+           onClose={() => setSelectedCustomer(null)}
+          >
+           {selectedCustomer && (
+             <div className="space-y-5">
+               <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                 <h3 className="font-semibold text-[var(--crm-text)]">Account information</h3>
+          
+                 <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                   <div>
+                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
+                     <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedCustomer.name}</dd>
+                   </div>
+          
+                   <div>
+                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Company</dt>
+                     <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                       {selectedCustomer.companyName ?? 'Independent'}
+                     </dd>
+                   </div>
+          
+                   <div>
+                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
+                     <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                       {selectedCustomer.email ?? 'No email'}
+                     </dd>
+                   </div>
+          
+                   <div>
+                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
+                     <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                       {selectedCustomer.phone ?? 'No phone'}
+                     </dd>
+                   </div>
+          
+                   <div>
+                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Type</dt>
+                     <dd className="mt-1">
+                       <StatusBadge variant={statusVariant(selectedCustomer.customerType)}>
+                         {formatStatus(selectedCustomer.customerType)}
+                       </StatusBadge>
+                     </dd>
+                   </div>
+          
+                   <div>
+                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
+                     <dd className="mt-1">
+                       <StatusBadge variant={statusVariant(selectedCustomer.status)}>
+                         {formatStatus(selectedCustomer.status)}
+                       </StatusBadge>
+                     </dd>
+                   </div>
+                 </dl>
+               </section>
+          
+               <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                 <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
+                 <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
+                   Created {formatDateTime(selectedCustomer.createdAt)}. Last updated{' '}
+                   {formatDateTime(selectedCustomer.updatedAt)}.
+                 </p>
+               </section>
+             </div>
+           )}
+         </DetailDrawer>
       </PageShell>
     </AppLayout>
   )
