@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { Activity, Archive, Building2, Mail, Phone, Plus, UserRound, UsersRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
+  DetailDrawer,
   EmptyState,
   GlassCard,
   PageActionButton,
@@ -22,7 +23,7 @@ import {
   type ContactResponse,
 } from '../services/contactService'
 import type { PageResponse } from '../services/userService'
-import { formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
+import {formatDateTime ,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
@@ -55,6 +56,7 @@ export function ContactsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedContact, setSelectedContact] = useState<ContactResponse | null>(null)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadContacts = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -264,7 +266,16 @@ export function ContactsPage() {
                         </StatusBadge>
                       </td>
 
-                      <td className="px-5 py-4 text-right">
+                     <td className="px-5 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedContact(contact)}
+                          className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
+                        >
+                          View
+                        </button>
+                    
                         <button
                           type="button"
                           onClick={() => handleArchive(contact)}
@@ -274,7 +285,8 @@ export function ContactsPage() {
                           <Archive size={14} />
                           {actionLoadingId === contact.id ? 'Saving...' : 'Archive'}
                         </button>
-                      </td>
+                      </div>
+                    </td> 
                     </tr>
                   ))}
 
@@ -309,6 +321,72 @@ export function ContactsPage() {
             />
           )}
         </GlassCard>
+        <DetailDrawer
+        open={selectedContact !== null}
+        title={selectedContact?.fullName ?? 'Contact details'}
+        description={selectedContact?.customerName ?? 'Customer contact'}
+        onClose={() => setSelectedContact(null)}
+      >
+        {selectedContact && (
+          <div className="space-y-5">
+            <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+              <h3 className="font-semibold text-[var(--crm-text)]">Contact information</h3>
+      
+              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
+                  <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedContact.fullName}</dd>
+                </div>
+      
+                <div>
+                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Customer</dt>
+                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                    {selectedContact.customerName}
+                  </dd>
+                </div>
+      
+                <div>
+                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
+                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                    {selectedContact.email ?? 'No email'}
+                  </dd>
+                </div>
+      
+                <div>
+                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
+                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                    {selectedContact.phone ?? 'No phone'}
+                  </dd>
+                </div>
+      
+                <div>
+                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Role</dt>
+                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                    {selectedContact.position ?? 'No role set'}
+                  </dd>
+                </div>
+      
+                <div>
+                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
+                  <dd className="mt-1">
+                    <StatusBadge variant={statusVariant(selectedContact.status)}>
+                      {formatStatus(selectedContact.status)}
+                    </StatusBadge>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+      
+            <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+              <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
+              <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
+                Created {formatDateTime(selectedContact.createdAt)}. Last updated{' '}
+                {formatDateTime(selectedContact.updatedAt)}.
+              </p>
+            </section>
+          </div>
+        )}
+      </DetailDrawer>
       </PageShell>
     </AppLayout>
   )
