@@ -181,6 +181,27 @@ function numberOrNull(value: string) {
   const trimmed = value.trim();
   return trimmed === "" ? null : Number(trimmed);
 }
+
+function clearOppositeRelationship(name: string, value: string, current: FormValues) {
+  if (name === "customerId") {
+    return {
+      ...current,
+      customerId: value,
+      leadId: value ? "" : current.leadId,
+    };
+  }
+
+  if (name === "leadId") {
+    return {
+      ...current,
+      leadId: value,
+      customerId: value ? "" : current.customerId,
+    };
+  }
+
+  return { ...current, [name]: value };
+}
+
 function formatCustomerOption(customer: CustomerResponse): string {
   const detail = customer.companyName || customer.email || customer.phone
 
@@ -279,7 +300,7 @@ export function QuickCreateMenu() {
   }
 
   function updateField(name: string, value: string) {
-    setFormValues((current) => ({ ...current, [name]: value }));
+    setFormValues((current) => clearOppositeRelationship(name, value, current));
     setErrors((current) => {
       const next = { ...current };
       delete next[name];
@@ -481,7 +502,7 @@ export function QuickCreateMenu() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField label="Estimated value" inputMode="decimal" value={formValues.estimatedValue ?? ""} onChange={(event) => updateField("estimatedValue", event.target.value)} error={errors.estimatedValue} />
-                <SelectField label="Owner" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId}>
+                <SelectField label="Assigned to" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId}>
                   <option value="">{optionsLoading ? "Loading team..." : "Unassigned"}</option>
                   {userOptions.map((user) => (
                     <option key={user.id} value={String(user.id)}>
@@ -534,7 +555,7 @@ export function QuickCreateMenu() {
                     </option>
                   ))}
                 </SelectField>
-                <SelectField label="Customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
+                <SelectField label="Attach to customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
                   <option value="">{optionsLoading ? "Loading customers..." : "No customer"}</option>
                   {customerOptions.map((customer) => (
                     <option key={customer.id} value={String(customer.id)}>
@@ -542,7 +563,7 @@ export function QuickCreateMenu() {
                     </option>
                   ))}
                 </SelectField>
-                <SelectField label="Lead" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId}>
+                <SelectField label="Attach to lead" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId}>
                   <option value="">{optionsLoading ? "Loading leads..." : "No lead"}</option>
                   {leadOptions.map((lead) => (
                     <option key={lead.id} value={String(lead.id)}>
@@ -551,6 +572,9 @@ export function QuickCreateMenu() {
                   ))}
                 </SelectField>
               </div>
+              <p className="text-xs text-[var(--crm-text-muted)]">
+                Choose either a customer or a lead. Selecting one will clear the other.
+              </p>
             </>
           )}
 
@@ -558,7 +582,7 @@ export function QuickCreateMenu() {
             <>
               <TextAreaField label="Note" value={formValues.content ?? ""} onChange={(event) => updateField("content", event.target.value)} error={errors.content} />
               <div className="grid gap-4 sm:grid-cols-2">
-                <SelectField label="Customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
+                <SelectField label="Attach to customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
                   <option value="">{optionsLoading ? "Loading customers..." : "No customer"}</option>
                   {customerOptions.map((customer) => (
                     <option key={customer.id} value={String(customer.id)}>
@@ -566,7 +590,7 @@ export function QuickCreateMenu() {
                     </option>
                   ))}
                 </SelectField>
-                <SelectField label="Lead" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId}>
+                <SelectField label="Attach to lead" value={formValues.leadId ?? ""} onChange={(event) => updateField("leadId", event.target.value)} error={errors.leadId}>
                   <option value="">{optionsLoading ? "Loading leads..." : "No lead"}</option>
                   {leadOptions.map((lead) => (
                     <option key={lead.id} value={String(lead.id)}>
@@ -575,6 +599,9 @@ export function QuickCreateMenu() {
                   ))}
                 </SelectField>
               </div>
+              <p className="text-xs text-[var(--crm-text-muted)]">
+                Notes must be attached to one customer or one lead.
+              </p>
             </>
           )}
 
