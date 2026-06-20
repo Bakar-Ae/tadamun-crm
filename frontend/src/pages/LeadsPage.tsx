@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
+  ActivityTimeline,
   DetailDrawer,
   EmptyState,
   GlassCard,
@@ -23,8 +24,10 @@ import {
   StatusBadge,
   ErrorState,
   PaginationBar,
+  type ActivityTimelineItem,
 } from '../components/ui'
 import { archiveLead, getLeads, updateLead, type LeadResponse, type LeadStatus,} from '../services/leadService'
+import { getLeadNotes } from '../services/noteService'
 import type { PageResponse } from '../services/userService'
 import {
   formatDateTime,
@@ -74,8 +77,10 @@ export function LeadsPage() {
     source: '',
     status: 'NEW' as LeadStatus,
     estimatedValue: '',
-})
+  })
   const [selectedLead, setSelectedLead] = useState<LeadResponse | null>(null)
+  const [leadActivity, setLeadActivity] = useState<ActivityTimelineItem[]>([])
+  const [activityLoading, setActivityLoading] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadLeads = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -206,6 +211,28 @@ async function saveLeadEdit() {
   } finally {
     setActionLoadingId(null)
   }
+}
+
+function loadLeadActivity(leadId: number) {
+  setActivityLoading(true)
+
+  getLeadNotes(leadId, 0, 5)
+    .then((notes) => {
+      setLeadActivity(
+        notes.content.map((note) => ({
+          id: note.id,
+          type: 'note',
+          title: 'Note added',
+          description: note.content,
+          actor: note.createdByUserName,
+          createdAt: note.createdAt,
+        })),
+      )
+    })
+    .catch(() => {
+      setLeadActivity([])
+    })
+    .finally(() => setActivityLoading(false))
 }
 
   function goToPreviousPage() {
@@ -352,6 +379,7 @@ async function saveLeadEdit() {
                           onClick={() => {
                            setSelectedLead(lead)
                            setEditingLead(false)
+                           loadLeadActivity(lead.id)
                          }}
                           className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                         >
@@ -412,6 +440,7 @@ async function saveLeadEdit() {
           onClose={() => {
             setSelectedLead(null)
             setEditingLead(false)
+            setLeadActivity([])
           }}
           footer={
             selectedLead && (
@@ -615,6 +644,18 @@ async function saveLeadEdit() {
                   Created {formatDateTime(selectedLead.createdAt)}. Last updated{' '}
                   {formatDateTime(selectedLead.updatedAt)}.
                 </p>
+              </section>
+
+              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <h3 className="font-semibold text-[var(--crm-text)]">Recent activity</h3>
+                <div className="mt-4">
+                  <ActivityTimeline
+                    items={leadActivity}
+                    loading={activityLoading}
+                    emptyTitle="No lead activity yet"
+                    emptyMessage="Notes for this lead will appear here."
+                  />
+                </div>
               </section>
             </div>
           )}
