@@ -181,6 +181,21 @@ function numberOrNull(value: string) {
   const trimmed = value.trim();
   return trimmed === "" ? null : Number(trimmed);
 }
+function formatCustomerOption(customer: CustomerResponse): string {
+  const detail = customer.companyName || customer.email || customer.phone
+
+  return detail ? `${customer.name} - ${detail}` : customer.name
+}
+
+function formatLeadOption(lead: LeadResponse): string {
+  const detail = lead.companyName || lead.email || lead.source
+
+  return detail ? `${lead.fullName} - ${detail}` : lead.fullName
+}
+
+function formatUserOption(user: UserResponse): string {
+  return `${user.fullName} - ${user.role.replaceAll('_', ' ').toLowerCase()}`
+}
 
 function getApiMessage(error: unknown) {
   const apiError = error as {
@@ -470,7 +485,7 @@ export function QuickCreateMenu() {
                   <option value="">{optionsLoading ? "Loading team..." : "Unassigned"}</option>
                   {userOptions.map((user) => (
                     <option key={user.id} value={String(user.id)}>
-                      {user.fullName}
+                      {formatUserOption(user)}
                     </option>
                   ))}
                 </SelectField>
@@ -484,7 +499,7 @@ export function QuickCreateMenu() {
                 <option value="">{optionsLoading ? "Loading customers..." : "Select customer"}</option>
                 {customerOptions.map((customer) => (
                   <option key={customer.id} value={String(customer.id)}>
-                    {customer.name}
+                    {formatCustomerOption(customer)}
                   </option>
                 ))}
               </SelectField>
@@ -515,7 +530,7 @@ export function QuickCreateMenu() {
                   <option value="">{optionsLoading ? "Loading team..." : "Unassigned"}</option>
                   {userOptions.map((user) => (
                     <option key={user.id} value={String(user.id)}>
-                      {user.fullName}
+                      {formatUserOption(user)}
                     </option>
                   ))}
                 </SelectField>
@@ -523,7 +538,7 @@ export function QuickCreateMenu() {
                   <option value="">{optionsLoading ? "Loading customers..." : "No customer"}</option>
                   {customerOptions.map((customer) => (
                     <option key={customer.id} value={String(customer.id)}>
-                      {customer.name}
+                      {formatCustomerOption(customer)}
                     </option>
                   ))}
                 </SelectField>
@@ -531,7 +546,7 @@ export function QuickCreateMenu() {
                   <option value="">{optionsLoading ? "Loading leads..." : "No lead"}</option>
                   {leadOptions.map((lead) => (
                     <option key={lead.id} value={String(lead.id)}>
-                      {lead.fullName}
+                      {formatLeadOption(lead)}
                     </option>
                   ))}
                 </SelectField>
@@ -547,7 +562,7 @@ export function QuickCreateMenu() {
                   <option value="">{optionsLoading ? "Loading customers..." : "No customer"}</option>
                   {customerOptions.map((customer) => (
                     <option key={customer.id} value={String(customer.id)}>
-                      {customer.name}
+                      {formatCustomerOption(customer)}
                     </option>
                   ))}
                 </SelectField>
@@ -555,7 +570,7 @@ export function QuickCreateMenu() {
                   <option value="">{optionsLoading ? "Loading leads..." : "No lead"}</option>
                   {leadOptions.map((lead) => (
                     <option key={lead.id} value={String(lead.id)}>
-                      {lead.fullName}
+                      {formatLeadOption(lead)}
                     </option>
                   ))}
                 </SelectField>
