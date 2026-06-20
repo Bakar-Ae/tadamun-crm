@@ -5,6 +5,8 @@ type PaginationBarProps = {
   pageSize: number
   onPrevious: () => void
   onNext: () => void
+  onPageSizeChange?: (pageSize: number) => void
+  pageSizeOptions?: number[]
   disabled?: boolean
 }
 
@@ -15,6 +17,8 @@ export function PaginationBar({
   pageSize,
   onPrevious,
   onNext,
+  onPageSizeChange,
+  pageSizeOptions = [10, 20, 50],
   disabled = false,
 }: PaginationBarProps) {
   const currentPage = page + 1
@@ -24,10 +28,28 @@ export function PaginationBar({
   return (
     <div className="flex flex-col gap-3 border-t border-[var(--crm-border)] px-5 py-4 text-sm text-[var(--crm-text-muted)] sm:flex-row sm:items-center sm:justify-between">
       <span>
-        Page {totalPages === 0 ? 0 : currentPage} of {totalPages} · {totalElements} total · {pageSize} per page
+        Page {totalPages === 0 ? 0 : currentPage} of {totalPages} - {totalElements} total - {pageSize} per page
       </span>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {onPageSizeChange && (
+          <label className="flex items-center gap-2">
+            <span>Rows</span>
+            <select
+              value={pageSize}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+              disabled={disabled}
+              className="crm-focus h-9 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-2 text-sm font-semibold text-[var(--crm-text)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {pageSizeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
         <button
           type="button"
           onClick={onPrevious}

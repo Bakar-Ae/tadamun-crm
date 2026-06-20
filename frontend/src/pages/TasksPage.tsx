@@ -69,16 +69,16 @@ export function TasksPage() {
   const [tasks, setTasks] = useState<PageResponse<TaskResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(0)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadTasks = useCallback((search: string, pageNumber = page) => {
+  const loadTasks = useCallback((search: string, pageNumber = page, size = pageSize) => {
     setLoading(true)
     setError('')
 
-    getTasks(pageNumber, pageSize, search)
+    getTasks(pageNumber, size, search)
       .then(setTasks)
       .catch(() => setError(getLoadErrorMessage('tasks')))
       .finally(() => setLoading(false))
@@ -87,7 +87,7 @@ export function TasksPage() {
   useEffect(() => {
     let ignore = false
 
-    getTasks(0, pageSize, '')
+    getTasks(0, 10, '')
       .then((data) => {
         if (!ignore) {
           setTasks(data)
@@ -158,6 +158,12 @@ export function TasksPage() {
     const nextPage = page + 1
     setPage(nextPage)
     loadTasks(keyword, nextPage)
+  }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
+    setPage(0)
+    loadTasks(keyword, 0, nextPageSize)
   }
 
   const visibleTasks = tasks?.content ?? []
@@ -335,6 +341,7 @@ export function TasksPage() {
               pageSize={pageSize}
               onPrevious={goToPreviousPage}
               onNext={goToNextPage}
+              onPageSizeChange={handlePageSizeChange}
               disabled={loading}
             />
           )}

@@ -60,16 +60,16 @@ export function LeadsPage() {
   const [leads, setLeads] = useState<PageResponse<LeadResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(0)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadLeads = useCallback((search: string, pageNumber = page) => {
+  const loadLeads = useCallback((search: string, pageNumber = page, size = pageSize) => {
     setLoading(true)
     setError('')
 
-    getLeads(pageNumber, pageSize, search)
+    getLeads(pageNumber, size, search)
       .then(setLeads)
       .catch(() => setError(getLoadErrorMessage('leads')))
       .finally(() => setLoading(false))
@@ -79,7 +79,7 @@ export function LeadsPage() {
   useEffect(() => {
     let ignore = false
 
-    getLeads(0, pageSize, '')
+    getLeads(0, 10, '')
       .then((data) => {
         if (!ignore) {
           setLeads(data)
@@ -144,6 +144,12 @@ export function LeadsPage() {
     const nextPage = page + 1
     setPage(nextPage)
     loadLeads(keyword, nextPage)
+  }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
+    setPage(0)
+    loadLeads(keyword, 0, nextPageSize)
   }
 
   const visibleLeads = leads?.content ?? []
@@ -306,6 +312,7 @@ export function LeadsPage() {
               pageSize={pageSize}
               onPrevious={goToPreviousPage}
               onNext={goToNextPage}
+              onPageSizeChange={handlePageSizeChange}
               disabled={loading}
             />
           )}

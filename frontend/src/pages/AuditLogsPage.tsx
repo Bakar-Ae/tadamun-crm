@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { Clock, Database, ShieldCheck, UserRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, PageShell, StatTile, StatusBadge, LoadingState,PaginationBar, } from '../components/ui'
+import { EmptyState, GlassCard, LoadingState, PageShell, PaginationBar, StatTile, StatusBadge } from '../components/ui'
 import { getAuditLogs, type AuditLogResponse } from '../services/auditLogService'
 import type { PageResponse } from '../services/userService'
 import {
@@ -55,13 +55,23 @@ export function AuditLogsPage() {
   const [logs, setLogs] = useState<PageResponse<AuditLogResponse> | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   const [error, setError] = useState('')
+
+  const loadAuditLogs = useCallback((pageNumber = page, size = pageSize) => {
+    setLoading(true)
+    setError('')
+
+    getAuditLogs(pageNumber, size)
+      .then(setLogs)
+      .catch(() => setError(getLoadErrorMessage('audit history')))
+      .finally(() => setLoading(false))
+  }, [page, pageSize])
 
   useEffect(() => {
     let ignore = false
 
-    getAuditLogs(0,pageSize)
+    getAuditLogs(0, 10)
       .then((data) => {
         if (!ignore) {
           setLogs(data)
@@ -86,18 +96,20 @@ export function AuditLogsPage() {
   function goToPreviousPage() {
    const previousPage = Math.max(page - 1, 0)
    setPage(previousPage)
-   getAuditLogs(previousPage, pageSize)
-     .then(setLogs)
-     .catch(() => setError(getLoadErrorMessage('audit history')))
+   loadAuditLogs(previousPage)
 }
 
   function goToNextPage() {
    const nextPage = page + 1
    setPage(nextPage)
-   getAuditLogs(nextPage, pageSize)
-     .then(setLogs)
-     .catch(() => setError(getLoadErrorMessage('audit history')))
+   loadAuditLogs(nextPage)
 }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
+    setPage(0)
+    loadAuditLogs(0, nextPageSize)
+  }
 
   const visibleLogs = logs?.content ?? []
   const actorCount = new Set(visibleLogs.map((log) => log.actorUserId).filter(Boolean)).size
@@ -219,6 +231,7 @@ export function AuditLogsPage() {
           pageSize={pageSize}
           onPrevious={goToPreviousPage}
           onNext={goToNextPage}
+          onPageSizeChange={handlePageSizeChange}
           disabled={loading}
         />
       )}

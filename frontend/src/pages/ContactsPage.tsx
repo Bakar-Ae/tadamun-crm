@@ -52,16 +52,16 @@ export function ContactsPage() {
   const [contacts, setContacts] = useState<PageResponse<ContactResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(0)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadContacts = useCallback((search: string, pageNumber = page) => {
+  const loadContacts = useCallback((search: string, pageNumber = page, size = pageSize) => {
     setLoading(true)
     setError('')
 
-    getContacts(pageNumber, pageSize, search)
+    getContacts(pageNumber, size, search)
       .then(setContacts)
       .catch(() => setError(getLoadErrorMessage('contacts')))
       .finally(() => setLoading(false))
@@ -70,7 +70,7 @@ export function ContactsPage() {
   useEffect(() => {
     let ignore = false
 
-    getContacts(0, pageSize, '')
+    getContacts(0, 10, '')
       .then((data) => {
         if (!ignore) {
           setContacts(data)
@@ -135,6 +135,12 @@ export function ContactsPage() {
     const nextPage = page + 1
     setPage(nextPage)
     loadContacts(keyword, nextPage)
+  }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
+    setPage(0)
+    loadContacts(keyword, 0, nextPageSize)
   }
 
   const visibleContacts = contacts?.content ?? []
@@ -298,6 +304,7 @@ export function ContactsPage() {
               pageSize={pageSize}
               onPrevious={goToPreviousPage}
               onNext={goToNextPage}
+              onPageSizeChange={handlePageSizeChange}
               disabled={loading}
             />
           )}

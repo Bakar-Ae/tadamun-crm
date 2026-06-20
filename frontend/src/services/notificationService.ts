@@ -34,8 +34,15 @@ export type UnreadNotificationCountResponse = {
   unreadCount: number
 }
 
-export async function getNotifications() {
-  const response = await api.get<PageResponse<NotificationResponse>>('/notifications')
+export async function getNotifications(page = 0, size = 10) {
+  const response = await api.get<PageResponse<NotificationResponse>>('/notifications', {
+    params: {
+      page,
+      size,
+      sort: 'id,desc',
+    },
+  })
+
   return response.data
 }
 

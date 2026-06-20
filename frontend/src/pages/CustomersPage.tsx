@@ -62,16 +62,16 @@ export function CustomersPage() {
   const [customers, setCustomers] = useState<PageResponse<CustomerResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(0)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadCustomers = useCallback((search: string, pageNumber = page) => {
+  const loadCustomers = useCallback((search: string, pageNumber = page, size = pageSize) => {
     setLoading(true)
     setError('')
 
-     getCustomers(pageNumber, pageSize, search)
+    getCustomers(pageNumber, size, search)
     .then(setCustomers)
     .catch(() => setError(getLoadErrorMessage('customers')))
     .finally(() => setLoading(false))
@@ -80,7 +80,7 @@ export function CustomersPage() {
   useEffect(() => {
     let ignore = false
 
-    getCustomers(0, pageSize, '')
+    getCustomers(0, 10, '')
       .then((data) => {
         if (!ignore) {
           setCustomers(data)
@@ -144,6 +144,12 @@ function goToNextPage() {
   setPage(nextPage)
   loadCustomers(keyword, nextPage)
 }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
+    setPage(0)
+    loadCustomers(keyword, 0, nextPageSize)
+  }
 
   const visibleCustomers = customers?.content ?? []
   const activeCustomers = visibleCustomers.filter((customer) => customer.status === 'ACTIVE').length
@@ -310,6 +316,7 @@ function goToNextPage() {
             pageSize={pageSize}
             onPrevious={goToPreviousPage}
             onNext={goToNextPage}
+            onPageSizeChange={handlePageSizeChange}
             disabled={loading}
           />
        )}

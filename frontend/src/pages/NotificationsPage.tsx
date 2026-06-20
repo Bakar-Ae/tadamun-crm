@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { Bell, CheckCircle2, Inbox, ShieldCheck } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, PageShell, StatTile, StatusBadge } from '../components/ui'
+import { EmptyState, GlassCard, PageShell, PaginationBar, StatTile, StatusBadge } from '../components/ui'
 import {
   getNotifications,
   getUnreadNotificationCount,
   markNotificationAsRead,
+  type PageResponse,
   type NotificationResponse,
 } from '../services/notificationService'
 import { formatDateTime, humanizeEnum } from '../lib/formatters'
@@ -34,26 +35,31 @@ const cardAnimation: Variants = {
   },
 }
 
-async function fetchNotificationData() {
+async function fetchNotificationData(pageNumber = 0, pageSize = 10) {
   const [notificationPage, countResponse] = await Promise.all([
-    getNotifications(),
+    getNotifications(pageNumber, pageSize),
     getUnreadNotificationCount(),
   ])
 
   return {
+    notificationPage,
     notifications: notificationPage.content,
     unreadCount: countResponse.unreadCount,
   }
 }
 
 export function NotificationsPage() {
+  const [notificationPage, setNotificationPage] = useState<PageResponse<NotificationResponse> | null>(null)
   const [notifications, setNotifications] = useState<NotificationResponse[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
+  const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  async function refreshNotifications() {
-    const data = await fetchNotificationData()
+  async function refreshNotifications(pageNumber = page, size = pageSize) {
+    const data = await fetchNotificationData(pageNumber, size)
+    setNotificationPage(data.notificationPage)
     setNotifications(data.notifications)
     setUnreadCount(data.unreadCount)
   }
@@ -63,21 +69,53 @@ export function NotificationsPage() {
 
     try {
       await markNotificationAsRead(id)
-      await refreshNotifications()
+      await refreshNotifications(page, pageSize)
     } finally {
       setActionLoadingId(null)
     }
   }
 
+  function loadNotifications(pageNumber = page, size = pageSize) {
+    setLoading(true)
+
+    refreshNotifications(pageNumber, size)
+      .catch(() => {
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
+        window.location.assign('/')
+      })
+      .finally(() => setLoading(false))
+  }
+
+  function goToPreviousPage() {
+    const previousPage = Math.max(page - 1, 0)
+    setPage(previousPage)
+    loadNotifications(previousPage)
+  }
+
+  function goToNextPage() {
+    const nextPage = page + 1
+    setPage(nextPage)
+    loadNotifications(nextPage)
+  }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
+    setPage(0)
+    loadNotifications(0, nextPageSize)
+  }
+
   useEffect(() => {
     let active = true
 
-    fetchNotificationData()
+    fetchNotificationData(0, 10)
       .then((data) => {
         if (!active) {
           return
         }
 
+        setNotificationPage(data.notificationPage)
         setNotifications(data.notifications)
         setUnreadCount(data.unreadCount)
       })
@@ -195,6 +233,18 @@ export function NotificationsPage() {
                 </motion.div>
               ))}
             </motion.div>
+          )}
+          {notificationPage && (
+            <PaginationBar
+              page={page}
+              totalPages={notificationPage.totalPages}
+              totalElements={notificationPage.totalElements}
+              pageSize={pageSize}
+              onPrevious={goToPreviousPage}
+              onNext={goToNextPage}
+              onPageSizeChange={handlePageSizeChange}
+              disabled={loading}
+            />
           )}
         </GlassCard>
       </PageShell>

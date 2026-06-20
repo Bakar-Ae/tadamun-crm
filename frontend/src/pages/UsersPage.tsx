@@ -51,16 +51,16 @@ export function UsersPage() {
   const [users, setUsers] = useState<PageResponse<UserResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [page, setPage] = useState(0)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadUsers = useCallback((search: string, pageNumber = page) => {
+  const loadUsers = useCallback((search: string, pageNumber = page, size = pageSize) => {
     setLoading(true)
     setError('')
 
-    getUsers(pageNumber, pageSize, search)
+    getUsers(pageNumber, size, search)
       .then(setUsers)
       .catch(() => setError(getLoadErrorMessage('team members')))
       .finally(() => setLoading(false))
@@ -69,7 +69,7 @@ export function UsersPage() {
   useEffect(() => {
     let ignore = false
 
-    getUsers(0, pageSize, '')
+    getUsers(0, 10, '')
       .then((data) => {
         if (!ignore) {
           setUsers(data)
@@ -134,6 +134,12 @@ export function UsersPage() {
   setPage(nextPage)
   loadUsers(keyword, nextPage)
 }
+
+  function handlePageSizeChange(nextPageSize: number) {
+    setPageSize(nextPageSize)
+    setPage(0)
+    loadUsers(keyword, 0, nextPageSize)
+  }
   
   const visibleUsers = users?.content ?? []
   const activeUsers = visibleUsers.filter((user) => user.status === 'ACTIVE').length
@@ -279,6 +285,7 @@ export function UsersPage() {
             pageSize={pageSize}
             onPrevious={goToPreviousPage}
             onNext={goToNextPage}
+            onPageSizeChange={handlePageSizeChange}
             disabled={loading}
            />
          )}
