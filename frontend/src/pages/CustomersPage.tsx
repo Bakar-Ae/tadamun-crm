@@ -30,7 +30,9 @@ import {
 import {
   archiveCustomer,
   getCustomers,
+  updateCustomer,
   type CustomerResponse,
+  type CustomerType,
 } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
 import {formatDateTime,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
@@ -66,6 +68,14 @@ export function CustomersPage() {
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editingCustomer, setEditingCustomer] = useState(false)
+  const [editCustomerForm, setEditCustomerForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    companyName: '',
+    customerType: 'COMPANY' as CustomerType,
+})
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
@@ -159,6 +169,59 @@ function goToNextPage() {
     (customer) => customer.customerType === 'COMPANY',
   ).length
   const hasSearch = keyword.trim().length > 0
+
+  function startEditingCustomer(customer: CustomerResponse) {
+  setSelectedCustomer(customer)
+  setEditCustomerForm({
+    name: customer.name,
+    email: customer.email ?? '',
+    phone: customer.phone ?? '',
+    companyName: customer.companyName ?? '',
+    customerType: customer.customerType,
+  })
+  setEditingCustomer(true)
+}
+
+function cancelEditingCustomer() {
+  setEditingCustomer(false)
+  if (selectedCustomer) {
+    setEditCustomerForm({
+      name: selectedCustomer.name,
+      email: selectedCustomer.email ?? '',
+      phone: selectedCustomer.phone ?? '',
+      companyName: selectedCustomer.companyName ?? '',
+      customerType: selectedCustomer.customerType,
+    })
+  }
+}
+
+ async function saveCustomerEdit() {
+  if (!selectedCustomer) {
+    return
+  }
+
+  setActionLoadingId(selectedCustomer.id)
+
+  try {
+    const updatedCustomer = await updateCustomer(selectedCustomer.id, {
+      name: editCustomerForm.name.trim(),
+      email: editCustomerForm.email.trim() || null,
+      phone: editCustomerForm.phone.trim() || null,
+      companyName: editCustomerForm.companyName.trim() || null,
+      customerType: editCustomerForm.customerType,
+      status: selectedCustomer.status,
+    })
+
+    setSelectedCustomer(updatedCustomer)
+    setEditingCustomer(false)
+    toast.success(`${updatedCustomer.name} updated`)
+    loadCustomers(keyword)
+  } catch {
+    toast.error(getSaveErrorMessage('customer'))
+  } finally {
+    setActionLoadingId(null)
+  }
+}
 
   return (
     <AppLayout>
@@ -282,7 +345,10 @@ function goToNextPage() {
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
-                        onClick={() => setSelectedCustomer(customer)}
+                        onClick={() => {
+                         setSelectedCustomer(customer)
+                         setEditingCustomer(false)
+                       }}
                         className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                       >
                         View
@@ -337,58 +403,169 @@ function goToNextPage() {
            open={selectedCustomer !== null}
            title={selectedCustomer?.name ?? 'Customer details'}
            description={selectedCustomer?.companyName ?? 'Customer account'}
-           onClose={() => setSelectedCustomer(null)}
+           onClose={() => {
+             setSelectedCustomer(null)
+             setEditingCustomer(false)
+           }}
+           footer={
+             selectedCustomer && (
+               <div className="flex justify-end gap-2">
+                 {editingCustomer ? (
+                   <>
+                     <button
+                       type="button"
+                       onClick={cancelEditingCustomer}
+                       className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+                     >
+                       Cancel
+                     </button>
+
+                     <button
+                       type="button"
+                       onClick={saveCustomerEdit}
+                       disabled={actionLoadingId === selectedCustomer.id}
+                       className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                     >
+                       {actionLoadingId === selectedCustomer.id ? 'Saving...' : 'Save changes'}
+                     </button>
+                   </>
+                 ) : (
+                   <button
+                     type="button"
+                     onClick={() => startEditingCustomer(selectedCustomer)}
+                     className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                   >
+                     Edit customer
+                   </button>
+                 )}
+               </div>
+             )
+           }
           >
            {selectedCustomer && (
              <div className="space-y-5">
                <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
                  <h3 className="font-semibold text-[var(--crm-text)]">Account information</h3>
           
-                 <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                   <div>
-                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
-                     <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedCustomer.name}</dd>
+                 {editingCustomer ? (
+                   <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                     <label className="block">
+                       <span className="text-xs uppercase text-[var(--crm-text-muted)]">Name</span>
+                       <input
+                         value={editCustomerForm.name}
+                         onChange={(event) =>
+                           setEditCustomerForm((current) => ({ ...current, name: event.target.value }))
+                         }
+                         className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                       />
+                     </label>
+
+                     <label className="block">
+                       <span className="text-xs uppercase text-[var(--crm-text-muted)]">Company</span>
+                       <input
+                         value={editCustomerForm.companyName}
+                         onChange={(event) =>
+                           setEditCustomerForm((current) => ({ ...current, companyName: event.target.value }))
+                         }
+                         className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                       />
+                     </label>
+
+                     <label className="block">
+                       <span className="text-xs uppercase text-[var(--crm-text-muted)]">Email</span>
+                       <input
+                         value={editCustomerForm.email}
+                         onChange={(event) =>
+                           setEditCustomerForm((current) => ({ ...current, email: event.target.value }))
+                         }
+                         className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                       />
+                     </label>
+
+                     <label className="block">
+                       <span className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</span>
+                       <input
+                         value={editCustomerForm.phone}
+                         onChange={(event) =>
+                           setEditCustomerForm((current) => ({ ...current, phone: event.target.value }))
+                         }
+                         className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                       />
+                     </label>
+
+                     <label className="block">
+                       <span className="text-xs uppercase text-[var(--crm-text-muted)]">Type</span>
+                       <select
+                         value={editCustomerForm.customerType}
+                         onChange={(event) =>
+                           setEditCustomerForm((current) => ({
+                             ...current,
+                             customerType: event.target.value as CustomerType,
+                           }))
+                         }
+                         className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                       >
+                         <option value="COMPANY">Company</option>
+                         <option value="INDIVIDUAL">Individual</option>
+                       </select>
+                     </label>
+
+                     <div>
+                       <p className="text-xs uppercase text-[var(--crm-text-muted)]">Status</p>
+                       <div className="mt-2">
+                         <StatusBadge variant={statusVariant(selectedCustomer.status)}>
+                           {formatStatus(selectedCustomer.status)}
+                         </StatusBadge>
+                       </div>
+                     </div>
                    </div>
-          
-                   <div>
-                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Company</dt>
-                     <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                       {selectedCustomer.companyName ?? 'Independent'}
-                     </dd>
-                   </div>
-          
-                   <div>
-                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
-                     <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                       {selectedCustomer.email ?? 'No email'}
-                     </dd>
-                   </div>
-          
-                   <div>
-                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
-                     <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                       {selectedCustomer.phone ?? 'No phone'}
-                     </dd>
-                   </div>
-          
-                   <div>
-                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Type</dt>
-                     <dd className="mt-1">
-                       <StatusBadge variant={statusVariant(selectedCustomer.customerType)}>
-                         {formatStatus(selectedCustomer.customerType)}
-                       </StatusBadge>
-                     </dd>
-                   </div>
-          
-                   <div>
-                     <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
-                     <dd className="mt-1">
-                       <StatusBadge variant={statusVariant(selectedCustomer.status)}>
-                         {formatStatus(selectedCustomer.status)}
-                       </StatusBadge>
-                     </dd>
-                   </div>
-                 </dl>
+                 ) : (
+                   <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                     <div>
+                       <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
+                       <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedCustomer.name}</dd>
+                     </div>
+            
+                     <div>
+                       <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Company</dt>
+                       <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                         {selectedCustomer.companyName ?? 'Independent'}
+                       </dd>
+                     </div>
+            
+                     <div>
+                       <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
+                       <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                         {selectedCustomer.email ?? 'No email'}
+                       </dd>
+                     </div>
+            
+                     <div>
+                       <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
+                       <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                         {selectedCustomer.phone ?? 'No phone'}
+                       </dd>
+                     </div>
+            
+                     <div>
+                       <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Type</dt>
+                       <dd className="mt-1">
+                         <StatusBadge variant={statusVariant(selectedCustomer.customerType)}>
+                           {formatStatus(selectedCustomer.customerType)}
+                         </StatusBadge>
+                       </dd>
+                     </div>
+            
+                     <div>
+                       <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
+                       <dd className="mt-1">
+                         <StatusBadge variant={statusVariant(selectedCustomer.status)}>
+                           {formatStatus(selectedCustomer.status)}
+                         </StatusBadge>
+                       </dd>
+                     </div>
+                   </dl>
+                 )}
                </section>
           
                <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
