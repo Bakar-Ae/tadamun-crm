@@ -219,7 +219,7 @@ function goToNextPage() {
                   <th className="px-5 py-3 font-semibold">Company</th>
                   <th className="px-5 py-3 font-semibold">Type</th>
                   <th className="px-5 py-3 font-semibold">Status</th>
-                  <th className="px-5 py-3 text-right font-semibold">Action</th>
+                  <th className="sticky right-0 bg-[var(--crm-card-subtle)] px-5 py-3 text-right font-semibold">Action</th>
                 </tr>
               </thead>
 
@@ -278,7 +278,7 @@ function goToNextPage() {
                         </StatusBadge>
                       </td>
 
-                  <td className="px-5 py-4 text-right">
+                  <td className="sticky right-0 bg-[var(--crm-card)] px-5 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"

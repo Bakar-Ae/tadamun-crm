@@ -219,7 +219,7 @@ export function LeadsPage() {
                   <th className="px-5 py-3 font-semibold">Value</th>
                   <th className="px-5 py-3 font-semibold">Stage</th>
                   <th className="px-5 py-3 font-semibold">Owner</th>
-                  <th className="px-5 py-3 text-right font-semibold">Action</th>
+                  <th className="sticky right-0 bg-[var(--crm-card-subtle)] px-5 py-3 text-right font-semibold">Action</th>
                 </tr>
               </thead>
 
@@ -274,7 +274,7 @@ export function LeadsPage() {
                       <td className="px-5 py-4 text-[var(--crm-text-muted)]">
                         {lead.assignedToUserName ?? 'Unassigned'}
                       </td>
-                     <td className="px-5 py-4 text-right">
+                     <td className="sticky right-0 bg-[var(--crm-card)] px-5 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
+  DetailDrawer,
   EmptyState,
   GlassCard,
   PageActionButton,
@@ -72,6 +73,7 @@ export function TasksPage() {
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadTasks = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -236,7 +238,7 @@ export function TasksPage() {
                   <th className="px-5 py-3 font-semibold">Owner</th>
                   <th className="px-5 py-3 font-semibold">Related record</th>
                   <th className="px-5 py-3 font-semibold">Due</th>
-                  <th className="px-5 py-3 text-right font-semibold">Action</th>
+                  <th className="sticky right-0 bg-[var(--crm-card-subtle)] px-5 py-3 text-right font-semibold">Action</th>
                 </tr>
               </thead>
 
@@ -301,17 +303,27 @@ export function TasksPage() {
                         </div>
                       </td>
 
-                      <td className="px-5 py-4 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleComplete(task)}
-                          disabled={task.status === 'COMPLETED' || actionLoadingId === task.id}
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <CheckCircle2 size={14} />
-                          {actionLoadingId === task.id ? 'Saving...' : 'Complete'}
-                        </button>
-                      </td>
+                     <td className="sticky right-0 bg-[var(--crm-card)] px-5 py-4 text-right">
+                     <div className="flex justify-end gap-2">
+                       <button
+                         type="button"
+                         onClick={() => setSelectedTask(task)}
+                         className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
+                       >
+                         View
+                       </button>
+                   
+                       <button
+                         type="button"
+                         onClick={() => handleComplete(task)}
+                         disabled={task.status === 'COMPLETED' || actionLoadingId === task.id}
+                         className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                       >
+                         <CheckCircle2 size={14} />
+                         {actionLoadingId === task.id ? 'Saving...' : 'Complete'}
+                       </button>
+                     </div>
+                   </td> 
                     </tr>
                   ))}
 
@@ -328,6 +340,7 @@ export function TasksPage() {
                         </PageActionButton>
                       )
                     }
+                    
                   />
                 )}
               </tbody>
@@ -344,8 +357,85 @@ export function TasksPage() {
               onPageSizeChange={handlePageSizeChange}
               disabled={loading}
             />
+            
           )}
         </GlassCard>
+        <DetailDrawer
+         open={selectedTask !== null}
+         title={selectedTask?.title ?? 'Task details'}
+         description={selectedTask?.customerName ?? selectedTask?.leadName ?? 'Work item'}
+         onClose={() => setSelectedTask(null)}
+       >
+         {selectedTask && (
+           <div className="space-y-5">
+             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+               <h3 className="font-semibold text-[var(--crm-text)]">Task information</h3>
+       
+               <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                 <div>
+                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Title</dt>
+                   <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedTask.title}</dd>
+                 </div>
+       
+                 <div>
+                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</dt>
+                   <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                     {selectedTask.assignedToUserName ?? 'Unassigned'}
+                   </dd>
+                 </div>
+       
+                 <div>
+                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
+                   <dd className="mt-1">
+                     <StatusBadge variant={statusVariant(selectedTask.status)}>
+                       {formatStatus(selectedTask.status)}
+                     </StatusBadge>
+                   </dd>
+                 </div>
+       
+                 <div>
+                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Priority</dt>
+                   <dd className="mt-1">
+                     <StatusBadge variant={priorityVariant(selectedTask.priority)}>
+                       {formatStatus(selectedTask.priority)}
+                     </StatusBadge>
+                   </dd>
+                 </div>
+       
+                 <div>
+                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Related record</dt>
+                   <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                     {selectedTask.customerName ?? selectedTask.leadName ?? 'No linked record'}
+                   </dd>
+                 </div>
+       
+                 <div>
+                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Due date</dt>
+                   <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                     {formatDateTime(selectedTask.dueDate)}
+                   </dd>
+                 </div>
+               </dl>
+       
+               {selectedTask.description && (
+                 <div className="mt-5">
+                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Description</dt>
+                   <dd className="mt-2 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3 text-sm text-[var(--crm-text-muted)]">
+                     {selectedTask.description}
+                   </dd>
+                 </div>
+               )}
+             </section>
+       
+             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+               <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
+               <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
+                 Created {formatDateTime(selectedTask.createdAt)}. Last updated {formatDateTime(selectedTask.updatedAt)}.
+               </p>
+             </section>
+           </div>
+         )}
+       </DetailDrawer>
       </PageShell>
     </AppLayout>
   )
