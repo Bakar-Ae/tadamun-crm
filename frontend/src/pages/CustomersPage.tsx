@@ -23,8 +23,12 @@ import {
   StatusBadge,
   LoadingState,
   ErrorState,
-  DetailDrawer,
   PaginationBar,
+  ActivityTimeline,
+  DetailDrawer,
+  type ActivityTimelineItem,
+
+
   
 } from '../components/ui'
 import {
@@ -35,6 +39,7 @@ import {
   type CustomerType,
 } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
+import { getCustomerNotes } from '../services/noteService'
 import {formatDateTime,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
@@ -77,6 +82,8 @@ export function CustomersPage() {
     customerType: 'COMPANY' as CustomerType,
 })
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null)
+  const [customerActivity, setCustomerActivity] = useState<ActivityTimelineItem[]>([])
+  const [activityLoading, setActivityLoading] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadCustomers = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -222,6 +229,27 @@ function cancelEditingCustomer() {
     setActionLoadingId(null)
   }
 }
+function loadCustomerActivity(customerId: number) {
+  setActivityLoading(true)
+
+  getCustomerNotes(customerId, 0, 5)
+    .then((notes) => {
+      setCustomerActivity(
+        notes.content.map((note) => ({
+          id: note.id,
+          type: 'note',
+          title: 'Note added',
+          description: note.content,
+          actor: note.createdByUserName,
+          createdAt: note.createdAt,
+        })),
+      )
+    })
+    .catch(() => {
+      setCustomerActivity([])
+    })
+    .finally(() => setActivityLoading(false))
+}
 
   return (
     <AppLayout>
@@ -348,6 +376,7 @@ function cancelEditingCustomer() {
                         onClick={() => {
                          setSelectedCustomer(customer)
                          setEditingCustomer(false)
+                         loadCustomerActivity(customer.id)
                        }}
                         className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                       >
@@ -406,6 +435,7 @@ function cancelEditingCustomer() {
            onClose={() => {
              setSelectedCustomer(null)
              setEditingCustomer(false)
+             setCustomerActivity([])
            }}
            footer={
              selectedCustomer && (
@@ -577,6 +607,17 @@ function cancelEditingCustomer() {
                </section>
              </div>
            )}
+           <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+            <h3 className="font-semibold text-[var(--crm-text)]">Recent activity</h3>
+            <div className="mt-4">
+              <ActivityTimeline
+                items={customerActivity}
+                loading={activityLoading}
+                emptyTitle="No customer activity yet"
+                emptyMessage="Notes for this customer will appear here."
+              />
+            </div>
+          </section>
          </DetailDrawer>
       </PageShell>
     </AppLayout>
