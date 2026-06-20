@@ -418,13 +418,13 @@ export function TasksPage() {
                </dl>
        
                {selectedTask.description && (
-                 <div className="mt-5">
-                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Description</dt>
-                   <dd className="mt-2 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3 text-sm text-[var(--crm-text-muted)]">
-                     {selectedTask.description}
-                   </dd>
-                 </div>
-               )}
+                <div className="mt-5">
+                  <p className="text-xs uppercase text-[var(--crm-text-muted)]">Description</p>
+                  <p className="mt-2 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3 text-sm text-[var(--crm-text-muted)]">
+                    {selectedTask.description}
+                  </p>
+                </div>
+              )}
              </section>
        
              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
