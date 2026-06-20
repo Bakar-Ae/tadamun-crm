@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
+  DetailDrawer,
   EmptyState,
   GlassCard,
   PageActionButton,
@@ -26,6 +27,7 @@ import {
 import { archiveLead, getLeads, type LeadResponse } from '../services/leadService'
 import type { PageResponse } from '../services/userService'
 import {
+  formatDateTime,
   formatMoney,
   formatStatus,
   getEmptyMessage,
@@ -63,6 +65,7 @@ export function LeadsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selectedLead, setSelectedLead] = useState<LeadResponse | null>(null)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadLeads = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -271,8 +274,16 @@ export function LeadsPage() {
                       <td className="px-5 py-4 text-[var(--crm-text-muted)]">
                         {lead.assignedToUserName ?? 'Unassigned'}
                       </td>
-
-                      <td className="px-5 py-4 text-right">
+                     <td className="px-5 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedLead(lead)}
+                          className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
+                        >
+                          View
+                        </button>
+                    
                         <button
                           type="button"
                           onClick={() => handleArchive(lead)}
@@ -282,7 +293,10 @@ export function LeadsPage() {
                           <Archive size={14} />
                           {actionLoadingId === lead.id ? 'Saving...' : 'Archive'}
                         </button>
-                      </td>
+                      </div>
+                    </td>
+
+                    
                     </tr>
                   ))}
 
@@ -317,6 +331,86 @@ export function LeadsPage() {
             />
           )}
         </GlassCard>
+        <DetailDrawer
+          open={selectedLead !== null}
+          title={selectedLead?.fullName ?? 'Lead details'}
+          description={selectedLead?.companyName ?? 'Pipeline record'}
+          onClose={() => setSelectedLead(null)}
+        >
+          {selectedLead && (
+            <div className="space-y-5">
+              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <h3 className="font-semibold text-[var(--crm-text)]">Lead information</h3>
+        
+                <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedLead.fullName}</dd>
+                  </div>
+        
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Company</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedLead.companyName ?? 'No company'}
+                    </dd>
+                  </div>
+        
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedLead.email ?? 'No email'}
+                    </dd>
+                  </div>
+        
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedLead.phone ?? 'No phone'}
+                    </dd>
+                  </div>
+        
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Estimated value</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {formatMoney(selectedLead.estimatedValue)}
+                    </dd>
+                  </div>
+        
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Source</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedLead.source ?? 'Not set'}
+                    </dd>
+                  </div>
+        
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Stage</dt>
+                    <dd className="mt-1">
+                      <StatusBadge variant={statusVariant(selectedLead.status)}>
+                        {formatStatus(selectedLead.status)}
+                      </StatusBadge>
+                    </dd>
+                  </div>
+        
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedLead.assignedToUserName ?? 'Unassigned'}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+        
+              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
+                <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
+                  Created {formatDateTime(selectedLead.createdAt)}. Last updated{' '}
+                  {formatDateTime(selectedLead.updatedAt)}.
+                </p>
+              </section>
+            </div>
+          )}
+        </DetailDrawer>
       </PageShell>
     </AppLayout>
   )
