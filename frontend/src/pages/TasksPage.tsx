@@ -74,6 +74,14 @@ export function TasksPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedTask, setSelectedTask] = useState<TaskResponse | null>(null)
+  const [editingTask, setEditingTask] = useState(false)
+  const [editTaskForm, setEditTaskForm] = useState({
+    title: '',
+    description: '',
+    status: 'OPEN' as TaskResponse['status'],
+    priority: 'MEDIUM' as TaskResponse['priority'],
+    dueDate: '',
+  })
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadTasks = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -150,6 +158,60 @@ export function TasksPage() {
       setActionLoadingId(null)
     }
   }
+
+  function startEditingTask(task: TaskResponse) {
+  setSelectedTask(task)
+  setEditTaskForm({
+    title: task.title,
+    description: task.description ?? '',
+    status: task.status,
+    priority: task.priority,
+    dueDate: task.dueDate ? task.dueDate.slice(0, 16) : '',
+  })
+  setEditingTask(true)
+}
+
+function cancelEditingTask() {
+  setEditingTask(false)
+
+  if (selectedTask) {
+    setEditTaskForm({
+      title: selectedTask.title,
+      description: selectedTask.description ?? '',
+      status: selectedTask.status,
+      priority: selectedTask.priority,
+      dueDate: selectedTask.dueDate ? selectedTask.dueDate.slice(0, 16) : '',
+    })
+  }
+}
+
+async function saveTaskEdit() {
+  if (!selectedTask) return
+
+  setActionLoadingId(selectedTask.id)
+
+  try {
+    const updatedTask = await updateTask(selectedTask.id, {
+      title: editTaskForm.title.trim(),
+      description: editTaskForm.description.trim() || null,
+      status: editTaskForm.status,
+      priority: editTaskForm.priority,
+      dueDate: editTaskForm.dueDate || null,
+      assignedToUserId: selectedTask.assignedToUserId,
+      customerId: selectedTask.customerId,
+      leadId: selectedTask.leadId,
+    })
+
+    setSelectedTask(updatedTask)
+    setEditingTask(false)
+    toast.success('Task updated')
+    loadTasks(keyword)
+  } catch {
+    toast.error(getSaveErrorMessage('task'))
+  } finally {
+    setActionLoadingId(null)
+  }
+}
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
     setPage(previousPage)
@@ -307,7 +369,10 @@ export function TasksPage() {
                      <div className="flex justify-end gap-2">
                        <button
                          type="button"
-                         onClick={() => setSelectedTask(task)}
+                         onClick={() => {
+                          setSelectedTask(task)
+                          setEditingTask(false)
+                        }}
                          className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                        >
                          View
@@ -361,63 +426,184 @@ export function TasksPage() {
           )}
         </GlassCard>
         <DetailDrawer
-         open={selectedTask !== null}
-         title={selectedTask?.title ?? 'Task details'}
-         description={selectedTask?.customerName ?? selectedTask?.leadName ?? 'Work item'}
-         onClose={() => setSelectedTask(null)}
-       >
-         {selectedTask && (
-           <div className="space-y-5">
-             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
-               <h3 className="font-semibold text-[var(--crm-text)]">Task information</h3>
-       
-               <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                 <div>
-                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Title</dt>
-                   <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedTask.title}</dd>
-                 </div>
-       
-                 <div>
-                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</dt>
-                   <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                     {selectedTask.assignedToUserName ?? 'Unassigned'}
-                   </dd>
-                 </div>
-       
-                 <div>
-                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
-                   <dd className="mt-1">
-                     <StatusBadge variant={statusVariant(selectedTask.status)}>
-                       {formatStatus(selectedTask.status)}
-                     </StatusBadge>
-                   </dd>
-                 </div>
-       
-                 <div>
-                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Priority</dt>
-                   <dd className="mt-1">
-                     <StatusBadge variant={priorityVariant(selectedTask.priority)}>
-                       {formatStatus(selectedTask.priority)}
-                     </StatusBadge>
-                   </dd>
-                 </div>
-       
-                 <div>
-                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Related record</dt>
-                   <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                     {selectedTask.customerName ?? selectedTask.leadName ?? 'No linked record'}
-                   </dd>
-                 </div>
-       
-                 <div>
-                   <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Due date</dt>
-                   <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                     {formatDateTime(selectedTask.dueDate)}
-                   </dd>
-                 </div>
-               </dl>
-       
-               {selectedTask.description && (
+        open={selectedTask !== null}
+        title={selectedTask?.title ?? 'Task details'}
+        description={selectedTask?.customerName ?? selectedTask?.leadName ?? 'Work item'}
+        onClose={() => {
+          setSelectedTask(null)
+          setEditingTask(false)
+        }}
+        footer={
+          selectedTask && (
+            <div className="flex justify-end gap-2">
+              {editingTask ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={cancelEditingTask}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+                  >
+                    Cancel
+                  </button>
+      
+                  <button
+                    type="button"
+                    onClick={saveTaskEdit}
+                    disabled={actionLoadingId === selectedTask.id}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actionLoadingId === selectedTask.id ? 'Saving...' : 'Save changes'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEditingTask(selectedTask)}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                >
+                  Edit task
+                </button>
+              )}
+            </div>
+          )
+        }
+      >
+        {selectedTask && (
+          <div className="space-y-5">
+            <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+              <h3 className="font-semibold text-[var(--crm-text)]">Task information</h3>
+      
+              {editingTask ? (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="block sm:col-span-2">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Title</span>
+                    <input
+                      value={editTaskForm.title}
+                      onChange={(event) =>
+                        setEditTaskForm((current) => ({ ...current, title: event.target.value }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    />
+                  </label>
+      
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Status</span>
+                    <select
+                      value={editTaskForm.status}
+                      onChange={(event) =>
+                        setEditTaskForm((current) => ({
+                          ...current,
+                          status: event.target.value as TaskResponse['status'],
+                        }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    >
+                      <option value="OPEN">Open</option>
+                      <option value="IN_PROGRESS">In progress</option>
+                      <option value="COMPLETED">Completed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                  </label>
+      
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Priority</span>
+                    <select
+                      value={editTaskForm.priority}
+                      onChange={(event) =>
+                        setEditTaskForm((current) => ({
+                          ...current,
+                          priority: event.target.value as TaskResponse['priority'],
+                        }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    >
+                      <option value="LOW">Low</option>
+                      <option value="MEDIUM">Medium</option>
+                      <option value="HIGH">High</option>
+                      <option value="URGENT">Urgent</option>
+                    </select>
+                  </label>
+      
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Due date</span>
+                    <input
+                      type="datetime-local"
+                      value={editTaskForm.dueDate}
+                      onChange={(event) =>
+                        setEditTaskForm((current) => ({ ...current, dueDate: event.target.value }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    />
+                  </label>
+      
+                  <div>
+                    <p className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</p>
+                    <p className="mt-2 font-medium text-[var(--crm-text)]">
+                      {selectedTask.assignedToUserName ?? 'Unassigned'}
+                    </p>
+                  </div>
+      
+                  <label className="block sm:col-span-2">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Description</span>
+                    <textarea
+                      value={editTaskForm.description}
+                      onChange={(event) =>
+                        setEditTaskForm((current) => ({ ...current, description: event.target.value }))
+                      }
+                      rows={4}
+                      className="crm-focus mt-1 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 py-3 text-sm text-[var(--crm-text)]"
+                    />
+                  </label>
+                </div>
+              ) : (
+                <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Title</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedTask.title}</dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedTask.assignedToUserName ?? 'Unassigned'}
+                    </dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
+                    <dd className="mt-1">
+                      <StatusBadge variant={statusVariant(selectedTask.status)}>
+                        {formatStatus(selectedTask.status)}
+                      </StatusBadge>
+                    </dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Priority</dt>
+                    <dd className="mt-1">
+                      <StatusBadge variant={priorityVariant(selectedTask.priority)}>
+                        {formatStatus(selectedTask.priority)}
+                      </StatusBadge>
+                    </dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Related record</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedTask.customerName ?? selectedTask.leadName ?? 'No linked record'}
+                    </dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Due date</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {formatDateTime(selectedTask.dueDate)}
+                    </dd>
+                  </div>
+                </dl>
+              )}
+      
+              {!editingTask && selectedTask.description && (
                 <div className="mt-5">
                   <p className="text-xs uppercase text-[var(--crm-text-muted)]">Description</p>
                   <p className="mt-2 rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3 text-sm text-[var(--crm-text-muted)]">
@@ -425,17 +611,17 @@ export function TasksPage() {
                   </p>
                 </div>
               )}
-             </section>
-       
-             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
-               <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
-               <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
-                 Created {formatDateTime(selectedTask.createdAt)}. Last updated {formatDateTime(selectedTask.updatedAt)}.
-               </p>
-             </section>
-           </div>
-         )}
-       </DetailDrawer>
+            </section>
+      
+            <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+              <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
+              <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
+                Created {formatDateTime(selectedTask.createdAt)}. Last updated {formatDateTime(selectedTask.updatedAt)}.
+              </p>
+            </section>
+          </div>
+        )}
+      </DetailDrawer>
       </PageShell>
     </AppLayout>
   )
