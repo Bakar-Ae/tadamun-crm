@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import { Clock, Database, ShieldCheck, UserRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
-import { EmptyState, GlassCard, PageShell, StatTile, StatusBadge, LoadingState } from '../components/ui'
+import { EmptyState, GlassCard, PageShell, StatTile, StatusBadge, LoadingState,PaginationBar, } from '../components/ui'
 import { getAuditLogs, type AuditLogResponse } from '../services/auditLogService'
 import type { PageResponse } from '../services/userService'
 import {
@@ -54,12 +54,14 @@ function auditVariant(action: string) {
 export function AuditLogsPage() {
   const [logs, setLogs] = useState<PageResponse<AuditLogResponse> | null>(null)
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(0)
+  const pageSize = 10
   const [error, setError] = useState('')
 
   useEffect(() => {
     let ignore = false
 
-    getAuditLogs()
+    getAuditLogs(0,pageSize)
       .then((data) => {
         if (!ignore) {
           setLogs(data)
@@ -80,6 +82,22 @@ export function AuditLogsPage() {
       ignore = true
     }
   }, [])
+
+  function goToPreviousPage() {
+   const previousPage = Math.max(page - 1, 0)
+   setPage(previousPage)
+   getAuditLogs(previousPage, pageSize)
+     .then(setLogs)
+     .catch(() => setError(getLoadErrorMessage('audit history')))
+}
+
+  function goToNextPage() {
+   const nextPage = page + 1
+   setPage(nextPage)
+   getAuditLogs(nextPage, pageSize)
+     .then(setLogs)
+     .catch(() => setError(getLoadErrorMessage('audit history')))
+}
 
   const visibleLogs = logs?.content ?? []
   const actorCount = new Set(visibleLogs.map((log) => log.actorUserId).filter(Boolean)).size
@@ -193,6 +211,17 @@ export function AuditLogsPage() {
               </tbody>
             </table>
           </div>
+          {logs && (
+        <PaginationBar
+          page={page}
+          totalPages={logs.totalPages}
+          totalElements={logs.totalElements}
+          pageSize={pageSize}
+          onPrevious={goToPreviousPage}
+          onNext={goToNextPage}
+          disabled={loading}
+        />
+      )}
         </GlassCard>
       </PageShell>
     </AppLayout>

@@ -12,11 +12,11 @@ export type AuditLogResponse = {
   createdAt: string
 }
 
-export async function getAuditLogs(page = 0, size = 10) {
+export async function getAuditLogs(pageNumber = 0, pageSize= 10) {
   const response = await api.get<PageResponse<AuditLogResponse>>('/audit-logs', {
     params: {
-      page,
-      size,
+      page: pageNumber,
+      size: pageSize,
       sort: 'id,desc',
     },
   })
