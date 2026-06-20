@@ -20,11 +20,13 @@ import {
 import {
   archiveContact,
   getContacts,
+  updateContact,
   type ContactResponse,
+  type ContactStatus,
 } from '../services/contactService'
 import type { PageResponse } from '../services/userService'
 import {formatDateTime ,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
-import { getLoadErrorMessage } from '../lib/errors'
+import { getLoadErrorMessage,getSaveErrorMessage} from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
 
 const containerAnimation: Variants = {
@@ -57,6 +59,14 @@ export function ContactsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selectedContact, setSelectedContact] = useState<ContactResponse | null>(null)
+  const [editingContact, setEditingContact] = useState(false)
+  const [editContactForm, setEditContactForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    position: '',
+    status: 'ACTIVE' as ContactStatus,
+  })
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadContacts = useCallback((search: string, pageNumber = page, size = pageSize) => {
@@ -126,6 +136,57 @@ export function ContactsPage() {
       setActionLoadingId(null)
     }
   }
+
+  function startEditingContact(contact: ContactResponse) {
+  setSelectedContact(contact)
+  setEditContactForm({
+    fullName: contact.fullName,
+    email: contact.email ?? '',
+    phone: contact.phone ?? '',
+    position: contact.position ?? '',
+    status: contact.status,
+  })
+  setEditingContact(true)
+}
+
+function cancelEditingContact() {
+  setEditingContact(false)
+
+  if (selectedContact) {
+    setEditContactForm({
+      fullName: selectedContact.fullName,
+      email: selectedContact.email ?? '',
+      phone: selectedContact.phone ?? '',
+      position: selectedContact.position ?? '',
+      status: selectedContact.status,
+    })
+  }
+}
+
+async function saveContactEdit() {
+  if (!selectedContact) return
+
+  setActionLoadingId(selectedContact.id)
+
+  try {
+    const updatedContact = await updateContact(selectedContact.id, {
+      fullName: editContactForm.fullName.trim(),
+      email: editContactForm.email.trim() || null,
+      phone: editContactForm.phone.trim() || null,
+      position: editContactForm.position.trim() || null,
+      status: editContactForm.status,
+    })
+
+    setSelectedContact(updatedContact)
+    setEditingContact(false)
+    toast.success(`${updatedContact.fullName} updated`)
+    loadContacts(keyword)
+  } catch {
+    toast.error(getSaveErrorMessage('contact'))
+  } finally {
+    setActionLoadingId(null)
+  }
+}
 
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
@@ -269,7 +330,10 @@ export function ContactsPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => setSelectedContact(contact)}
+                          onClick={() => {
+                            setSelectedContact(contact)
+                            setEditingContact(false)
+                          }}
                           className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                         >
                           View
@@ -320,60 +384,165 @@ export function ContactsPage() {
             />
           )}
         </GlassCard>
-        <DetailDrawer
+       <DetailDrawer
         open={selectedContact !== null}
         title={selectedContact?.fullName ?? 'Contact details'}
         description={selectedContact?.customerName ?? 'Customer contact'}
-        onClose={() => setSelectedContact(null)}
+        onClose={() => {
+          setSelectedContact(null)
+          setEditingContact(false)
+        }}
+        footer={
+          selectedContact && (
+            <div className="flex justify-end gap-2">
+              {editingContact ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={cancelEditingContact}
+                    className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+                  >
+                    Cancel
+                  </button>
+      
+                  <button
+                    type="button"
+                    onClick={saveContactEdit}
+                    disabled={actionLoadingId === selectedContact.id}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actionLoadingId === selectedContact.id ? 'Saving...' : 'Save changes'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => startEditingContact(selectedContact)}
+                  className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                >
+                  Edit contact
+                </button>
+              )}
+            </div>
+          )
+        }
       >
         {selectedContact && (
           <div className="space-y-5">
             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
               <h3 className="font-semibold text-[var(--crm-text)]">Contact information</h3>
       
-              <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
-                  <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedContact.fullName}</dd>
-                </div>
+              {editingContact ? (
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Name</span>
+                    <input
+                      value={editContactForm.fullName}
+                      onChange={(event) =>
+                        setEditContactForm((current) => ({ ...current, fullName: event.target.value }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    />
+                  </label>
       
-                <div>
-                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Customer</dt>
-                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                    {selectedContact.customerName}
-                  </dd>
-                </div>
+                  <div>
+                    <p className="text-xs uppercase text-[var(--crm-text-muted)]">Customer</p>
+                    <p className="mt-2 font-medium text-[var(--crm-text)]">{selectedContact.customerName}</p>
+                  </div>
       
-                <div>
-                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
-                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                    {selectedContact.email ?? 'No email'}
-                  </dd>
-                </div>
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Email</span>
+                    <input
+                      value={editContactForm.email}
+                      onChange={(event) =>
+                        setEditContactForm((current) => ({ ...current, email: event.target.value }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    />
+                  </label>
       
-                <div>
-                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
-                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                    {selectedContact.phone ?? 'No phone'}
-                  </dd>
-                </div>
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</span>
+                    <input
+                      value={editContactForm.phone}
+                      onChange={(event) =>
+                        setEditContactForm((current) => ({ ...current, phone: event.target.value }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    />
+                  </label>
       
-                <div>
-                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Role</dt>
-                  <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                    {selectedContact.position ?? 'No role set'}
-                  </dd>
-                </div>
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Role</span>
+                    <input
+                      value={editContactForm.position}
+                      onChange={(event) =>
+                        setEditContactForm((current) => ({ ...current, position: event.target.value }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    />
+                  </label>
       
-                <div>
-                  <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
-                  <dd className="mt-1">
-                    <StatusBadge variant={statusVariant(selectedContact.status)}>
-                      {formatStatus(selectedContact.status)}
-                    </StatusBadge>
-                  </dd>
+                  <label className="block">
+                    <span className="text-xs uppercase text-[var(--crm-text-muted)]">Status</span>
+                    <select
+                      value={editContactForm.status}
+                      onChange={(event) =>
+                        setEditContactForm((current) => ({
+                          ...current,
+                          status: event.target.value as ContactStatus,
+                        }))
+                      }
+                      className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                    >
+                      <option value="ACTIVE">Active</option>
+                      <option value="ARCHIVED">Archived</option>
+                    </select>
+                  </label>
                 </div>
-              </dl>
+              ) : (
+                <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedContact.fullName}</dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Customer</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedContact.customerName}</dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedContact.email ?? 'No email'}
+                    </dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedContact.phone ?? 'No phone'}
+                    </dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Role</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedContact.position ?? 'No role set'}
+                    </dd>
+                  </div>
+      
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
+                    <dd className="mt-1">
+                      <StatusBadge variant={statusVariant(selectedContact.status)}>
+                        {formatStatus(selectedContact.status)}
+                      </StatusBadge>
+                    </dd>
+                  </div>
+                </dl>
+              )}
             </section>
       
             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
