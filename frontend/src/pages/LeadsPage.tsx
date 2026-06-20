@@ -24,7 +24,7 @@ import {
   ErrorState,
   PaginationBar,
 } from '../components/ui'
-import { archiveLead, getLeads, type LeadResponse } from '../services/leadService'
+import { archiveLead, getLeads, updateLead, type LeadResponse, type LeadStatus,} from '../services/leadService'
 import type { PageResponse } from '../services/userService'
 import {
   formatDateTime,
@@ -65,6 +65,16 @@ export function LeadsPage() {
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [editingLead, setEditingLead] = useState(false)
+  const [editLeadForm, setEditLeadForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    companyName: '',
+    source: '',
+    status: 'NEW' as LeadStatus,
+    estimatedValue: '',
+})
   const [selectedLead, setSelectedLead] = useState<LeadResponse | null>(null)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
@@ -136,6 +146,67 @@ export function LeadsPage() {
       setActionLoadingId(null)
     }
   }
+  function startEditingLead(lead: LeadResponse) {
+  setSelectedLead(lead)
+  setEditLeadForm({
+    fullName: lead.fullName,
+    email: lead.email ?? '',
+    phone: lead.phone ?? '',
+    companyName: lead.companyName ?? '',
+    source: lead.source ?? '',
+    status: lead.status,
+    estimatedValue: lead.estimatedValue ? String(lead.estimatedValue) : '',
+  })
+  setEditingLead(true)
+}
+
+function cancelEditingLead() {
+  setEditingLead(false)
+
+  if (selectedLead) {
+    setEditLeadForm({
+      fullName: selectedLead.fullName,
+      email: selectedLead.email ?? '',
+      phone: selectedLead.phone ?? '',
+      companyName: selectedLead.companyName ?? '',
+      source: selectedLead.source ?? '',
+      status: selectedLead.status,
+      estimatedValue: selectedLead.estimatedValue ? String(selectedLead.estimatedValue) : '',
+    })
+  }
+}
+
+async function saveLeadEdit() {
+  if (!selectedLead) {
+    return
+  }
+
+  setActionLoadingId(selectedLead.id)
+
+  try {
+    const updatedLead = await updateLead(selectedLead.id, {
+      fullName: editLeadForm.fullName.trim(),
+      email: editLeadForm.email.trim() || null,
+      phone: editLeadForm.phone.trim() || null,
+      companyName: editLeadForm.companyName.trim() || null,
+      source: editLeadForm.source.trim() || null,
+      status: editLeadForm.status,
+      estimatedValue: editLeadForm.estimatedValue
+        ? Number(editLeadForm.estimatedValue)
+        : null,
+      assignedToUserId: selectedLead.assignedToUserId,
+    })
+
+    setSelectedLead(updatedLead)
+    setEditingLead(false)
+    toast.success(`${updatedLead.fullName} updated`)
+    loadLeads(keyword)
+  } catch {
+    toast.error(getSaveErrorMessage('lead'))
+  } finally {
+    setActionLoadingId(null)
+  }
+}
 
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
@@ -278,7 +349,10 @@ export function LeadsPage() {
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => setSelectedLead(lead)}
+                          onClick={() => {
+                           setSelectedLead(lead)
+                           setEditingLead(false)
+                         }}
                           className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                         >
                           View
@@ -335,70 +409,204 @@ export function LeadsPage() {
           open={selectedLead !== null}
           title={selectedLead?.fullName ?? 'Lead details'}
           description={selectedLead?.companyName ?? 'Pipeline record'}
-          onClose={() => setSelectedLead(null)}
+          onClose={() => {
+            setSelectedLead(null)
+            setEditingLead(false)
+          }}
+          footer={
+            selectedLead && (
+              <div className="flex justify-end gap-2">
+                {editingLead ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={cancelEditingLead}
+                      className="inline-flex h-10 items-center justify-center rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={saveLeadEdit}
+                      disabled={actionLoadingId === selectedLead.id}
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actionLoadingId === selectedLead.id ? 'Saving...' : 'Save changes'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => startEditingLead(selectedLead)}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                  >
+                    Edit lead
+                  </button>
+                )}
+              </div>
+            )
+          }
         >
           {selectedLead && (
             <div className="space-y-5">
               <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
                 <h3 className="font-semibold text-[var(--crm-text)]">Lead information</h3>
         
-                <dl className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
-                    <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedLead.fullName}</dd>
+                {editingLead ? (
+                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <label className="block">
+                      <span className="text-xs uppercase text-[var(--crm-text-muted)]">Name</span>
+                      <input
+                        value={editLeadForm.fullName}
+                        onChange={(event) =>
+                          setEditLeadForm((current) => ({ ...current, fullName: event.target.value }))
+                        }
+                        className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs uppercase text-[var(--crm-text-muted)]">Company</span>
+                      <input
+                        value={editLeadForm.companyName}
+                        onChange={(event) =>
+                          setEditLeadForm((current) => ({ ...current, companyName: event.target.value }))
+                        }
+                        className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs uppercase text-[var(--crm-text-muted)]">Email</span>
+                      <input
+                        value={editLeadForm.email}
+                        onChange={(event) =>
+                          setEditLeadForm((current) => ({ ...current, email: event.target.value }))
+                        }
+                        className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</span>
+                      <input
+                        value={editLeadForm.phone}
+                        onChange={(event) =>
+                          setEditLeadForm((current) => ({ ...current, phone: event.target.value }))
+                        }
+                        className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs uppercase text-[var(--crm-text-muted)]">Estimated value</span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editLeadForm.estimatedValue}
+                        onChange={(event) =>
+                          setEditLeadForm((current) => ({ ...current, estimatedValue: event.target.value }))
+                        }
+                        className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs uppercase text-[var(--crm-text-muted)]">Source</span>
+                      <input
+                        value={editLeadForm.source}
+                        onChange={(event) =>
+                          setEditLeadForm((current) => ({ ...current, source: event.target.value }))
+                        }
+                        className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs uppercase text-[var(--crm-text-muted)]">Stage</span>
+                      <select
+                        value={editLeadForm.status}
+                        onChange={(event) =>
+                          setEditLeadForm((current) => ({ ...current, status: event.target.value as LeadStatus }))
+                        }
+                        className="crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+                      >
+                        <option value="NEW">New</option>
+                        <option value="CONTACTED">Contacted</option>
+                        <option value="QUALIFIED">Qualified</option>
+                        <option value="LOST">Lost</option>
+                        <option value="CONVERTED">Converted</option>
+                        <option value="ARCHIVED">Archived</option>
+                      </select>
+                    </label>
+
+                    <div>
+                      <p className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</p>
+                      <p className="mt-2 font-medium text-[var(--crm-text)]">
+                        {selectedLead.assignedToUserName ?? 'Unassigned'}
+                      </p>
+                    </div>
                   </div>
-        
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Company</dt>
-                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                      {selectedLead.companyName ?? 'No company'}
-                    </dd>
-                  </div>
-        
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
-                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                      {selectedLead.email ?? 'No email'}
-                    </dd>
-                  </div>
-        
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
-                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                      {selectedLead.phone ?? 'No phone'}
-                    </dd>
-                  </div>
-        
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Estimated value</dt>
-                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                      {formatMoney(selectedLead.estimatedValue)}
-                    </dd>
-                  </div>
-        
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Source</dt>
-                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                      {selectedLead.source ?? 'Not set'}
-                    </dd>
-                  </div>
-        
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Stage</dt>
-                    <dd className="mt-1">
-                      <StatusBadge variant={statusVariant(selectedLead.status)}>
-                        {formatStatus(selectedLead.status)}
-                      </StatusBadge>
-                    </dd>
-                  </div>
-        
-                  <div>
-                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</dt>
-                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
-                      {selectedLead.assignedToUserName ?? 'Unassigned'}
-                    </dd>
-                  </div>
-                </dl>
+                ) : (
+                  <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Name</dt>
+                      <dd className="mt-1 font-medium text-[var(--crm-text)]">{selectedLead.fullName}</dd>
+                    </div>
+          
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Company</dt>
+                      <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                        {selectedLead.companyName ?? 'No company'}
+                      </dd>
+                    </div>
+          
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Email</dt>
+                      <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                        {selectedLead.email ?? 'No email'}
+                      </dd>
+                    </div>
+          
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Phone</dt>
+                      <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                        {selectedLead.phone ?? 'No phone'}
+                      </dd>
+                    </div>
+          
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Estimated value</dt>
+                      <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                        {formatMoney(selectedLead.estimatedValue)}
+                      </dd>
+                    </div>
+          
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Source</dt>
+                      <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                        {selectedLead.source ?? 'Not set'}
+                      </dd>
+                    </div>
+          
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Stage</dt>
+                      <dd className="mt-1">
+                        <StatusBadge variant={statusVariant(selectedLead.status)}>
+                          {formatStatus(selectedLead.status)}
+                        </StatusBadge>
+                      </dd>
+                    </div>
+          
+                    <div>
+                      <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</dt>
+                      <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                        {selectedLead.assignedToUserName ?? 'Unassigned'}
+                      </dd>
+                    </div>
+                  </dl>
+                )}
               </section>
         
               <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
