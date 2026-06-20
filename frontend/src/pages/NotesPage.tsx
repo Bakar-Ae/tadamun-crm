@@ -7,13 +7,14 @@ import {
   GlassCard,
   PageActionButton,
   PageShell,
-  SearchPanel,
   StatTile,
   StatusBadge,
   LoadingState,
   ErrorState,
 } from '../components/ui'
 import { getCustomerNotes, getLeadNotes, type NoteResponse } from '../services/noteService'
+import { getCustomers, type CustomerResponse } from '../services/customerService'
+import { getLeads, type LeadResponse } from '../services/leadService'
 import type { PageResponse } from '../services/userService'
 import { formatDateTime } from '../lib/formatters'
 import { getLoadErrorMessage } from '../lib/errors'
@@ -40,6 +41,15 @@ const cardAnimation: Variants = {
     },
   },
 }
+function formatCustomerOption(customer: CustomerResponse) {
+  const detail = customer.companyName || customer.email || customer.phone
+  return detail ? `${customer.name} - ${detail}` : customer.name
+}
+
+function formatLeadOption(lead: LeadResponse) {
+  const detail = lead.companyName || lead.email || lead.source
+  return detail ? `${lead.fullName} - ${detail}` : lead.fullName
+}
 
 export function NotesPage() {
   const [notes, setNotes] = useState<PageResponse<NoteResponse> | null>(null)
@@ -48,6 +58,9 @@ export function NotesPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [hasLoaded, setHasLoaded] = useState(false)
+  const [customerOptions, setCustomerOptions] = useState<CustomerResponse[]>([])
+  const [leadOptions, setLeadOptions] = useState<LeadResponse[]>([])
+  const [optionsLoading, setOptionsLoading] = useState(true)
 
   function loadNotes(type = targetType, rawId = targetId) {
     const id = Number(rawId)
@@ -70,6 +83,34 @@ export function NotesPage() {
       .catch(() => setError(getLoadErrorMessage('notes')))
       .finally(() => setLoading(false))
   }
+  useEffect(() => {
+  let ignore = false
+
+  Promise.all([
+    getCustomers(0, 50, ''),
+    getLeads(0, 50, ''),
+  ])
+    .then(([customers, leads]) => {
+      if (!ignore) {
+        setCustomerOptions(customers.content)
+        setLeadOptions(leads.content)
+      }
+    })
+    .catch(() => {
+      if (!ignore) {
+        setError('Could not load customers and leads.')
+      }
+    })
+    .finally(() => {
+      if (!ignore) {
+        setOptionsLoading(false)
+      }
+    })
+
+  return () => {
+    ignore = true
+  }
+}, [])
 
   useEffect(() => {
     function refreshAfterCreate() {
@@ -128,23 +169,72 @@ export function NotesPage() {
           </motion.div>
         </motion.section>
 
-        <SearchPanel
-          value={targetId}
-          onChange={setTargetId}
-          onSubmit={handleSubmit}
-          placeholder="Enter customer or lead number"
-          submitLabel="Load notes"
-        >
-          <select
-            value={targetType}
-            onChange={(event) => setTargetType(event.target.value as 'customer' | 'lead')}
-            aria-label="Note record type"
-            className="crm-focus h-11 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] shadow-sm transition focus:border-[var(--crm-primary)]"
+
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-3xl border border-[var(--crm-border)] bg-[var(--crm-card)] p-5 shadow-[var(--crm-shadow-soft)]"
+      >
+        <div className="grid gap-4 md:grid-cols-[180px_1fr_auto] md:items-end">
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--crm-text-muted)]">
+              Record type
+            </span>
+            <select
+              value={targetType}
+              onChange={(event) => {
+                setTargetType(event.target.value as 'customer' | 'lead')
+                setTargetId('')
+                setNotes(null)
+                setHasLoaded(false)
+              }}
+              className="crm-focus mt-2 h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+            >
+              <option value="customer">Customer</option>
+              <option value="lead">Lead</option>
+            </select>
+          </label>
+      
+          <label className="block">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--crm-text-muted)]">
+              {targetType === 'customer' ? 'Customer' : 'Lead'}
+            </span>
+            <select
+              value={targetId}
+              onChange={(event) => setTargetId(event.target.value)}
+              className="crm-focus mt-2 h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)]"
+            >
+              <option value="">
+                {optionsLoading
+                  ? 'Loading records...'
+                  : targetType === 'customer'
+                    ? 'Select customer'
+                    : 'Select lead'}
+              </option>
+      
+              {targetType === 'customer'
+                ? customerOptions.map((customer) => (
+                    <option key={customer.id} value={String(customer.id)}>
+                      {formatCustomerOption(customer)}
+                    </option>
+                  ))
+                : leadOptions.map((lead) => (
+                    <option key={lead.id} value={String(lead.id)}>
+                      {formatLeadOption(lead)}
+                    </option>
+                  ))}
+            </select>
+          </label>
+      
+          <button
+            type="submit"
+            disabled={!targetId || optionsLoading}
+            className="crm-primary-action h-11 rounded-2xl px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <option value="customer">Customer</option>
-            <option value="lead">Lead</option>
-          </select>
-        </SearchPanel>
+            Load notes
+          </button>
+        </div>
+      </form>
+    
 
         {error && <ErrorState message={error} onRetry={() => loadNotes()} />}
 
@@ -182,7 +272,7 @@ export function NotesPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm leading-6 text-[var(--crm-text)]">{note.content}</p>
                       <p className="mt-3 text-xs text-[var(--crm-text-muted)]">
-                        {note.createdByUserName} · {formatDateTime(note.createdAt)}
+                        {note.createdByUserName} - {formatDateTime(note.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -197,7 +287,7 @@ export function NotesPage() {
                   message={
                     hasLoaded
                       ? 'Add a note when there is a useful customer conversation to remember.'
-                      : 'Select customer or lead, enter its ID, then load the note history.'
+                      : 'Choose a customer or lead, then load the note history.'
                   }
                   action={
                     <PageActionButton icon={Plus} onClick={() => openQuickCreate('note')}>
