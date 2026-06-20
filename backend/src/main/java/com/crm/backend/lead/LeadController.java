@@ -53,4 +53,9 @@ public class LeadController {
     public ResponseEntity<LeadResponse> archiveLead(@PathVariable Long id) {
         return ResponseEntity.ok(leadService.archiveLead(id));
     }
+
+    @PatchMapping("/{id}/convert")
+    public ResponseEntity<LeadResponse> convertLead(@PathVariable Long id) {
+        return ResponseEntity.ok(leadService.convertLead(id));
+    }
 }

@@ -4,9 +4,11 @@ import toast from 'react-hot-toast'
 import {
   Archive,
   BriefcaseBusiness,
+  CheckCircle2,
   DollarSign,
   Mail,
   Plus,
+  RotateCcw,
   Target,
   UserRound,
   UsersRound,
@@ -26,7 +28,7 @@ import {
   PaginationBar,
   type ActivityTimelineItem,
 } from '../components/ui'
-import { archiveLead, getLeads, updateLead, type LeadResponse, type LeadStatus,} from '../services/leadService'
+import { archiveLead, convertLead, getLeads, updateLead, type LeadResponse, type LeadStatus,} from '../services/leadService'
 import { getLeadNotes } from '../services/noteService'
 import type { PageResponse } from '../services/userService'
 import {
@@ -142,8 +144,64 @@ export function LeadsPage() {
     setActionLoadingId(lead.id)
 
     try {
-      await archiveLead(lead.id)
+      const archivedLead = await archiveLead(lead.id)
       toast.success(`${lead.fullName} archived`)
+      if (selectedLead?.id === archivedLead.id) {
+        setSelectedLead(archivedLead)
+      }
+      loadLeads(keyword)
+    } catch {
+      toast.error(getSaveErrorMessage('lead'))
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  async function handleRestore(lead: LeadResponse) {
+    if (!window.confirm(`Restore ${lead.fullName} to the active pipeline?`)) {
+      return
+    }
+
+    setActionLoadingId(lead.id)
+
+    try {
+      const restoredLead = await updateLead(lead.id, {
+        fullName: lead.fullName,
+        email: lead.email,
+        phone: lead.phone,
+        companyName: lead.companyName,
+        source: lead.source,
+        status: 'NEW',
+        estimatedValue: lead.estimatedValue,
+        assignedToUserId: lead.assignedToUserId,
+      })
+
+      toast.success(`${restoredLead.fullName} restored`)
+      if (selectedLead?.id === restoredLead.id) {
+        setSelectedLead(restoredLead)
+      }
+      loadLeads(keyword)
+    } catch {
+      toast.error(getSaveErrorMessage('lead'))
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  async function handleConvert(lead: LeadResponse) {
+    if (!window.confirm(`Convert ${lead.fullName} into a customer account?`)) {
+      return
+    }
+
+    setActionLoadingId(lead.id)
+
+    try {
+      const convertedLead = await convertLead(lead.id)
+      toast.success(`${convertedLead.fullName} converted to customer`)
+      if (selectedLead?.id === convertedLead.id) {
+        setSelectedLead(convertedLead)
+      }
+      setEditingLead(false)
       loadLeads(keyword)
     } catch {
       toast.error(getSaveErrorMessage('lead'))
@@ -386,15 +444,39 @@ function loadLeadActivity(leadId: number) {
                           View
                         </button>
                     
-                        <button
-                          type="button"
-                          onClick={() => handleArchive(lead)}
-                          disabled={lead.status === 'ARCHIVED' || actionLoadingId === lead.id}
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <Archive size={14} />
-                          {actionLoadingId === lead.id ? 'Saving...' : 'Archive'}
-                        </button>
+                        {lead.status !== 'CONVERTED' && lead.status !== 'ARCHIVED' && (
+                          <button
+                            type="button"
+                            onClick={() => handleConvert(lead)}
+                            disabled={actionLoadingId === lead.id}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <CheckCircle2 size={14} />
+                            {actionLoadingId === lead.id ? 'Saving...' : 'Convert'}
+                          </button>
+                        )}
+
+                        {lead.status === 'ARCHIVED' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleRestore(lead)}
+                            disabled={actionLoadingId === lead.id}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <RotateCcw size={14} />
+                            {actionLoadingId === lead.id ? 'Saving...' : 'Restore'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleArchive(lead)}
+                            disabled={lead.status === 'CONVERTED' || actionLoadingId === lead.id}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Archive size={14} />
+                            {actionLoadingId === lead.id ? 'Saving...' : 'Archive'}
+                          </button>
+                        )}
                       </div>
                     </td>
 
@@ -465,13 +547,49 @@ function loadLeadActivity(leadId: number) {
                     </button>
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => startEditingLead(selectedLead)}
-                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
-                  >
-                    Edit lead
-                  </button>
+                  <>
+                    {selectedLead.status !== 'CONVERTED' && selectedLead.status !== 'ARCHIVED' && (
+                      <button
+                        type="button"
+                        onClick={() => handleConvert(selectedLead)}
+                        disabled={actionLoadingId === selectedLead.id}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <CheckCircle2 size={15} />
+                        Convert
+                      </button>
+                    )}
+
+                    {selectedLead.status === 'ARCHIVED' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleRestore(selectedLead)}
+                        disabled={actionLoadingId === selectedLead.id}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <RotateCcw size={15} />
+                        Restore
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleArchive(selectedLead)}
+                        disabled={selectedLead.status === 'CONVERTED' || actionLoadingId === selectedLead.id}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <Archive size={15} />
+                        Archive
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => startEditingLead(selectedLead)}
+                      className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                    >
+                      Edit lead
+                    </button>
+                  </>
                 )}
               </div>
             )
@@ -634,6 +752,15 @@ function loadLeadActivity(leadId: number) {
                         {selectedLead.assignedToUserName ?? 'Unassigned'}
                       </dd>
                     </div>
+
+                    {selectedLead.convertedCustomerId && (
+                      <div>
+                        <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Converted customer</dt>
+                        <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                          Customer #{selectedLead.convertedCustomerId}
+                        </dd>
+                      </div>
+                    )}
                   </dl>
                 )}
               </section>

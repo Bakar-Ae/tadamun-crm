@@ -8,6 +8,7 @@ import {
   Mail,
   Phone,
   Plus,
+  RotateCcw,
   UserRound,
   UsersRound,
   
@@ -143,8 +144,40 @@ export function CustomersPage() {
     setActionLoadingId(customer.id)
 
     try {
-      await archiveCustomer(customer.id)
+      const archivedCustomer = await archiveCustomer(customer.id)
       toast.success(`${customer.name} archived`)
+      if (selectedCustomer?.id === archivedCustomer.id) {
+        setSelectedCustomer(archivedCustomer)
+      }
+      loadCustomers(keyword)
+    } catch {
+      toast.error(getSaveErrorMessage('customer'))
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  async function handleRestore(customer: CustomerResponse) {
+    if (!window.confirm(`Restore ${customer.name} to active accounts?`)) {
+      return
+    }
+
+    setActionLoadingId(customer.id)
+
+    try {
+      const restoredCustomer = await updateCustomer(customer.id, {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        companyName: customer.companyName,
+        customerType: customer.customerType,
+        status: 'ACTIVE',
+      })
+
+      toast.success(`${restoredCustomer.name} restored`)
+      if (selectedCustomer?.id === restoredCustomer.id) {
+        setSelectedCustomer(restoredCustomer)
+      }
       loadCustomers(keyword)
     } catch {
       toast.error(getSaveErrorMessage('customer'))
@@ -383,15 +416,27 @@ function loadCustomerActivity(customerId: number) {
                         View
                       </button>
                   
-                      <button
-                        type="button"
-                        onClick={() => handleArchive(customer)}
-                        disabled={customer.status !== 'ACTIVE' || actionLoadingId === customer.id}
-                        className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <Archive size={14} />
-                        {actionLoadingId === customer.id ? 'Saving...' : 'Archive'}
-                      </button>
+                      {customer.status === 'ACTIVE' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleArchive(customer)}
+                          disabled={actionLoadingId === customer.id}
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <Archive size={14} />
+                          {actionLoadingId === customer.id ? 'Saving...' : 'Archive'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleRestore(customer)}
+                          disabled={actionLoadingId === customer.id}
+                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <RotateCcw size={14} />
+                          {actionLoadingId === customer.id ? 'Saving...' : 'Restore'}
+                        </button>
+                      )}
                     </div>
                      </td>
                     </tr>
@@ -460,13 +505,36 @@ function loadCustomerActivity(customerId: number) {
                      </button>
                    </>
                  ) : (
-                   <button
-                     type="button"
-                     onClick={() => startEditingCustomer(selectedCustomer)}
-                     className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
-                   >
-                     Edit customer
-                   </button>
+                   <>
+                     {selectedCustomer.status === 'ACTIVE' ? (
+                       <button
+                         type="button"
+                         onClick={() => handleArchive(selectedCustomer)}
+                         disabled={actionLoadingId === selectedCustomer.id}
+                         className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                       >
+                         <Archive size={15} />
+                         Archive
+                       </button>
+                     ) : (
+                       <button
+                         type="button"
+                         onClick={() => handleRestore(selectedCustomer)}
+                         disabled={actionLoadingId === selectedCustomer.id}
+                         className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                       >
+                         <RotateCcw size={15} />
+                         Restore
+                       </button>
+                     )}
+                     <button
+                       type="button"
+                       onClick={() => startEditingCustomer(selectedCustomer)}
+                       className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                     >
+                       Edit customer
+                     </button>
+                   </>
                  )}
                </div>
              )

@@ -60,3 +60,8 @@ export async function archiveLead(id: number) {
   const response = await api.patch<LeadResponse>(`/leads/${id}/archive`)
   return response.data
 }
+
+export async function convertLead(id: number) {
+  const response = await api.patch<LeadResponse>(`/leads/${id}/convert`)
+  return response.data
+}

@@ -140,7 +140,7 @@ export function TasksPage() {
     setActionLoadingId(task.id)
 
     try {
-      await updateTask(task.id, {
+      const updatedTask = await updateTask(task.id, {
         title: task.title,
         description: task.description,
         status: 'COMPLETED',
@@ -151,6 +151,9 @@ export function TasksPage() {
         leadId: task.leadId,
       })
       toast.success('Task completed')
+      if (selectedTask?.id === updatedTask.id) {
+        setSelectedTask(updatedTask)
+      }
       loadTasks(keyword)
     } catch {
       toast.error(getSaveErrorMessage('task'))
@@ -456,13 +459,27 @@ async function saveTaskEdit() {
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => startEditingTask(selectedTask)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
-                >
-                  Edit task
-                </button>
+                <>
+                  {selectedTask.status !== 'COMPLETED' && selectedTask.status !== 'CANCELLED' && (
+                    <button
+                      type="button"
+                      onClick={() => handleComplete(selectedTask)}
+                      disabled={actionLoadingId === selectedTask.id}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={15} />
+                      Complete
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => startEditingTask(selectedTask)}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                  >
+                    Edit task
+                  </button>
+                </>
               )}
             </div>
           )

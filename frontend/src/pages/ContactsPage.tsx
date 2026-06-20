@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Activity, Archive, Building2, Mail, Phone, Plus, UserRound, UsersRound } from 'lucide-react'
+import { Activity, Archive, Building2, Mail, Phone, Plus, RotateCcw, UserRound, UsersRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
   DetailDrawer,
@@ -127,11 +127,42 @@ export function ContactsPage() {
     setActionLoadingId(contact.id)
 
     try {
-      await archiveContact(contact.id)
+      const archivedContact = await archiveContact(contact.id)
       toast.success(`${contact.fullName} archived`)
+      if (selectedContact?.id === archivedContact.id) {
+        setSelectedContact(archivedContact)
+      }
       loadContacts(keyword)
     } catch {
-      toast.error(getLoadErrorMessage('contacts'))
+      toast.error(getSaveErrorMessage('contact'))
+    } finally {
+      setActionLoadingId(null)
+    }
+  }
+
+  async function handleRestore(contact: ContactResponse) {
+    if (!window.confirm(`Restore ${contact.fullName} to active contacts?`)) {
+      return
+    }
+
+    setActionLoadingId(contact.id)
+
+    try {
+      const restoredContact = await updateContact(contact.id, {
+        fullName: contact.fullName,
+        email: contact.email,
+        phone: contact.phone,
+        position: contact.position,
+        status: 'ACTIVE',
+      })
+
+      toast.success(`${restoredContact.fullName} restored`)
+      if (selectedContact?.id === restoredContact.id) {
+        setSelectedContact(restoredContact)
+      }
+      loadContacts(keyword)
+    } catch {
+      toast.error(getSaveErrorMessage('contact'))
     } finally {
       setActionLoadingId(null)
     }
@@ -339,15 +370,27 @@ async function saveContactEdit() {
                           View
                         </button>
                     
-                        <button
-                          type="button"
-                          onClick={() => handleArchive(contact)}
-                          disabled={contact.status !== 'ACTIVE' || actionLoadingId === contact.id}
-                          className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <Archive size={14} />
-                          {actionLoadingId === contact.id ? 'Saving...' : 'Archive'}
-                        </button>
+                        {contact.status === 'ACTIVE' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleArchive(contact)}
+                            disabled={actionLoadingId === contact.id}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <Archive size={14} />
+                            {actionLoadingId === contact.id ? 'Saving...' : 'Archive'}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleRestore(contact)}
+                            disabled={actionLoadingId === contact.id}
+                            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <RotateCcw size={14} />
+                            {actionLoadingId === contact.id ? 'Saving...' : 'Restore'}
+                          </button>
+                        )}
                       </div>
                     </td> 
                     </tr>
@@ -415,13 +458,36 @@ async function saveContactEdit() {
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => startEditingContact(selectedContact)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
-                >
-                  Edit contact
-                </button>
+                <>
+                  {selectedContact.status === 'ACTIVE' ? (
+                    <button
+                      type="button"
+                      onClick={() => handleArchive(selectedContact)}
+                      disabled={actionLoadingId === selectedContact.id}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-amber-300 hover:bg-amber-400/10 hover:text-[var(--crm-warning-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <Archive size={15} />
+                      Archive
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleRestore(selectedContact)}
+                      disabled={actionLoadingId === selectedContact.id}
+                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:border-emerald-300 hover:bg-emerald-400/10 hover:text-[var(--crm-success-text)] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <RotateCcw size={15} />
+                      Restore
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => startEditingContact(selectedContact)}
+                    className="inline-flex h-10 items-center justify-center rounded-xl bg-[var(--crm-primary)] px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110"
+                  >
+                    Edit contact
+                  </button>
+                </>
               )}
             </div>
           )

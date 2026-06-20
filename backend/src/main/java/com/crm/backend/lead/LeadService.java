@@ -1,5 +1,9 @@
 package com.crm.backend.lead;
 
+import com.crm.backend.customer.Customer;
+import com.crm.backend.customer.CustomerRepository;
+import com.crm.backend.customer.CustomerStatus;
+import com.crm.backend.customer.CustomerType;
 import com.crm.backend.lead.dto.CreateLeadRequest;
 import com.crm.backend.lead.dto.LeadResponse;
 import com.crm.backend.lead.dto.UpdateLeadRequest;
@@ -17,11 +21,18 @@ public class LeadService {
     private static final Logger log = LoggerFactory.getLogger(LeadService.class);
 
     private final LeadRepository leadRepository;
+    private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
     private final LeadMapper leadMapper;
 
-    public LeadService(LeadRepository leadRepository, UserRepository userRepository, LeadMapper leadMapper) {
+    public LeadService(
+            LeadRepository leadRepository,
+            CustomerRepository customerRepository,
+            UserRepository userRepository,
+            LeadMapper leadMapper
+    ) {
         this.leadRepository = leadRepository;
+        this.customerRepository = customerRepository;
         this.userRepository = userRepository;
         this.leadMapper = leadMapper;
     }
@@ -79,7 +90,40 @@ public class LeadService {
         Lead lead = findLeadOrThrow(id);
         lead.setStatus(LeadStatus.ARCHIVED);
         log.info("Lead archived. leadId={}", lead.getId());
-        log.info("Lead archived. leadId={}", lead.getId());
+        return leadMapper.toResponse(lead);
+    }
+
+    @Transactional
+    public LeadResponse convertLead(Long id) {
+        Lead lead = findLeadOrThrow(id);
+
+        if (lead.getStatus() == LeadStatus.CONVERTED) {
+            throw new IllegalArgumentException("Lead already converted");
+        }
+
+        if (lead.getStatus() == LeadStatus.ARCHIVED) {
+            throw new IllegalArgumentException("Archived leads cannot be converted");
+        }
+
+        if (hasText(lead.getEmail()) && customerRepository.existsByEmail(lead.getEmail())) {
+            throw new IllegalArgumentException("Customer email already exists");
+        }
+
+        Customer customer = new Customer();
+        customer.setName(hasText(lead.getCompanyName()) ? lead.getCompanyName() : lead.getFullName());
+        customer.setEmail(lead.getEmail());
+        customer.setPhone(lead.getPhone());
+        customer.setCompanyName(lead.getCompanyName());
+        customer.setCustomerType(hasText(lead.getCompanyName()) ? CustomerType.COMPANY : CustomerType.INDIVIDUAL);
+        customer.setStatus(CustomerStatus.ACTIVE);
+
+        Customer savedCustomer = customerRepository.save(customer);
+
+        lead.setStatus(LeadStatus.CONVERTED);
+        lead.setConvertedCustomer(savedCustomer);
+
+        log.info("Lead converted. leadId={}, customerId={}", lead.getId(), savedCustomer.getId());
+
         return leadMapper.toResponse(lead);
     }
 
@@ -95,5 +139,9 @@ public class LeadService {
 
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Assigned user not found"));
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }
