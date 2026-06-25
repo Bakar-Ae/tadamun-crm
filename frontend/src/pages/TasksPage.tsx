@@ -7,6 +7,8 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardList,
+  Filter,
+  RotateCcw,
   Plus,
   UserRound,
 } from 'lucide-react'
@@ -24,7 +26,7 @@ import {
   ErrorState,
   PaginationBar,
 } from '../components/ui'
-import { getTasks, updateTask, type TaskResponse } from '../services/taskService'
+import { getTasks, updateTask, type TaskFilters, type TaskPriority, type TaskResponse, type TaskStatus } from '../services/taskService'
 import type { PageResponse } from '../services/userService'
 import {
   formatDateTime,
@@ -69,6 +71,9 @@ function isOverdue(task: TaskResponse) {
 export function TasksPage() {
   const [tasks, setTasks] = useState<PageResponse<TaskResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('')
+  const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('')
+  const [assignedToUserIdFilter, setAssignedToUserIdFilter] = useState('')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
@@ -84,20 +89,33 @@ export function TasksPage() {
   })
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadTasks = useCallback((search: string, pageNumber = page, size = pageSize) => {
+  const loadTasks = useCallback((
+    search: string,
+    pageNumber = page,
+    size = pageSize,
+    status: TaskStatus | '' = statusFilter,
+    priority: TaskPriority | '' = priorityFilter,
+    assignedToUserIdText = assignedToUserIdFilter,
+  ) => {
     setLoading(true)
     setError('')
-
-    getTasks(pageNumber, size, search)
+  
+  const filters: TaskFilters = {
+      keyword: search,
+      status,
+      priority,
+      assignedToUserId: assignedToUserIdText ? Number(assignedToUserIdText) : null,
+    }
+  
+    getTasks(pageNumber, size, filters)
       .then(setTasks)
       .catch(() => setError(getLoadErrorMessage('tasks')))
       .finally(() => setLoading(false))
-  }, [page, pageSize])
-
+  }, [assignedToUserIdFilter, page, pageSize, priorityFilter, statusFilter])
   useEffect(() => {
     let ignore = false
 
-    getTasks(0, 10, '')
+    getTasks(0, 10, {})
       .then((data) => {
         if (!ignore) {
           setTasks(data)
@@ -122,18 +140,32 @@ export function TasksPage() {
   }, [])
 
   useEffect(() => {
-    function refreshAfterCreate() {
-      loadTasks(keyword)
-    }
+  function refreshAfterCreate() {
+    loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+  }
 
-    window.addEventListener('crm-data-changed', refreshAfterCreate)
-    return () => window.removeEventListener('crm-data-changed', refreshAfterCreate)
-  }, [keyword, loadTasks])
+  window.addEventListener('crm-data-changed', refreshAfterCreate)
+  return () => window.removeEventListener('crm-data-changed', refreshAfterCreate)
+}, [assignedToUserIdFilter, keyword, loadTasks, page, pageSize, priorityFilter, statusFilter])
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPage(0)
-    loadTasks(keyword,0)
+    loadTasks(keyword, 0, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+  }
+
+  function applyTaskFilters() {
+    setPage(0)
+    loadTasks(keyword, 0, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+  }
+
+  function resetTaskFilters() {
+    setKeyword('')
+    setStatusFilter('')
+    setPriorityFilter('')
+    setAssignedToUserIdFilter('')
+    setPage(0)
+    loadTasks('', 0, pageSize, '', '', '')
   }
 
   async function handleComplete(task: TaskResponse) {
@@ -154,7 +186,7 @@ export function TasksPage() {
       if (selectedTask?.id === updatedTask.id) {
         setSelectedTask(updatedTask)
       }
-      loadTasks(keyword)
+      loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
     } catch {
       toast.error(getSaveErrorMessage('task'))
     } finally {
@@ -208,7 +240,7 @@ async function saveTaskEdit() {
     setSelectedTask(updatedTask)
     setEditingTask(false)
     toast.success('Task updated')
-    loadTasks(keyword)
+    loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
   } catch {
     toast.error(getSaveErrorMessage('task'))
   } finally {
@@ -218,19 +250,19 @@ async function saveTaskEdit() {
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
     setPage(previousPage)
-    loadTasks(keyword, previousPage)
+    loadTasks(keyword, previousPage, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
   }
 
   function goToNextPage() {
     const nextPage = page + 1
     setPage(nextPage)
-    loadTasks(keyword, nextPage)
+    loadTasks(keyword, nextPage, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
   }
 
   function handlePageSizeChange(nextPageSize: number) {
     setPageSize(nextPageSize)
     setPage(0)
-    loadTasks(keyword, 0, nextPageSize)
+    loadTasks(keyword, 0, nextPageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
   }
 
   const visibleTasks = tasks?.content ?? []
@@ -238,8 +270,11 @@ async function saveTaskEdit() {
   const completedTasks = visibleTasks.filter((task) => task.status === 'COMPLETED').length
   const urgentTasks = visibleTasks.filter((task) => task.priority === 'URGENT').length
   const overdueTasks = visibleTasks.filter(isOverdue).length
-  const hasSearch = keyword.trim().length > 0
-
+  const hasSearch =
+  keyword.trim().length > 0 ||
+  statusFilter.length > 0 ||
+  priorityFilter.length > 0 ||
+  assignedToUserIdFilter.trim().length > 0
   return (
     <AppLayout>
       <PageShell
@@ -280,8 +315,82 @@ async function saveTaskEdit() {
           onSubmit={handleSearch}
           placeholder="Search tasks by title, customer, lead, or owner"
         />
+        <GlassCard>
+          <div className="mb-4 flex items-center gap-2">
+            <Filter size={18} className="text-violet-500" />
+            <h3 className="font-semibold text-[var(--crm-text)]">Task filters</h3>
+          </div>
+        
+          <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_auto_auto]">
+            <label>
+              <span className="sr-only">Filter tasks by status</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as TaskStatus | '')}
+                className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+              >
+                <option value="">All statuses</option>
+                <option value="OPEN">Open</option>
+                <option value="IN_PROGRESS">In progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </label>
+        
+            <label>
+              <span className="sr-only">Filter tasks by priority</span>
+              <select
+                value={priorityFilter}
+                onChange={(event) => setPriorityFilter(event.target.value as TaskPriority | '')}
+                className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+              >
+                <option value="">All priorities</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </label>
+        
+            <label>
+              <span className="sr-only">Filter tasks by assigned user ID</span>
+              <input
+                type="number"
+                min="1"
+                value={assignedToUserIdFilter}
+                onChange={(event) => setAssignedToUserIdFilter(event.target.value)}
+                placeholder="Assigned user ID"
+                className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+              />
+            </label>
+        
+            <button
+              type="button"
+              onClick={applyTaskFilters}
+              className="crm-focus inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-blue-500 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5"
+            >
+              Apply
+            </button>
+        
+            <button
+              type="button"
+              onClick={resetTaskFilters}
+              className="crm-focus inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+            >
+              <RotateCcw size={16} />
+              Reset
+            </button>
+          </div>
+        </GlassCard>
 
-        {error && <ErrorState message={error} onRetry={() => loadTasks(keyword)} />}
+        {error && (
+          <ErrorState
+            message={error}
+            onRetry={() =>
+              loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+            }
+          />
+        )}
 
         <GlassCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
