@@ -38,17 +38,21 @@ const auditActionLabels: Record<string, string> = {
   CUSTOMER_CREATED: 'Customer created',
   CUSTOMER_UPDATED: 'Customer updated',
   CUSTOMER_ARCHIVED: 'Customer archived',
+  CUSTOMER_RESTORED: 'Customer restored',
   USER_CREATED: 'User invited',
   USER_UPDATED: 'User updated',
   USER_DEACTIVATED: 'User deactivated',
   LEAD_CREATED: 'Lead created',
   LEAD_UPDATED: 'Lead updated',
   LEAD_ARCHIVED: 'Lead archived',
+  LEAD_CONVERTED: 'Lead converted',
   CONTACT_CREATED: 'Contact added',
   CONTACT_UPDATED: 'Contact updated',
   CONTACT_ARCHIVED: 'Contact archived',
+  CONTACT_RESTORED: 'Contact restored',
   TASK_CREATED: 'Task created',
   TASK_UPDATED: 'Task updated',
+  TASK_COMPLETED: 'Task completed',
   NOTE_CREATED: 'Note added',
   NOTE_UPDATED: 'Note updated',
   PASSWORD_CHANGED: 'Password changed',
@@ -169,9 +173,7 @@ function parseAuditDetails(details: string | null) {
   }
 }
 
-export function formatAuditAction(action: string) {
-  return auditActionLabels[action] ?? humanizeEnum(action)
-}
+
 
 export function formatAuditDetails(log: AuditLogResponse) {
   const parsed = parseAuditDetails(log.details)
@@ -202,4 +204,8 @@ export function formatAuditDetails(log: AuditLogResponse) {
 export function formatEntityName(entityType: string | null | undefined, entityId?: number | null) {
   const label = humanizeEnum(entityType)
   return entityId ? `${label} ${entityId}` : label
+}
+
+export function formatAuditAction(action: string) {
+  return auditActionLabels[action] ?? humanizeEnum(action)
 }
