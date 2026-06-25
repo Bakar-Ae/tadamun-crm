@@ -44,6 +44,7 @@ import {
 } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
 import { getCustomerNotes } from '../services/noteService'
+import { getContacts, type ContactResponse } from '../services/contactService'
 import {formatDateTime,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
 import { openQuickCreate } from '../lib/quickCreate'
@@ -90,6 +91,8 @@ export function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null)
   const [customerActivity, setCustomerActivity] = useState<ActivityTimelineItem[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
+  const [relatedContacts, setRelatedContacts] = useState<ContactResponse[]>([])
+  const [relatedContactsLoading, setRelatedContactsLoading] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadCustomers = useCallback((
@@ -316,6 +319,19 @@ function loadCustomerActivity(customerId: number) {
     .finally(() => setActivityLoading(false))
 }
 
+function loadRelatedContacts(customerId: number) {
+  setRelatedContactsLoading(true)
+
+  getContacts(0, 5, { customerId })
+    .then((contacts) => {
+      setRelatedContacts(contacts.content)
+    })
+    .catch(() => {
+      setRelatedContacts([])
+    })
+    .finally(() => setRelatedContactsLoading(false))
+}
+
   return (
     <AppLayout>
       <PageShell
@@ -493,6 +509,7 @@ function loadCustomerActivity(customerId: number) {
                          setSelectedCustomer(customer)
                          setEditingCustomer(false)
                          loadCustomerActivity(customer.id)
+                         loadRelatedContacts(customer.id)
                        }}
                         className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                       >
@@ -564,6 +581,7 @@ function loadCustomerActivity(customerId: number) {
              setSelectedCustomer(null)
              setEditingCustomer(false)
              setCustomerActivity([])
+             setRelatedContacts([])
            }}
            footer={
              selectedCustomer && (
@@ -756,6 +774,42 @@ function loadCustomerActivity(customerId: number) {
                    {formatDateTime(selectedCustomer.updatedAt)}.
                  </p>
                </section>
+               <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-semibold text-[var(--crm-text)]">Related contacts</h3>
+                <span className="text-xs font-semibold text-[var(--crm-text-muted)]">
+                  {relatedContacts.length} shown
+                </span>
+              </div>
+            
+              <div className="mt-4 space-y-3">
+                {relatedContactsLoading && (
+                  <p className="text-sm text-[var(--crm-text-muted)]">Loading contacts...</p>
+                )}
+            
+                {!relatedContactsLoading && relatedContacts.length === 0 && (
+                  <p className="text-sm text-[var(--crm-text-muted)]">
+                    No contacts linked to this customer yet.
+                  </p>
+                )}
+            
+                {!relatedContactsLoading &&
+                  relatedContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3"
+                    >
+                      <p className="font-semibold text-[var(--crm-text)]">{contact.fullName}</p>
+                      <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
+                        {contact.position ?? 'No role set'}
+                      </p>
+                      <p className="mt-1 text-xs text-[var(--crm-text-muted)]">
+                        {contact.email ?? 'No email'} · {contact.phone ?? 'No phone'}
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            </section>
              </div>
            )}
            <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
