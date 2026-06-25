@@ -22,9 +22,15 @@ public class AuditLogController {
 
     @GetMapping
     public ResponseEntity<Page<AuditLogResponse>> getAuditLogs(
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String entityType,
+            @RequestParam(required = false) Long actorUserId,
+            @RequestParam(required = false) String keyword,
             @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(auditLogService.getAuditLogs(pageable));
+        return ResponseEntity.ok(
+                auditLogService.searchAuditLogs(action, entityType, actorUserId, keyword, pageable)
+        );
     }
 
     @GetMapping("/entity/{entityType}")

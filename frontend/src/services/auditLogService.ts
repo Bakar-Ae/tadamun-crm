@@ -12,12 +12,27 @@ export type AuditLogResponse = {
   createdAt: string
 }
 
-export async function getAuditLogs(pageNumber = 0, pageSize= 10) {
+export type AuditLogFilters = {
+  action?: string
+  entityType?: string
+  actorUserId?: number | null
+  keyword?: string
+}
+
+export async function getAuditLogs(
+  pageNumber = 0,
+  pageSize = 10,
+  filters: AuditLogFilters = {},
+) {
   const response = await api.get<PageResponse<AuditLogResponse>>('/audit-logs', {
     params: {
       page: pageNumber,
       size: pageSize,
       sort: 'id,desc',
+      action: filters.action || undefined,
+      entityType: filters.entityType || undefined,
+      actorUserId: filters.actorUserId || undefined,
+      keyword: filters.keyword || undefined,
     },
   })
 

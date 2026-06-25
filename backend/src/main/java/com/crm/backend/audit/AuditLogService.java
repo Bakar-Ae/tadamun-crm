@@ -14,6 +14,13 @@ public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
     private final AuditLogMapper auditLogMapper;
+    private String cleanFilter(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        return value.trim();
+    }
 
     public AuditLogService(
             AuditLogRepository auditLogRepository,
@@ -53,6 +60,27 @@ public class AuditLogService {
     public Page<AuditLogResponse> getAuditLogsByActor(Long actorUserId, Pageable pageable) {
         return auditLogRepository.findByActorUserId(actorUserId, pageable)
                 .map(auditLogMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AuditLogResponse> searchAuditLogs(
+            String action,
+            String entityType,
+            Long actorUserId,
+            String keyword,
+            Pageable pageable
+    ) {
+        String cleanAction = cleanFilter(action);
+        String cleanEntityType = cleanFilter(entityType);
+        String cleanKeyword = cleanFilter(keyword);
+
+        return auditLogRepository.searchAuditLogs(
+                cleanAction,
+                cleanEntityType,
+                actorUserId,
+                cleanKeyword,
+                pageable
+        ).map(auditLogMapper::toResponse);
     }
 
     private User findUserOrNull(Long actorUserId) {
