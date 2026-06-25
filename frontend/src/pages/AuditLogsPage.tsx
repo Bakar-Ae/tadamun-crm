@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { motion, type Variants } from 'framer-motion'
-import { Clock, Database, Eye, Filter, RotateCcw, Search, ShieldCheck, UserRound } from 'lucide-react'
+import { Clock, Database, Download, Eye, Filter, RotateCcw, Search, ShieldCheck, UserRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
   DetailDrawer,
@@ -170,6 +170,45 @@ export function AuditLogsPage() {
       actorUserId: value ? Number(value) : null,
     }))
   }
+  function escapeCsvValue(value: string | number | null | undefined) {
+  const text = value === null || value === undefined ? '' : String(value)
+
+  if (text.includes('"') || text.includes(',') || text.includes('\n')) {
+    return `"${text.replaceAll('"', '""')}"`
+  }
+
+  return text
+}
+
+function exportVisibleLogs() {
+  if (visibleLogs.length === 0) {
+    return
+  }
+
+  const headers = ['Event', 'Record', 'Person', 'Details', 'Time']
+
+  const rows = visibleLogs.map((log) => [
+    formatAuditAction(log.action),
+    formatEntityName(log.entityType, log.entityId),
+    log.actorUserName ?? 'System',
+    formatAuditDetails(log),
+    formatDateTime(log.createdAt),
+  ])
+
+  const csv = [headers, ...rows]
+    .map((row) => row.map(escapeCsvValue).join(','))
+    .join('\n')
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+
+  URL.revokeObjectURL(url)
+}
 
   const visibleLogs = logs?.content ?? []
   const actorCount = new Set(visibleLogs.map((log) => log.actorUserId).filter(Boolean)).size
@@ -302,6 +341,15 @@ export function AuditLogsPage() {
               </p>
             </div>
           </div>
+          <button
+           type="button"
+           onClick={exportVisibleLogs}
+           disabled={visibleLogs.length === 0}
+           className="crm-focus inline-flex items-center gap-2 rounded-2xl border border-[var(--crm-border)] px-4 py-2 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)] disabled:cursor-not-allowed disabled:opacity-50"
+         >
+           <Download size={16} />
+           Export CSV
+         </button>
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] border-collapse text-left text-sm">
