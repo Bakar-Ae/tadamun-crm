@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Activity, Archive, Building2, Mail, Phone, Plus, RotateCcw, UserRound, UsersRound } from 'lucide-react'
+import { Activity, Archive, Building2, Filter, Mail, Phone, Plus, RotateCcw, UserRound, UsersRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
   DetailDrawer,
@@ -21,6 +21,7 @@ import {
   archiveContact,
   getContacts,
   updateContact,
+  type ContactFilters,
   type ContactResponse,
   type ContactStatus,
 } from '../services/contactService'
@@ -54,6 +55,8 @@ const cardAnimation: Variants = {
 export function ContactsPage() {
   const [contacts, setContacts] = useState<PageResponse<ContactResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('')
+  const [customerIdFilter, setCustomerIdFilter] = useState('')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
@@ -69,20 +72,32 @@ export function ContactsPage() {
   })
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadContacts = useCallback((search: string, pageNumber = page, size = pageSize) => {
+  const loadContacts = useCallback((
+    search: string,
+    pageNumber = page,
+    size = pageSize,
+    status: ContactStatus | '' = statusFilter,
+    customerIdText = customerIdFilter,
+  ) => {
     setLoading(true)
     setError('')
-
-    getContacts(pageNumber, size, search)
+  
+  const filters: ContactFilters = {
+      keyword: search,
+      status,
+      customerId: customerIdText ? Number(customerIdText) : null,
+    }
+  
+    getContacts(pageNumber, size, filters)
       .then(setContacts)
       .catch(() => setError(getLoadErrorMessage('contacts')))
       .finally(() => setLoading(false))
-  }, [page, pageSize])
+  }, [customerIdFilter, page, pageSize, statusFilter])
 
   useEffect(() => {
     let ignore = false
 
-    getContacts(0, 10, '')
+    getContacts(0, 10, {})
       .then((data) => {
         if (!ignore) {
           setContacts(data)
@@ -106,17 +121,29 @@ export function ContactsPage() {
 
   useEffect(() => {
     function refreshAfterCreate() {
-      loadContacts(keyword)
+      loadContacts(keyword, page, pageSize, statusFilter, customerIdFilter)
     }
 
     window.addEventListener('crm-data-changed', refreshAfterCreate)
     return () => window.removeEventListener('crm-data-changed', refreshAfterCreate)
-  }, [keyword, loadContacts])
+  },[customerIdFilter, keyword, loadContacts, page, pageSize, statusFilter])
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPage(0)
-    loadContacts(keyword, 0)
+    loadContacts(keyword, 0, pageSize, statusFilter, customerIdFilter)
+  }
+  function applyContactFilters() {
+   setPage(0)
+   loadContacts(keyword, 0, pageSize, statusFilter, customerIdFilter)
+ }
+
+  function resetContactFilters() {
+    setKeyword('')
+    setStatusFilter('')
+    setCustomerIdFilter('')
+    setPage(0)
+    loadContacts('', 0, pageSize, '', '')
   }
 
   async function handleArchive(contact: ContactResponse) {
@@ -132,7 +159,7 @@ export function ContactsPage() {
       if (selectedContact?.id === archivedContact.id) {
         setSelectedContact(archivedContact)
       }
-      loadContacts(keyword)
+      loadContacts(keyword, page, pageSize, statusFilter, customerIdFilter)
     } catch {
       toast.error(getSaveErrorMessage('contact'))
     } finally {
@@ -160,7 +187,7 @@ export function ContactsPage() {
       if (selectedContact?.id === restoredContact.id) {
         setSelectedContact(restoredContact)
       }
-      loadContacts(keyword)
+      loadContacts(keyword, page, pageSize, statusFilter, customerIdFilter)
     } catch {
       toast.error(getSaveErrorMessage('contact'))
     } finally {
@@ -211,7 +238,7 @@ async function saveContactEdit() {
     setSelectedContact(updatedContact)
     setEditingContact(false)
     toast.success(`${updatedContact.fullName} updated`)
-    loadContacts(keyword)
+    loadContacts(keyword, page, pageSize, statusFilter, customerIdFilter)
   } catch {
     toast.error(getSaveErrorMessage('contact'))
   } finally {
@@ -222,25 +249,28 @@ async function saveContactEdit() {
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
     setPage(previousPage)
-    loadContacts(keyword, previousPage)
+    loadContacts(keyword, previousPage, pageSize, statusFilter, customerIdFilter)
   }
 
   function goToNextPage() {
     const nextPage = page + 1
     setPage(nextPage)
-    loadContacts(keyword, nextPage)
+    loadContacts(keyword, nextPage, pageSize, statusFilter, customerIdFilter)
   }
 
   function handlePageSizeChange(nextPageSize: number) {
     setPageSize(nextPageSize)
     setPage(0)
-    loadContacts(keyword, 0, nextPageSize)
+    loadContacts(keyword, 0, nextPageSize, statusFilter, customerIdFilter)
   }
 
   const visibleContacts = contacts?.content ?? []
   const activeContacts = visibleContacts.filter((contact) => contact.status === 'ACTIVE').length
   const linkedCustomers = new Set(visibleContacts.map((contact) => contact.customerId)).size
-  const hasSearch = keyword.trim().length > 0
+  const hasSearch =
+  keyword.trim().length > 0 ||
+  statusFilter.length > 0 ||
+  customerIdFilter.trim().length > 0
 
   return (
     <AppLayout>
@@ -278,8 +308,58 @@ async function saveContactEdit() {
           onSubmit={handleSearch}
           placeholder="Search contacts by name, email, phone, role, or customer"
         />
+        <GlassCard>
+        <div className="mb-4 flex items-center gap-2">
+          <Filter size={18} className="text-violet-500" />
+          <h3 className="font-semibold text-[var(--crm-text)]">Contact filters</h3>
+        </div>
+      
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
+          <label>
+            <span className="sr-only">Filter contacts by status</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as ContactStatus | '')}
+              className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+            >
+              <option value="">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="ARCHIVED">Archived</option>
+            </select>
+          </label>
+      
+          <label>
+            <span className="sr-only">Filter contacts by customer ID</span>
+            <input
+              type="number"
+              min="1"
+              value={customerIdFilter}
+              onChange={(event) => setCustomerIdFilter(event.target.value)}
+              placeholder="Customer ID"
+              className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+            />
+          </label>
+      
+          <button
+            type="button"
+            onClick={applyContactFilters}
+            className="crm-focus inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-blue-500 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5"
+          >
+            Apply
+          </button>
+      
+          <button
+            type="button"
+            onClick={resetContactFilters}
+            className="crm-focus inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+          >
+            <RotateCcw size={16} />
+            Reset
+          </button>
+        </div>
+      </GlassCard>
 
-        {error && <ErrorState message={error} onRetry={() => loadContacts(keyword)} />}
+        {error && <ErrorState message={error} onRetry={() => loadContacts(keyword, page, pageSize, statusFilter, customerIdFilter)} />}
 
         <GlassCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
