@@ -5,6 +5,7 @@ import {
   Activity,
   Archive,
   Building2,
+  Filter,
   Mail,
   Phone,
   Plus,
@@ -36,7 +37,9 @@ import {
   archiveCustomer,
   getCustomers,
   updateCustomer,
+  type CustomerFilters,
   type CustomerResponse,
+  type CustomerStatus,
   type CustomerType,
 } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
@@ -70,6 +73,8 @@ const cardAnimation: Variants = {
 export function CustomersPage() {
   const [customers, setCustomers] = useState<PageResponse<CustomerResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<CustomerStatus | ''>('')
+  const [customerTypeFilter, setCustomerTypeFilter] = useState<CustomerType | ''>('') 
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
@@ -87,20 +92,32 @@ export function CustomersPage() {
   const [activityLoading, setActivityLoading] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadCustomers = useCallback((search: string, pageNumber = page, size = pageSize) => {
-    setLoading(true)
-    setError('')
+  const loadCustomers = useCallback((
+  search: string,
+  pageNumber = page,
+  size = pageSize,
+  status: CustomerStatus | '' = statusFilter,
+  customerType: CustomerType | '' = customerTypeFilter,
+ ) => {
+  setLoading(true)
+  setError('')
 
-    getCustomers(pageNumber, size, search)
+  const filters: CustomerFilters = {
+    keyword: search,
+    status,
+    customerType,
+  }
+
+  getCustomers(pageNumber, size, filters)
     .then(setCustomers)
     .catch(() => setError(getLoadErrorMessage('customers')))
     .finally(() => setLoading(false))
-  }, [page,pageSize])
+ }, [customerTypeFilter, page, pageSize, statusFilter])
 
   useEffect(() => {
     let ignore = false
 
-    getCustomers(0, 10, '')
+    getCustomers(0, 10, {})
       .then((data) => {
         if (!ignore) {
           setCustomers(data)
@@ -134,8 +151,21 @@ export function CustomersPage() {
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPage(0)
-    loadCustomers(keyword, 0)
+    loadCustomers(keyword, 0, pageSize, statusFilter, customerTypeFilter)
   }
+
+  function applyCustomerFilters() {
+  setPage(0)
+  loadCustomers(keyword, 0, pageSize, statusFilter, customerTypeFilter)
+}
+
+  function resetCustomerFilters() {
+  setKeyword('')
+  setStatusFilter('')
+  setCustomerTypeFilter('')
+  setPage(0)
+  loadCustomers('', 0, pageSize, '', '')
+}
 
   async function handleArchive(customer: CustomerResponse) {
     if (!window.confirm(`Archive ${customer.name}? You can keep the history, but it will leave active work lists.`)) {
@@ -188,19 +218,19 @@ export function CustomersPage() {
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
     setPage(previousPage)
-    loadCustomers(keyword, previousPage)
+    loadCustomers(keyword, previousPage, pageSize, statusFilter, customerTypeFilter)
   }
 
 function goToNextPage() {
   const nextPage = page + 1
   setPage(nextPage)
-  loadCustomers(keyword, nextPage)
+  loadCustomers(keyword, nextPage, pageSize, statusFilter, customerTypeFilter)
 }
 
   function handlePageSizeChange(nextPageSize: number) {
     setPageSize(nextPageSize)
     setPage(0)
-    loadCustomers(keyword, 0, nextPageSize)
+    loadCustomers(keyword, 0, nextPageSize, statusFilter, customerTypeFilter)
   }
 
   const visibleCustomers = customers?.content ?? []
@@ -208,8 +238,10 @@ function goToNextPage() {
   const companyCustomers = visibleCustomers.filter(
     (customer) => customer.customerType === 'COMPANY',
   ).length
-  const hasSearch = keyword.trim().length > 0
-
+  const hasSearch =
+  keyword.trim().length > 0 ||
+  statusFilter.length > 0 ||
+  customerTypeFilter.length > 0
   function startEditingCustomer(customer: CustomerResponse) {
   setSelectedCustomer(customer)
   setEditCustomerForm({
@@ -255,7 +287,7 @@ function cancelEditingCustomer() {
     setSelectedCustomer(updatedCustomer)
     setEditingCustomer(false)
     toast.success(`${updatedCustomer.name} updated`)
-    loadCustomers(keyword)
+    loadCustomers(keyword, page, pageSize, statusFilter, customerTypeFilter)
   } catch {
     toast.error(getSaveErrorMessage('customer'))
   } finally {
@@ -320,6 +352,57 @@ function loadCustomerActivity(customerId: number) {
           onSubmit={handleSearch}
           placeholder="Search customers by name, email, phone, or company"
         />
+        <GlassCard>
+         <div className="mb-4 flex items-center gap-2">
+           <Filter size={18} className="text-violet-500" />
+           <h3 className="font-semibold text-[var(--crm-text)]">Customer filters</h3>
+         </div>
+       
+         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
+           <label>
+             <span className="sr-only">Filter customers by status</span>
+             <select
+               value={statusFilter}
+               onChange={(event) => setStatusFilter(event.target.value as CustomerStatus | '')}
+               className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+             >
+               <option value="">All statuses</option>
+               <option value="ACTIVE">Active</option>
+               <option value="ARCHIVED">Archived</option>
+             </select>
+           </label>
+       
+           <label>
+             <span className="sr-only">Filter customers by type</span>
+             <select
+               value={customerTypeFilter}
+               onChange={(event) => setCustomerTypeFilter(event.target.value as CustomerType | '')}
+               className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+             >
+               <option value="">All types</option>
+               <option value="COMPANY">Company</option>
+               <option value="INDIVIDUAL">Individual</option>
+             </select>
+           </label>
+       
+           <button
+             type="button"
+             onClick={applyCustomerFilters}
+             className="crm-focus inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-blue-500 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5"
+           >
+             Apply
+           </button>
+       
+           <button
+             type="button"
+             onClick={resetCustomerFilters}
+             className="crm-focus inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+           >
+             <RotateCcw size={16} />
+             Reset
+           </button>
+         </div>
+       </GlassCard>
 
         {error && <ErrorState message={error} onRetry={() => loadCustomers(keyword)} />}
 
