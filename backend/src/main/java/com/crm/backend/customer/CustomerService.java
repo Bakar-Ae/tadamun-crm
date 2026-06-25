@@ -73,6 +73,7 @@ public class CustomerService {
     @Transactional
     public CustomerResponse updateCustomer(Long id, UpdateCustomerRequest request, Long actorUserId) {
         Customer customer = findCustomerOrThrow(id);
+        CustomerStatus previousStatus = customer.getStatus();
 
         if (hasText(request.email()) && customerRepository.existsByEmailAndIdNot(request.email(), id)) {
             throw new IllegalArgumentException("Customer email already exists");
@@ -87,12 +88,16 @@ public class CustomerService {
 
         Customer savedCustomer = customerRepository.save(customer);
 
+        String action = previousStatus == CustomerStatus.ARCHIVED && savedCustomer.getStatus() == CustomerStatus.ACTIVE
+                ? "CUSTOMER_RESTORED"
+                : "CUSTOMER_UPDATED";
+
         auditLogService.log(
                 actorUserId,
-                "CUSTOMER_UPDATED",
+                action,
                 "CUSTOMER",
                 savedCustomer.getId(),
-                "{\"name\":\"" + savedCustomer.getName() + "\"}"
+                "{\"name\":\"" + savedCustomer.getName() + "\",\"status\":\"" + savedCustomer.getStatus() + "\"}"
         );
         log.info("Customer updated. customerId={}, actorUserId={}, status={}",
                 savedCustomer.getId(), actorUserId, savedCustomer.getStatus());

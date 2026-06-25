@@ -1,5 +1,6 @@
 package com.crm.backend.task;
 
+import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.Lead;
@@ -25,23 +26,27 @@ public class TaskService {
     private final CustomerRepository customerRepository;
     private final LeadRepository leadRepository;
     private final TaskMapper taskMapper;
+    private final AuditLogService auditLogService;
 
     public TaskService(
             TaskRepository taskRepository,
             UserRepository userRepository,
             CustomerRepository customerRepository,
             LeadRepository leadRepository,
-            TaskMapper taskMapper
+            TaskMapper taskMapper,
+            AuditLogService auditLogService
+
     ) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.customerRepository = customerRepository;
         this.leadRepository = leadRepository;
         this.taskMapper = taskMapper;
+        this.auditLogService = auditLogService;
     }
 
     @Transactional
-    public TaskResponse createTask(CreateTaskRequest request) {
+    public TaskResponse createTask(CreateTaskRequest request, Long actorUserId) {
         CrmTask task = new CrmTask();
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -53,6 +58,13 @@ public class TaskService {
         task.setLead(findLeadOrNull(request.leadId()));
 
         CrmTask savedTask = taskRepository.save(task);
+        auditLogService.log(
+                actorUserId,
+                "TASK_CREATED",
+                "TASK",
+                savedTask.getId(),
+                "{\"title\":\"" + savedTask.getTitle() + "\"}"
+        );
 
         log.info("Task created. taskId={}, assignedToUserId={}, status={}",
                 savedTask.getId(), request.assignedToUserId(), savedTask.getStatus());
@@ -80,8 +92,9 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
+    public TaskResponse updateTask(Long id, UpdateTaskRequest request, Long actorUserId) {
         CrmTask task = findTaskOrThrow(id);
+        TaskStatus previousStatus = task.getStatus();
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -91,6 +104,19 @@ public class TaskService {
         task.setAssignedToUser(findUserOrNull(request.assignedToUserId()));
         task.setCustomer(findCustomerOrNull(request.customerId()));
         task.setLead(findLeadOrNull(request.leadId()));
+
+        String action = previousStatus != TaskStatus.COMPLETED && task.getStatus() == TaskStatus.COMPLETED
+                ? "TASK_COMPLETED"
+                : "TASK_UPDATED";
+
+        auditLogService.log(
+                actorUserId,
+                action,
+                "TASK",
+                task.getId(),
+                "{\"title\":\"" + task.getTitle() + "\",\"status\":\"" + task.getStatus() + "\"}"
+        );
+
         log.info("Task updated. taskId={}, assignedToUserId={}, status={}, priority={}",
                 task.getId(), request.assignedToUserId(), task.getStatus(), task.getPriority());
 

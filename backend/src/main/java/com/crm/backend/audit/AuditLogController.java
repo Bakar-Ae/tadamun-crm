@@ -3,6 +3,8 @@ package com.crm.backend.audit;
 import com.crm.backend.audit.dto.AuditLogResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,14 +21,16 @@ public class AuditLogController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<AuditLogResponse>> getAuditLogs(Pageable pageable) {
+    public ResponseEntity<Page<AuditLogResponse>> getAuditLogs(
+            @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
         return ResponseEntity.ok(auditLogService.getAuditLogs(pageable));
     }
 
     @GetMapping("/entity/{entityType}")
     public ResponseEntity<Page<AuditLogResponse>> getAuditLogsByEntityType(
             @PathVariable String entityType,
-            Pageable pageable
+            @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(auditLogService.getAuditLogsByEntityType(entityType, pageable));
     }
@@ -34,7 +38,7 @@ public class AuditLogController {
     @GetMapping("/actor/{actorUserId}")
     public ResponseEntity<Page<AuditLogResponse>> getAuditLogsByActor(
             @PathVariable Long actorUserId,
-            Pageable pageable
+            @PageableDefault(sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(auditLogService.getAuditLogsByActor(actorUserId, pageable));
     }

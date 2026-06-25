@@ -3,12 +3,14 @@ package com.crm.backend.lead;
 import com.crm.backend.lead.dto.CreateLeadRequest;
 import com.crm.backend.lead.dto.LeadResponse;
 import com.crm.backend.lead.dto.UpdateLeadRequest;
+import com.crm.backend.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,8 +25,11 @@ public class LeadController {
     }
 
     @PostMapping
-    public ResponseEntity<LeadResponse> createLead(@Valid @RequestBody CreateLeadRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(leadService.createLead(request));
+    public ResponseEntity<LeadResponse> createLead(
+            @Valid @RequestBody CreateLeadRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(leadService.createLead(request, currentUser.getId()));
     }
 
     @GetMapping
@@ -44,18 +49,25 @@ public class LeadController {
     @PutMapping("/{id}")
     public ResponseEntity<LeadResponse> updateLead(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateLeadRequest request
+            @Valid @RequestBody UpdateLeadRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        return ResponseEntity.ok(leadService.updateLead(id, request));
+        return ResponseEntity.ok(leadService.updateLead(id, request, currentUser.getId()));
     }
 
     @PatchMapping("/{id}/archive")
-    public ResponseEntity<LeadResponse> archiveLead(@PathVariable Long id) {
-        return ResponseEntity.ok(leadService.archiveLead(id));
+    public ResponseEntity<LeadResponse> archiveLead(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return ResponseEntity.ok(leadService.archiveLead(id, currentUser.getId()));
     }
 
     @PatchMapping("/{id}/convert")
-    public ResponseEntity<LeadResponse> convertLead(@PathVariable Long id) {
-        return ResponseEntity.ok(leadService.convertLead(id));
+    public ResponseEntity<LeadResponse> convertLead(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return ResponseEntity.ok(leadService.convertLead(id, currentUser.getId()));
     }
 }

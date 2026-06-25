@@ -3,12 +3,14 @@ package com.crm.backend.contact;
 import com.crm.backend.contact.dto.ContactResponse;
 import com.crm.backend.contact.dto.CreateContactRequest;
 import com.crm.backend.contact.dto.UpdateContactRequest;
+import com.crm.backend.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -23,8 +25,11 @@ public class ContactController {
     }
 
     @PostMapping
-    public ResponseEntity<ContactResponse> createContact(@Valid @RequestBody CreateContactRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(contactService.createContact(request));
+    public ResponseEntity<ContactResponse> createContact(
+            @Valid @RequestBody CreateContactRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(contactService.createContact(request, currentUser.getId()));
     }
 
     @GetMapping
@@ -45,13 +50,17 @@ public class ContactController {
     @PutMapping("/{id}")
     public ResponseEntity<ContactResponse> updateContact(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateContactRequest request
+            @Valid @RequestBody UpdateContactRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        return ResponseEntity.ok(contactService.updateContact(id, request));
+        return ResponseEntity.ok(contactService.updateContact(id, request, currentUser.getId()));
     }
 
     @PatchMapping("/{id}/archive")
-    public ResponseEntity<ContactResponse> archiveContact(@PathVariable Long id) {
-        return ResponseEntity.ok(contactService.archiveContact(id));
+    public ResponseEntity<ContactResponse> archiveContact(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return ResponseEntity.ok(contactService.archiveContact(id, currentUser.getId()));
     }
 }
