@@ -27,7 +27,9 @@ import {
   PaginationBar,
 } from '../components/ui'
 import { getTasks, updateTask, type TaskFilters, type TaskPriority, type TaskResponse, type TaskStatus } from '../services/taskService'
-import type { PageResponse } from '../services/userService'
+import { getCustomers, type CustomerResponse } from '../services/customerService'
+import { getLeads, type LeadResponse } from '../services/leadService'
+import { getUsers, type PageResponse, type UserResponse } from '../services/userService'
 import {
   formatDateTime,
   formatStatus,
@@ -74,6 +76,12 @@ export function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('')
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | ''>('')
   const [assignedToUserIdFilter, setAssignedToUserIdFilter] = useState('')
+  const [customerIdFilter, setCustomerIdFilter] = useState('')
+  const [leadIdFilter, setLeadIdFilter] = useState('')
+  const [userOptions, setUserOptions] = useState<UserResponse[]>([])
+  const [customerOptions, setCustomerOptions] = useState<CustomerResponse[]>([])
+  const [leadOptions, setLeadOptions] = useState<LeadResponse[]>([])
+  const [relationshipOptionsLoading, setRelationshipOptionsLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
@@ -96,6 +104,8 @@ export function TasksPage() {
     status: TaskStatus | '' = statusFilter,
     priority: TaskPriority | '' = priorityFilter,
     assignedToUserIdText = assignedToUserIdFilter,
+    customerIdText = customerIdFilter,
+    leadIdText = leadIdFilter,
   ) => {
     setLoading(true)
     setError('')
@@ -105,13 +115,57 @@ export function TasksPage() {
       status,
       priority,
       assignedToUserId: assignedToUserIdText ? Number(assignedToUserIdText) : null,
+      customerId: customerIdText ? Number(customerIdText) : null,
+      leadId: leadIdText ? Number(leadIdText) : null,
     }
   
     getTasks(pageNumber, size, filters)
       .then(setTasks)
       .catch(() => setError(getLoadErrorMessage('tasks')))
       .finally(() => setLoading(false))
-  }, [assignedToUserIdFilter, page, pageSize, priorityFilter, statusFilter])
+  }, [
+    assignedToUserIdFilter,
+    customerIdFilter,
+    leadIdFilter,
+    page,
+    pageSize,
+    priorityFilter,
+    statusFilter,
+  ])
+
+  useEffect(() => {
+    let ignore = false
+
+    Promise.all([
+      getUsers(0, 50, ''),
+      getCustomers(0, 50, {}),
+      getLeads(0, 50, {}),
+    ])
+      .then(([users, customers, leads]) => {
+        if (!ignore) {
+          setUserOptions(users.content)
+          setCustomerOptions(customers.content)
+          setLeadOptions(leads.content)
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setUserOptions([])
+          setCustomerOptions([])
+          setLeadOptions([])
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setRelationshipOptionsLoading(false)
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [])
+
   useEffect(() => {
     let ignore = false
 
@@ -141,22 +195,41 @@ export function TasksPage() {
 
   useEffect(() => {
   function refreshAfterCreate() {
-    loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+    loadTasks(
+      keyword,
+      page,
+      pageSize,
+      statusFilter,
+      priorityFilter,
+      assignedToUserIdFilter,
+      customerIdFilter,
+      leadIdFilter,
+    )
   }
 
   window.addEventListener('crm-data-changed', refreshAfterCreate)
   return () => window.removeEventListener('crm-data-changed', refreshAfterCreate)
-}, [assignedToUserIdFilter, keyword, loadTasks, page, pageSize, priorityFilter, statusFilter])
+}, [
+  assignedToUserIdFilter,
+  customerIdFilter,
+  keyword,
+  leadIdFilter,
+  loadTasks,
+  page,
+  pageSize,
+  priorityFilter,
+  statusFilter,
+])
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPage(0)
-    loadTasks(keyword, 0, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+    loadTasks(keyword, 0, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter, customerIdFilter, leadIdFilter)
   }
 
   function applyTaskFilters() {
     setPage(0)
-    loadTasks(keyword, 0, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+    loadTasks(keyword, 0, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter, customerIdFilter, leadIdFilter)
   }
 
   function resetTaskFilters() {
@@ -164,8 +237,10 @@ export function TasksPage() {
     setStatusFilter('')
     setPriorityFilter('')
     setAssignedToUserIdFilter('')
+    setCustomerIdFilter('')
+    setLeadIdFilter('')
     setPage(0)
-    loadTasks('', 0, pageSize, '', '', '')
+    loadTasks('', 0, pageSize, '', '', '', '', '')
   }
 
   async function handleComplete(task: TaskResponse) {
@@ -186,7 +261,7 @@ export function TasksPage() {
       if (selectedTask?.id === updatedTask.id) {
         setSelectedTask(updatedTask)
       }
-      loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+      loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter, customerIdFilter, leadIdFilter)
     } catch {
       toast.error(getSaveErrorMessage('task'))
     } finally {
@@ -240,7 +315,7 @@ async function saveTaskEdit() {
     setSelectedTask(updatedTask)
     setEditingTask(false)
     toast.success('Task updated')
-    loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+    loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter, customerIdFilter, leadIdFilter)
   } catch {
     toast.error(getSaveErrorMessage('task'))
   } finally {
@@ -250,19 +325,19 @@ async function saveTaskEdit() {
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
     setPage(previousPage)
-    loadTasks(keyword, previousPage, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+    loadTasks(keyword, previousPage, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter, customerIdFilter, leadIdFilter)
   }
 
   function goToNextPage() {
     const nextPage = page + 1
     setPage(nextPage)
-    loadTasks(keyword, nextPage, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+    loadTasks(keyword, nextPage, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter, customerIdFilter, leadIdFilter)
   }
 
   function handlePageSizeChange(nextPageSize: number) {
     setPageSize(nextPageSize)
     setPage(0)
-    loadTasks(keyword, 0, nextPageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+    loadTasks(keyword, 0, nextPageSize, statusFilter, priorityFilter, assignedToUserIdFilter, customerIdFilter, leadIdFilter)
   }
 
   const visibleTasks = tasks?.content ?? []
@@ -274,7 +349,9 @@ async function saveTaskEdit() {
   keyword.trim().length > 0 ||
   statusFilter.length > 0 ||
   priorityFilter.length > 0 ||
-  assignedToUserIdFilter.trim().length > 0
+  assignedToUserIdFilter.trim().length > 0 ||
+  customerIdFilter.trim().length > 0 ||
+  leadIdFilter.trim().length > 0
   return (
     <AppLayout>
       <PageShell
@@ -321,7 +398,7 @@ async function saveTaskEdit() {
             <h3 className="font-semibold text-[var(--crm-text)]">Task filters</h3>
           </div>
         
-          <div className="grid gap-3 lg:grid-cols-[1fr_1fr_1fr_auto_auto]">
+          <div className="grid gap-3 lg:grid-cols-5">
             <label>
               <span className="sr-only">Filter tasks by status</span>
               <select
@@ -353,15 +430,72 @@ async function saveTaskEdit() {
             </label>
         
             <label>
-              <span className="sr-only">Filter tasks by assigned user ID</span>
-              <input
-                type="number"
-                min="1"
+              <span className="sr-only">Filter tasks by assigned user</span>
+              <select
                 value={assignedToUserIdFilter}
                 onChange={(event) => setAssignedToUserIdFilter(event.target.value)}
-                placeholder="Assigned user ID"
+                disabled={relationshipOptionsLoading}
                 className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
-              />
+              >
+                <option value="">
+                  {relationshipOptionsLoading ? 'Loading team...' : 'All owners'}
+                </option>
+                {userOptions.map((user) => (
+                  <option key={user.id} value={String(user.id)}>
+                    {user.fullName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span className="sr-only">Filter tasks by customer</span>
+              <select
+                value={customerIdFilter}
+                onChange={(event) => {
+                  setCustomerIdFilter(event.target.value)
+                  if (event.target.value) {
+                    setLeadIdFilter('')
+                  }
+                }}
+                disabled={relationshipOptionsLoading}
+                className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+              >
+                <option value="">
+                  {relationshipOptionsLoading ? 'Loading customers...' : 'All customers'}
+                </option>
+                {customerOptions.map((customer) => (
+                  <option key={customer.id} value={String(customer.id)}>
+                    {customer.name}
+                    {customer.companyName ? ` - ${customer.companyName}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span className="sr-only">Filter tasks by lead</span>
+              <select
+                value={leadIdFilter}
+                onChange={(event) => {
+                  setLeadIdFilter(event.target.value)
+                  if (event.target.value) {
+                    setCustomerIdFilter('')
+                  }
+                }}
+                disabled={relationshipOptionsLoading}
+                className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+              >
+                <option value="">
+                  {relationshipOptionsLoading ? 'Loading leads...' : 'All leads'}
+                </option>
+                {leadOptions.map((lead) => (
+                  <option key={lead.id} value={String(lead.id)}>
+                    {lead.fullName}
+                    {lead.companyName ? ` - ${lead.companyName}` : ''}
+                  </option>
+                ))}
+              </select>
             </label>
         
             <button
@@ -387,7 +521,16 @@ async function saveTaskEdit() {
           <ErrorState
             message={error}
             onRetry={() =>
-              loadTasks(keyword, page, pageSize, statusFilter, priorityFilter, assignedToUserIdFilter)
+              loadTasks(
+                keyword,
+                page,
+                pageSize,
+                statusFilter,
+                priorityFilter,
+                assignedToUserIdFilter,
+                customerIdFilter,
+                leadIdFilter,
+              )
             }
           />
         )}

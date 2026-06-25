@@ -25,6 +25,7 @@ import {
   type ContactResponse,
   type ContactStatus,
 } from '../services/contactService'
+import { getCustomers, type CustomerResponse } from '../services/customerService'
 import type { PageResponse } from '../services/userService'
 import {formatDateTime ,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage,getSaveErrorMessage} from '../lib/errors'
@@ -57,6 +58,8 @@ export function ContactsPage() {
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('')
   const [customerIdFilter, setCustomerIdFilter] = useState('')
+  const [customerOptions, setCustomerOptions] = useState<CustomerResponse[]>([])
+  const [customerOptionsLoading, setCustomerOptionsLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
@@ -93,6 +96,31 @@ export function ContactsPage() {
       .catch(() => setError(getLoadErrorMessage('contacts')))
       .finally(() => setLoading(false))
   }, [customerIdFilter, page, pageSize, statusFilter])
+
+  useEffect(() => {
+    let ignore = false
+
+    getCustomers(0, 50, {})
+      .then((data) => {
+        if (!ignore) {
+          setCustomerOptions(data.content)
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setCustomerOptions([])
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setCustomerOptionsLoading(false)
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   useEffect(() => {
     let ignore = false
@@ -329,15 +357,23 @@ async function saveContactEdit() {
           </label>
       
           <label>
-            <span className="sr-only">Filter contacts by customer ID</span>
-            <input
-              type="number"
-              min="1"
+            <span className="sr-only">Filter contacts by customer</span>
+            <select
               value={customerIdFilter}
               onChange={(event) => setCustomerIdFilter(event.target.value)}
-              placeholder="Customer ID"
+              disabled={customerOptionsLoading}
               className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
-            />
+            >
+              <option value="">
+                {customerOptionsLoading ? 'Loading customers...' : 'All customers'}
+              </option>
+              {customerOptions.map((customer) => (
+                <option key={customer.id} value={String(customer.id)}>
+                  {customer.name}
+                  {customer.companyName ? ` - ${customer.companyName}` : ''}
+                </option>
+              ))}
+            </select>
           </label>
       
           <button
