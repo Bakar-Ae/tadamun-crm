@@ -35,12 +35,33 @@ export type UpdateTaskRequest = CreateTaskRequest & {
   status: TaskStatus
 }
 
-export async function getTasks(page = 0, size = 10, keyword = '') {
+export type TaskFilters = {
+  keyword?: string
+  status?: TaskStatus | ''
+  priority?: TaskPriority | ''
+  assignedToUserId?: number | null
+  customerId?: number | null
+  leadId?: number | null
+}
+
+export async function getTasks(
+  page = 0,
+  size = 10,
+  filters: TaskFilters | string = '',
+) {
+  const cleanFilters =
+    typeof filters === 'string' ? { keyword: filters } : filters
+
   const response = await api.get<PageResponse<TaskResponse>>('/tasks', {
     params: {
       page,
       size,
-      keyword,
+      keyword: cleanFilters.keyword || undefined,
+      status: cleanFilters.status || undefined,
+      priority: cleanFilters.priority || undefined,
+      assignedToUserId: cleanFilters.assignedToUserId || undefined,
+      customerId: cleanFilters.customerId || undefined,
+      leadId: cleanFilters.leadId || undefined,
       sort: 'id,desc',
     },
   })

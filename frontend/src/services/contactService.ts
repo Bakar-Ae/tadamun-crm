@@ -27,13 +27,27 @@ export type CreateContactRequest = {
 export type UpdateContactRequest = Omit<CreateContactRequest, 'customerId'> & {
   status: ContactStatus
 }
+export type ContactFilters = {
+  keyword?: string
+  status?: ContactStatus | ''
+  customerId?: number | null
+}
 
-export async function getContacts(page = 0, size = 10, keyword = '') {
+export async function getContacts(
+  page = 0,
+  size = 10,
+  filters: ContactFilters | string = '',
+) {
+  const cleanFilters =
+    typeof filters === 'string' ? { keyword: filters } : filters
+
   const response = await api.get<PageResponse<ContactResponse>>('/contacts', {
     params: {
       page,
       size,
-      keyword,
+      keyword: cleanFilters.keyword || undefined,
+      status: cleanFilters.status || undefined,
+      customerId: cleanFilters.customerId || undefined,
       sort: 'id,desc',
     },
   })

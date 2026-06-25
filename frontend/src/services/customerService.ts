@@ -27,13 +27,27 @@ export type CreateCustomerRequest = {
 export type UpdateCustomerRequest = CreateCustomerRequest & {
   status: CustomerStatus
 }
+export type CustomerFilters = {
+  keyword?: string
+  status?: CustomerStatus | ''
+  customerType?: CustomerType | ''
+}
 
-export async function getCustomers(page = 0, size = 10, keyword = '') {
+export async function getCustomers(
+  page = 0,
+  size = 10,
+  filters: CustomerFilters | string = '',
+) {
+  const cleanFilters =
+    typeof filters === 'string' ? { keyword: filters } : filters
+
   const response = await api.get<PageResponse<CustomerResponse>>('/customers', {
     params: {
       page,
       size,
-      keyword,
+      keyword: cleanFilters.keyword || undefined,
+      status: cleanFilters.status || undefined,
+      customerType: cleanFilters.customerType || undefined,
       sort: 'id,desc',
     },
   })

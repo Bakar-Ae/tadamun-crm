@@ -32,13 +32,25 @@ export type CreateLeadRequest = {
 export type UpdateLeadRequest = CreateLeadRequest & {
   status: LeadStatus
 }
+export type LeadFilters = {
+  keyword?: string
+  status?: LeadStatus | ''
+}
 
-export async function getLeads(page = 0, size = 10, keyword = '') {
-  const response = await api.get<PageResponse<LeadResponse>>('/leads', {
+export async function getLeads(
+  page = 0,
+  size = 10,
+  filters: LeadFilters | string = '',
+) {
+   const cleanFilters =
+    typeof filters === 'string' ? { keyword: filters } : filters
+
+   const response = await api.get<PageResponse<LeadResponse>>('/leads', {
     params: {
       page,
       size,
-      keyword,
+      keyword: cleanFilters.keyword || undefined,
+      status: cleanFilters.status || undefined,
       sort: 'id,desc',
     },
   })
