@@ -8,10 +8,12 @@ import {
   DollarSign,
   Mail,
   Plus,
+  Filter,
   RotateCcw,
   Target,
   UserRound,
-  UsersRound,
+  UsersRound
+
 } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
@@ -28,7 +30,7 @@ import {
   PaginationBar,
   type ActivityTimelineItem,
 } from '../components/ui'
-import { archiveLead, convertLead, getLeads, updateLead, type LeadResponse, type LeadStatus,} from '../services/leadService'
+import { archiveLead, convertLead, getLeads, updateLead, type LeadFilters, type LeadResponse, type LeadStatus,} from '../services/leadService'
 import { getLeadNotes } from '../services/noteService'
 import type { PageResponse } from '../services/userService'
 import {
@@ -66,6 +68,7 @@ const cardAnimation: Variants = {
 export function LeadsPage() {
   const [leads, setLeads] = useState<PageResponse<LeadResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | ''>('')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [loading, setLoading] = useState(true)
@@ -85,21 +88,30 @@ export function LeadsPage() {
   const [activityLoading, setActivityLoading] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
-  const loadLeads = useCallback((search: string, pageNumber = page, size = pageSize) => {
+  const loadLeads = useCallback((
+    search: string,
+    pageNumber = page,
+    size = pageSize,
+    status: LeadStatus | '' = statusFilter,
+  ) => {
     setLoading(true)
     setError('')
-
-    getLeads(pageNumber, size, search)
+  
+    const filters: LeadFilters = {
+      keyword: search,
+      status,
+    }
+  
+    getLeads(pageNumber, size, filters)
       .then(setLeads)
       .catch(() => setError(getLoadErrorMessage('leads')))
       .finally(() => setLoading(false))
-  }, [page, pageSize])
-  
+  }, [page, pageSize, statusFilter])
 
   useEffect(() => {
     let ignore = false
 
-    getLeads(0, 10, '')
+    getLeads(0, 10, {})
       .then((data) => {
         if (!ignore) {
           setLeads(data)
@@ -123,17 +135,28 @@ export function LeadsPage() {
 
   useEffect(() => {
     function refreshAfterCreate() {
-      loadLeads(keyword)
+      loadLeads(keyword, page, pageSize, statusFilter)
     }
 
     window.addEventListener('crm-data-changed', refreshAfterCreate)
     return () => window.removeEventListener('crm-data-changed', refreshAfterCreate)
-  }, [keyword, loadLeads])
+  }, [keyword, loadLeads, page, pageSize, statusFilter])
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setPage(0)
-    loadLeads(keyword, 0)
+    loadLeads(keyword, 0, pageSize, statusFilter)
+  }
+  function applyLeadFilters() {
+    setPage(0)
+    loadLeads(keyword, 0, pageSize, statusFilter)
+  }
+  
+  function resetLeadFilters() {
+    setKeyword('')
+    setStatusFilter('')
+    setPage(0)
+    loadLeads('', 0, pageSize, '')
   }
 
   async function handleArchive(lead: LeadResponse) {
@@ -149,7 +172,7 @@ export function LeadsPage() {
       if (selectedLead?.id === archivedLead.id) {
         setSelectedLead(archivedLead)
       }
-      loadLeads(keyword)
+      loadLeads(keyword, page, pageSize, statusFilter)
     } catch {
       toast.error(getSaveErrorMessage('lead'))
     } finally {
@@ -180,7 +203,7 @@ export function LeadsPage() {
       if (selectedLead?.id === restoredLead.id) {
         setSelectedLead(restoredLead)
       }
-      loadLeads(keyword)
+      loadLeads(keyword, page, pageSize, statusFilter)
     } catch {
       toast.error(getSaveErrorMessage('lead'))
     } finally {
@@ -202,7 +225,7 @@ export function LeadsPage() {
         setSelectedLead(convertedLead)
       }
       setEditingLead(false)
-      loadLeads(keyword)
+      loadLeads(keyword, page, pageSize, statusFilter)
     } catch {
       toast.error(getSaveErrorMessage('lead'))
     } finally {
@@ -263,7 +286,7 @@ async function saveLeadEdit() {
     setSelectedLead(updatedLead)
     setEditingLead(false)
     toast.success(`${updatedLead.fullName} updated`)
-    loadLeads(keyword)
+    loadLeads(keyword, page, pageSize, statusFilter)
   } catch {
     toast.error(getSaveErrorMessage('lead'))
   } finally {
@@ -296,25 +319,27 @@ function loadLeadActivity(leadId: number) {
   function goToPreviousPage() {
     const previousPage = Math.max(page - 1, 0)
     setPage(previousPage)
-    loadLeads(keyword, previousPage)
+    loadLeads(keyword, previousPage, pageSize, statusFilter)
   }
 
   function goToNextPage() {
     const nextPage = page + 1
     setPage(nextPage)
-    loadLeads(keyword, nextPage)
+    loadLeads(keyword, nextPage, pageSize, statusFilter)
   }
 
   function handlePageSizeChange(nextPageSize: number) {
     setPageSize(nextPageSize)
     setPage(0)
-    loadLeads(keyword, 0, nextPageSize)
+    loadLeads(keyword, 0, nextPageSize, statusFilter)
   }
 
   const visibleLeads = leads?.content ?? []
   const qualifiedLeads = visibleLeads.filter((lead) => lead.status === 'QUALIFIED').length
   const assignedLeads = visibleLeads.filter((lead) => lead.assignedToUserName).length
-  const hasSearch = keyword.trim().length > 0
+  const hasSearch =
+  keyword.trim().length > 0 ||
+  statusFilter.length > 0
 
   return (
     <AppLayout>
@@ -353,7 +378,50 @@ function loadLeadActivity(leadId: number) {
           placeholder="Search leads by name, email, company, or source"
         />
 
-        {error && <ErrorState message={error} onRetry={() => loadLeads(keyword)} />}
+        <GlassCard>
+          <div className="mb-4 flex items-center gap-2">
+            <Filter size={18} className="text-violet-500" />
+            <h3 className="font-semibold text-[var(--crm-text)]">Pipeline filters</h3>
+          </div>
+        
+          <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+            <label>
+              <span className="sr-only">Filter leads by stage</span>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as LeadStatus | '')}
+                className="crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none"
+              >
+                <option value="">All stages</option>
+                <option value="NEW">New</option>
+                <option value="CONTACTED">Contacted</option>
+                <option value="QUALIFIED">Qualified</option>
+                <option value="LOST">Lost</option>
+                <option value="CONVERTED">Converted</option>
+                <option value="ARCHIVED">Archived</option>
+              </select>
+            </label>
+        
+            <button
+              type="button"
+              onClick={applyLeadFilters}
+              className="crm-focus inline-flex h-11 items-center justify-center rounded-2xl bg-gradient-to-r from-violet-600 to-blue-500 px-5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5"
+            >
+              Apply
+            </button>
+        
+            <button
+              type="button"
+              onClick={resetLeadFilters}
+              className="crm-focus inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--crm-border)] px-4 text-sm font-semibold text-[var(--crm-text-muted)] transition hover:bg-violet-500/10 hover:text-[var(--crm-text)]"
+            >
+              <RotateCcw size={16} />
+              Reset
+            </button>
+          </div>
+        </GlassCard>
+
+        {error && <ErrorState message={error} onRetry={() => loadLeads(keyword, page, pageSize, statusFilter)} />}
 
         <GlassCard className="overflow-hidden p-0">
           <div className="flex items-center justify-between border-b border-[var(--crm-border)] px-5 py-4">
