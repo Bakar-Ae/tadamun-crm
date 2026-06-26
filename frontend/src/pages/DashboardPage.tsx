@@ -379,8 +379,8 @@ function SalesTable({ rows }: { rows: SalesRow[] }) {
     : rows;
 
   return (
-    <motion.div variants={cardAnimation}>
-      <GlassCard className="overflow-hidden p-0">
+    <motion.div className="min-w-0" variants={cardAnimation}>
+      <GlassCard className="min-w-0 overflow-hidden p-0">
         <div className="flex flex-col justify-between gap-4 border-b border-[var(--crm-border)] p-5 sm:flex-row sm:items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--crm-text-muted)]">
