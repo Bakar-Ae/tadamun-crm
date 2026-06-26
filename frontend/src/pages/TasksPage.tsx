@@ -881,7 +881,67 @@ async function saveTaskEdit() {
                 </div>
               )}
             </section>
-      
+
+            {!editingTask && (
+              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <h3 className="font-semibold text-[var(--crm-text)]">Work context</h3>
+
+                <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Owner</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedTask.assignedToUserName ?? 'Unassigned'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Customer</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedTask.customerName ?? 'No customer linked'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Lead</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedTask.leadName ?? 'No lead linked'}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            )}
+
+            {!editingTask && (
+              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <h3 className="font-semibold text-[var(--crm-text)]">Schedule</h3>
+
+                <dl className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Due date</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {selectedTask.dueDate ? formatDateTime(selectedTask.dueDate) : 'No due date'}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Priority</dt>
+                    <dd className="mt-1 font-medium text-[var(--crm-text)]">
+                      {formatStatus(selectedTask.priority)}
+                    </dd>
+                  </div>
+
+                  <div>
+                    <dt className="text-xs uppercase text-[var(--crm-text-muted)]">Status</dt>
+                    <dd className="mt-1">
+                      <StatusBadge variant={statusVariant(selectedTask.status)}>
+                        {formatStatus(selectedTask.status)}
+                      </StatusBadge>
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            )}
+
             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
               <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
               <p className="mt-2 text-sm text-[var(--crm-text-muted)]">
