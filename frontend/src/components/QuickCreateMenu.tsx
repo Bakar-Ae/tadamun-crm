@@ -476,7 +476,14 @@ export function QuickCreateMenu() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {activeKind === "customer" && (
             <>
-              <TextField label="Customer name" value={formValues.name ?? ""} onChange={(event) => updateField("name", event.target.value)} error={errors.name} />
+              <TextField
+               label="Customer name"
+               required
+               helperText="Use the account or person name your team will search for."
+               value={formValues.name ?? ""}
+               onChange={(event) => updateField("name", event.target.value)}
+               error={errors.name}
+             />
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField label="Email" type="email" value={formValues.email ?? ""} onChange={(event) => updateField("email", event.target.value)} error={errors.email} />
                 <TextField label="Phone" value={formValues.phone ?? ""} onChange={(event) => updateField("phone", event.target.value)} />
@@ -491,7 +498,14 @@ export function QuickCreateMenu() {
 
           {activeKind === "lead" && (
             <>
-              <TextField label="Lead name" value={formValues.fullName ?? ""} onChange={(event) => updateField("fullName", event.target.value)} error={errors.fullName} />
+              <TextField
+               label="Lead name"
+               required
+               helperText="Use the prospect name your team will follow up with."
+               value={formValues.fullName ?? ""}
+               onChange={(event) => updateField("fullName", event.target.value)}
+               error={errors.fullName}
+             />
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField label="Email" type="email" value={formValues.email ?? ""} onChange={(event) => updateField("email", event.target.value)} error={errors.email} />
                 <TextField label="Phone" value={formValues.phone ?? ""} onChange={(event) => updateField("phone", event.target.value)} />
@@ -502,7 +516,14 @@ export function QuickCreateMenu() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField label="Estimated value" inputMode="decimal" value={formValues.estimatedValue ?? ""} onChange={(event) => updateField("estimatedValue", event.target.value)} error={errors.estimatedValue} />
-                <SelectField label="Assigned to" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId}>
+                  <SelectField
+                    label="Assigned to"
+                    required
+                    helperText="Choose the team member responsible for this lead."
+                    value={formValues.assignedToUserId ?? ""}
+                    onChange={(event) => updateField("assignedToUserId", event.target.value)}
+                    error={errors.assignedToUserId}
+                  >
                   <option value="">{optionsLoading ? "Loading team..." : "Unassigned"}</option>
                   {userOptions.map((user) => (
                     <option key={user.id} value={String(user.id)}>
@@ -516,15 +537,28 @@ export function QuickCreateMenu() {
 
           {activeKind === "contact" && (
             <>
-              <SelectField label="Customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
-                <option value="">{optionsLoading ? "Loading customers..." : "Select customer"}</option>
+              <SelectField
+                label="Customer"
+                required
+                helperText="Choose the account this contact belongs to."
+                value={formValues.customerId ?? ""}
+                onChange={(event) => updateField("customerId", event.target.value)}
+                error={errors.customerId}
+              >
                 {customerOptions.map((customer) => (
                   <option key={customer.id} value={String(customer.id)}>
                     {formatCustomerOption(customer)}
                   </option>
                 ))}
               </SelectField>
-              <TextField label="Contact name" value={formValues.fullName ?? ""} onChange={(event) => updateField("fullName", event.target.value)} error={errors.fullName} />
+              <TextField
+                label="Contact name"
+                required
+                helperText="Use the person’s real name, not only the company name."
+                value={formValues.fullName ?? ""}
+                onChange={(event) => updateField("fullName", event.target.value)}
+                error={errors.fullName}
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <TextField label="Email" type="email" value={formValues.email ?? ""} onChange={(event) => updateField("email", event.target.value)} error={errors.email} />
                 <TextField label="Phone" value={formValues.phone ?? ""} onChange={(event) => updateField("phone", event.target.value)} />
@@ -535,8 +569,15 @@ export function QuickCreateMenu() {
 
           {activeKind === "task" && (
             <>
-              <TextField label="Task title" value={formValues.title ?? ""} onChange={(event) => updateField("title", event.target.value)} error={errors.title} />
-              <TextAreaField label="Description" value={formValues.description ?? ""} onChange={(event) => updateField("description", event.target.value)} />
+              <TextField
+               label="Task title"
+               required
+               helperText="Write the action clearly, for example: Call customer about renewal."
+               value={formValues.title ?? ""}
+               onChange={(event) => updateField("title", event.target.value)}
+               error={errors.title}
+             />
+                           <TextAreaField label="Description" value={formValues.description ?? ""} onChange={(event) => updateField("description", event.target.value)} />
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField label="Priority" value={formValues.priority ?? "MEDIUM"} onChange={(event) => updateField("priority", event.target.value)} error={errors.priority}>
                   <option value="LOW">Low</option>
@@ -547,7 +588,14 @@ export function QuickCreateMenu() {
                 <TextField label="Due date" type="datetime-local" value={formValues.dueDate ?? ""} onChange={(event) => updateField("dueDate", event.target.value)} />
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
-                <SelectField label="Owner" value={formValues.assignedToUserId ?? ""} onChange={(event) => updateField("assignedToUserId", event.target.value)} error={errors.assignedToUserId}>
+                <SelectField
+                  label="Owner"
+                  required
+                  helperText="Choose who is responsible for completing this task."
+                  value={formValues.assignedToUserId ?? ""}
+                  onChange={(event) => updateField("assignedToUserId", event.target.value)}
+                  error={errors.assignedToUserId}
+                >
                   <option value="">{optionsLoading ? "Loading team..." : "Unassigned"}</option>
                   {userOptions.map((user) => (
                     <option key={user.id} value={String(user.id)}>
@@ -580,7 +628,14 @@ export function QuickCreateMenu() {
 
           {activeKind === "note" && (
             <>
-              <TextAreaField label="Note" value={formValues.content ?? ""} onChange={(event) => updateField("content", event.target.value)} error={errors.content} />
+              <TextAreaField
+                label="Note"
+                required
+                helperText="Write the important customer or lead context your team should remember."
+                value={formValues.content ?? ""}
+                onChange={(event) => updateField("content", event.target.value)}
+                error={errors.content}
+              />
               <div className="grid gap-4 sm:grid-cols-2">
                 <SelectField label="Attach to customer" value={formValues.customerId ?? ""} onChange={(event) => updateField("customerId", event.target.value)} error={errors.customerId}>
                   <option value="">{optionsLoading ? "Loading customers..." : "No customer"}</option>
@@ -607,10 +662,41 @@ export function QuickCreateMenu() {
 
           {activeKind === "user" && (
             <>
-              <TextField label="Full name" value={formValues.fullName ?? ""} onChange={(event) => updateField("fullName", event.target.value)} error={errors.fullName} />
-              <TextField label="Email" type="email" value={formValues.email ?? ""} onChange={(event) => updateField("email", event.target.value)} error={errors.email} />
-              <TextField label="Temporary password" type="password" value={formValues.password ?? ""} onChange={(event) => updateField("password", event.target.value)} error={errors.password} />
-              <SelectField label="Role" value={formValues.role ?? "SALES_REP"} onChange={(event) => updateField("role", event.target.value)} error={errors.role}>
+              <TextField
+                label="Full name"
+                required
+                helperText="Use the team member’s real full name."
+                value={formValues.fullName ?? ""}
+                onChange={(event) => updateField("fullName", event.target.value)}
+                error={errors.fullName}
+              />
+              <TextField
+                label="Email"
+                type="email"
+                required
+                helperText="This email will be used for login."
+                value={formValues.email ?? ""}
+                onChange={(event) => updateField("email", event.target.value)}
+                error={errors.email}
+
+              />
+              <TextField
+                label="Temporary password"
+                type="password"
+                required
+                helperText="The user should change this after first login."
+                value={formValues.password ?? ""}
+                onChange={(event) => updateField("password", event.target.value)}
+                error={errors.password}
+              />
+               <SelectField
+                label="Role"
+                required
+                helperText="This controls what the user can access."
+                value={formValues.role ?? "SALES_REP"}
+                onChange={(event) => updateField("role", event.target.value)}
+                error={errors.role}
+              >
                 <option value="ADMIN">Admin</option>
                 <option value="MANAGER">Manager</option>
                 <option value="SALES_REP">Sales rep</option>
@@ -632,7 +718,7 @@ export function QuickCreateMenu() {
               disabled={saving}
               className="crm-primary-action h-10 rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
-              {saving ? "Creating..." : "Create"}
+              {saving ? "Saving..." : `Create ${activeAction?.label.toLowerCase() ?? "item"}`}
             </button>
           </div>
         </form>

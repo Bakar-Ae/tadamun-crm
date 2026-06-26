@@ -1,73 +1,107 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type {
+  ComponentPropsWithoutRef,
+  ReactNode,
+} from 'react'
 
-type FieldShellProps = {
-  label: string;
-  error?: string;
-  children: ReactNode;
-};
+type BaseFieldProps = {
+  label: string
+  error?: string
+  helperText?: string
+}
 
-function FieldShell({ label, error, children }: FieldShellProps) {
+function FieldMessage({ error, helperText }: Pick<BaseFieldProps, 'error' | 'helperText'>) {
+  if (error) {
+    return <p className="mt-1 text-xs font-medium text-red-600">{error}</p>
+  }
+
+  if (helperText) {
+    return <p className="mt-1 text-xs text-[var(--crm-text-muted)]">{helperText}</p>
+  }
+
+  return null
+}
+
+function FieldLabel({ label, required }: Pick<BaseFieldProps, 'label'> & { required?: boolean }) {
+  return (
+    <span className="text-xs font-semibold uppercase tracking-wide text-[var(--crm-text-muted)]">
+      {label}
+      {required ? <span className="ml-1 text-red-600">*</span> : null}
+    </span>
+  )
+}
+
+type TextFieldProps = BaseFieldProps & ComponentPropsWithoutRef<'input'>
+
+export function TextField({ label, error, helperText, required, className, ...props }: TextFieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-[var(--crm-text)]">
-        {label}
-      </span>
-      {children}
-      {error && (
-        <span className="mt-1 block text-xs font-semibold text-[var(--crm-danger-text)]">
-          {error}
-        </span>
-      )}
-    </label>
-  );
-}
-
-type TextFieldProps = InputHTMLAttributes<HTMLInputElement> & {
-  label: string;
-  error?: string;
-};
-
-export function TextField({ label, error, className, ...props }: TextFieldProps) {
-  return (
-    <FieldShell label={label} error={error}>
+      <FieldLabel label={label} required={required} />
       <input
+        required={required}
+        aria-invalid={Boolean(error)}
+        className={`crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none transition placeholder:text-[var(--crm-text-muted)] ${
+          error ? 'border-red-400 ring-2 ring-red-500/10' : ''
+        } ${className ?? ''}`}
         {...props}
-        className={`crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] shadow-sm transition placeholder:text-[var(--crm-text-muted)] focus:border-[var(--crm-primary)] ${className ?? ""}`}
       />
-    </FieldShell>
-  );
+      <FieldMessage error={error} helperText={helperText} />
+    </label>
+  )
 }
 
-type TextAreaFieldProps = TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  label: string;
-  error?: string;
-};
+type TextAreaFieldProps = BaseFieldProps & ComponentPropsWithoutRef<'textarea'>
 
-export function TextAreaField({ label, error, className, ...props }: TextAreaFieldProps) {
+export function TextAreaField({
+  label,
+  error,
+  helperText,
+  required,
+  className,
+  ...props
+}: TextAreaFieldProps) {
   return (
-    <FieldShell label={label} error={error}>
+    <label className="block">
+      <FieldLabel label={label} required={required} />
       <textarea
+        required={required}
+        aria-invalid={Boolean(error)}
+        className={`crm-focus mt-1 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 py-3 text-sm text-[var(--crm-text)] outline-none transition placeholder:text-[var(--crm-text-muted)] ${
+          error ? 'border-red-400 ring-2 ring-red-500/10' : ''
+        } ${className ?? ''}`}
         {...props}
-        className={`crm-focus min-h-24 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 py-2 text-sm text-[var(--crm-text)] shadow-sm transition placeholder:text-[var(--crm-text-muted)] focus:border-[var(--crm-primary)] ${className ?? ""}`}
       />
-    </FieldShell>
-  );
+      <FieldMessage error={error} helperText={helperText} />
+    </label>
+  )
 }
 
-type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
-  label: string;
-  error?: string;
-};
+type SelectFieldProps = BaseFieldProps & ComponentPropsWithoutRef<'select'> & {
+  children: ReactNode
+}
 
-export function SelectField({ label, error, className, children, ...props }: SelectFieldProps) {
+export function SelectField({
+  label,
+  error,
+  helperText,
+  required,
+  className,
+  children,
+  ...props
+}: SelectFieldProps) {
   return (
-    <FieldShell label={label} error={error}>
+    <label className="block">
+      <FieldLabel label={label} required={required} />
       <select
+        required={required}
+        aria-invalid={Boolean(error)}
+        className={`crm-focus mt-1 h-11 w-full rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] outline-none transition ${
+          error ? 'border-red-400 ring-2 ring-red-500/10' : ''
+        } ${className ?? ''}`}
         {...props}
-        className={`crm-focus h-11 w-full rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-3 text-sm text-[var(--crm-text)] shadow-sm transition focus:border-[var(--crm-primary)] ${className ?? ""}`}
       >
         {children}
       </select>
-    </FieldShell>
-  );
+      <FieldMessage error={error} helperText={helperText} />
+    </label>
+  )
 }
