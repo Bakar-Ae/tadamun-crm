@@ -299,6 +299,9 @@ async function saveContactEdit() {
   keyword.trim().length > 0 ||
   statusFilter.length > 0 ||
   customerIdFilter.trim().length > 0
+  const selectedContactChannelCount = selectedContact
+    ? [selectedContact.email, selectedContact.phone].filter(Boolean).length
+    : 0
 
   return (
     <AppLayout>
@@ -726,6 +729,100 @@ async function saveContactEdit() {
                 </dl>
               )}
             </section>
+
+            {!editingContact && (
+              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-[var(--crm-text)]">Account relationship</h3>
+                    <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
+                      Contact context for sales, support, and follow-up work.
+                    </p>
+                  </div>
+
+                  <StatusBadge variant={statusVariant(selectedContact.status)}>
+                    {formatStatus(selectedContact.status)}
+                  </StatusBadge>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-4">
+                    <div className="flex items-center gap-2 text-xs uppercase text-[var(--crm-text-muted)]">
+                      <Building2 size={15} />
+                      Account
+                    </div>
+                    <p className="mt-2 font-semibold text-[var(--crm-text)]">{selectedContact.customerName}</p>
+                  </div>
+
+                  <div className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-4">
+                    <div className="flex items-center gap-2 text-xs uppercase text-[var(--crm-text-muted)]">
+                      <UserRound size={15} />
+                      Role
+                    </div>
+                    <p className="mt-2 font-semibold text-[var(--crm-text)]">
+                      {selectedContact.position ?? 'Role not set'}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {!editingContact && (
+              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-semibold text-[var(--crm-text)]">Contact channels</h3>
+                    <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
+                      {selectedContactChannelCount} of 2 channels saved.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {selectedContact.email ? (
+                    <a
+                      href={`mailto:${selectedContact.email}`}
+                      className="crm-focus rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-4 transition hover:border-violet-300 hover:bg-violet-500/10"
+                    >
+                      <div className="flex items-center gap-2 text-xs uppercase text-[var(--crm-text-muted)]">
+                        <Mail size={15} />
+                        Email
+                      </div>
+                      <p className="mt-2 break-all font-semibold text-[var(--crm-text)]">{selectedContact.email}</p>
+                    </a>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-[var(--crm-border)] bg-[var(--crm-surface)] p-4">
+                      <div className="flex items-center gap-2 text-xs uppercase text-[var(--crm-text-muted)]">
+                        <Mail size={15} />
+                        Email
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--crm-text-muted)]">No email saved</p>
+                    </div>
+                  )}
+
+                  {selectedContact.phone ? (
+                    <a
+                      href={`tel:${selectedContact.phone}`}
+                      className="crm-focus rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-4 transition hover:border-violet-300 hover:bg-violet-500/10"
+                    >
+                      <div className="flex items-center gap-2 text-xs uppercase text-[var(--crm-text-muted)]">
+                        <Phone size={15} />
+                        Phone
+                      </div>
+                      <p className="mt-2 font-semibold text-[var(--crm-text)]">{selectedContact.phone}</p>
+                    </a>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-[var(--crm-border)] bg-[var(--crm-surface)] p-4">
+                      <div className="flex items-center gap-2 text-xs uppercase text-[var(--crm-text-muted)]">
+                        <Phone size={15} />
+                        Phone
+                      </div>
+                      <p className="mt-2 text-sm text-[var(--crm-text-muted)]">No phone saved</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
       
             <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
               <h3 className="font-semibold text-[var(--crm-text)]">Record activity</h3>
