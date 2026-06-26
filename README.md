@@ -1,26 +1,35 @@
-# Enterprise CRM System
+# Tadamun CRM
 
-A full-stack CRM system built with Spring Boot, React, MySQL, and Docker.
+Tadamun CRM is a full-stack customer relationship management system built with Java 21, Spring Boot, React, TypeScript, MySQL, and Docker.
 
-## Features
+The project is designed as an enterprise-style modular monolith for managing customers, leads, contacts, tasks, notes, users, reports, notifications, and audit logs.
 
-- JWT authentication
-- Refresh tokens
+## Project Status
+
+Version 1 is working and demo-ready.
+
+Completed:
+
+- Authentication with JWT access tokens
+- Refresh tokens and logout
+- Password change and password reset
+- Login rate limiting
 - Role-based access control
-- Forced password change
 - User management
 - Customer management
 - Lead management
 - Contact management
 - Task management
 - Notes
+- Notifications
+- Dashboard
+- Reports
 - Audit logs
-- Dashboard analytics
-- Basic reports
-- Dockerized frontend, backend, and database
+- Search, filters, pagination, detail drawers, and quick create
+- Light and dark frontend themes
+- Dockerized frontend, backend, and MySQL
 - Health checks
-- Backup and restore documentation
-- Production hardening documentation
+- Security and handover documentation
 
 ## Tech Stack
 
@@ -34,6 +43,7 @@ A full-stack CRM system built with Spring Boot, React, MySQL, and Docker.
 - Maven
 - MySQL
 - Flyway
+- Spring Boot Actuator
 
 ### Frontend
 
@@ -42,13 +52,42 @@ A full-stack CRM system built with Spring Boot, React, MySQL, and Docker.
 - Vite
 - Tailwind CSS
 - Axios
+- Framer Motion
+- Recharts
+- Lucide icons
 
 ### DevOps
 
 - Docker
 - Docker Compose
-- Spring Boot Actuator
+- Nginx frontend container
+- MySQL container
+- Environment-based configuration
 - Git
+
+## Architecture
+
+The system uses a modular monolith architecture.
+
+Backend layers:
+
+- Controller layer
+- Service layer
+- Repository layer
+- Entity layer
+- DTO layer
+- Security layer
+- Exception handling layer
+- Configuration layer
+
+Frontend structure:
+
+- Pages
+- Layouts
+- Components
+- Shared UI components
+- Services
+- Utility libraries
 
 ## Environment Setup
 
@@ -58,14 +97,28 @@ Copy the example environment file:
 copy .env.example .env
 ```
 
-Update `.env` with local or production values.
+Update `.env` with your local values.
 
 Do not commit `.env`.
 
 ## Run With Docker
 
+From the project root:
+
+```powershell
+docker compose up -d
+```
+
+Rebuild after code changes:
+
 ```powershell
 docker compose up -d --build
+```
+
+If you only need to rebuild the frontend:
+
+```powershell
+docker compose up -d --no-deps --build frontend
 ```
 
 Check containers:
@@ -74,39 +127,86 @@ Check containers:
 docker ps
 ```
 
-## Backend Tests
+Expected containers:
+
+- `crm_frontend`
+- `crm_backend`
+- `crm_mysql`
+
+## Local URLs
+
+Frontend:
+
+```text
+http://localhost:5173
+```
+
+Backend health:
+
+```text
+http://localhost:8081/actuator/health
+```
+
+Backend info:
+
+```text
+http://localhost:8081/actuator/info
+```
+
+## Backend Checks
 
 ```powershell
 cd backend
-mvn test
+mvn clean test
 ```
 
-## Frontend Build
+## Frontend Checks
 
 ```powershell
 cd frontend
 npm run build
-```
-
-## Health Checks
-
-Backend:
-
-```powershell
-Invoke-RestMethod -Uri "http://localhost:8081/actuator/health" -Method Get
-```
-
-Frontend:
-
-```powershell
-Invoke-WebRequest -UseBasicParsing -Uri "http://localhost:5173" -Method Get
+npm run lint
 ```
 
 ## Security Notes
 
 - Never commit `.env`
-- Use strong JWT secrets
+- Use a long random `JWT_SECRET`
 - Use strong database passwords
-- Change default or temporary passwords
-- Keep production CORS restricted
+- Rotate any password shared in chat, screenshots, or demos
+- Keep production CORS restricted to the real domain
 - Do not expose MySQL publicly in production
+- Use HTTPS in production
+- Store production secrets in a secret manager or secure deployment environment
+
+## Documentation
+
+Important documents are stored in `docs/`.
+
+Recommended reading:
+
+- `docs/phase-41-handover-summary.md`
+- `docs/phase-42-security-review.md`
+- `docs/phase-43-demo-script.md`
+- `docs/phase-44-company-handover-package.md`
+
+## Future Roadmap
+
+Recommended next improvements:
+
+- Advanced permissions
+- Advanced reporting
+- File attachments
+- Email delivery configuration
+- Calendar integration
+- Workflow automation
+- Multi-tenant SaaS support
+- Billing and subscriptions
+- Public API
+- Mobile application
+- AI insights
+- Team performance dashboards
+
+## Summary
+
+Tadamun CRM Version 1 demonstrates backend engineering, frontend engineering, database design, authentication, authorization, audit logging, Docker deployment, and professional CRM UI/UX design.
