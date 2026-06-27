@@ -31,9 +31,31 @@ class SecurityEndpointTest {
     }
 
     @Test
-    @WithMockUser(username = "admin@crm.com", roles = {"ADMIN"})
+    @WithMockUser(
+            username = "admin@crm.com",
+            authorities = {"ROLE_ADMIN", "USER_VIEW"}
+    )
     void adminEndpointShouldAllowAdminUser() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isOk());
+    }
+    @Test
+    @WithMockUser(
+            username = "manager@crm.com",
+            authorities = {"CUSTOMER_VIEW"}
+    )
+    void customerEndpointShouldAllowUserWithViewPermission() throws Exception {
+        mockMvc.perform(get("/api/v1/customers"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "restricted@crm.com",
+            authorities = {"CUSTOMER_UPDATE"}
+    )
+    void customerEndpointShouldRejectUserWithoutViewPermission() throws Exception {
+        mockMvc.perform(get("/api/v1/customers"))
+                .andExpect(status().isForbidden());
     }
 }

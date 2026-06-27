@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/notes")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES_REP', 'SUPPORT_STAFF')")
 public class NoteController {
 
     private final NoteService noteService;
@@ -25,6 +24,7 @@ public class NoteController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('NOTE_CREATE')")
     public ResponseEntity<NoteResponse> createNote(
             @Valid @RequestBody CreateNoteRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
@@ -34,6 +34,7 @@ public class NoteController {
     }
 
     @GetMapping("/customers/{customerId}")
+    @PreAuthorize("hasAuthority('NOTE_VIEW')")
     public ResponseEntity<Page<NoteResponse>> getCustomerNotes(
             @PathVariable Long customerId,
             Pageable pageable
@@ -42,6 +43,7 @@ public class NoteController {
     }
 
     @GetMapping("/leads/{leadId}")
+    @PreAuthorize("hasAuthority('NOTE_VIEW')")
     public ResponseEntity<Page<NoteResponse>> getLeadNotes(
             @PathVariable Long leadId,
             Pageable pageable
@@ -50,6 +52,7 @@ public class NoteController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('NOTE_UPDATE')")
     public ResponseEntity<NoteResponse> updateNote(
             @PathVariable Long id,
             @Valid @RequestBody UpdateNoteRequest request

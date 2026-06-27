@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/customers")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES_REP', 'SUPPORT_STAFF')")
 public class CustomerController {
 
     private final CustomerService customerService;
@@ -25,6 +24,7 @@ public class CustomerController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CUSTOMER_CREATE')")
     public ResponseEntity<CustomerResponse> createCustomer(
             @Valid @RequestBody CreateCustomerRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
@@ -34,6 +34,7 @@ public class CustomerController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('CUSTOMER_VIEW')")
     public ResponseEntity<Page<CustomerResponse>> getCustomers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) CustomerStatus status,
@@ -51,6 +52,7 @@ public class CustomerController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('CUSTOMER_VIEW')")
     public ResponseEntity<CustomerResponse> getCustomerById(
             @PathVariable Long id
     ) {
@@ -58,6 +60,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('CUSTOMER_UPDATE')")
     public ResponseEntity<CustomerResponse> updateCustomer(
             @PathVariable Long id,
             @Valid @RequestBody UpdateCustomerRequest request,
@@ -73,6 +76,7 @@ public class CustomerController {
     }
 
     @PatchMapping("/{id}/archive")
+    @PreAuthorize("hasAuthority('CUSTOMER_ARCHIVE')")
     public ResponseEntity<CustomerResponse> archiveCustomer(
             @PathVariable Long id,
             @AuthenticationPrincipal CustomUserDetails currentUser

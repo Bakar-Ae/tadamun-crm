@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/contacts")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES_REP', 'SUPPORT_STAFF')")
+
 public class ContactController {
 
     private final ContactService contactService;
@@ -24,13 +24,16 @@ public class ContactController {
         this.contactService = contactService;
     }
 
+
     @PostMapping
+    @PreAuthorize("hasAuthority('CONTACT_CREATE')")
     public ResponseEntity<ContactResponse> createContact(
             @Valid @RequestBody CreateContactRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(contactService.createContact(request, currentUser.getId()));
     }
+    @PreAuthorize("hasAuthority('CONTACT_VIEW')")
 
     @GetMapping
     public ResponseEntity<Page<ContactResponse>> getContacts(
@@ -41,11 +44,14 @@ public class ContactController {
     ) {
         return ResponseEntity.ok(contactService.getContacts(customerId, keyword, status, pageable));
     }
+    @PreAuthorize("hasAuthority('CONTACT_VIEW')")
 
     @GetMapping("/{id}")
     public ResponseEntity<ContactResponse> getContactById(@PathVariable Long id) {
         return ResponseEntity.ok(contactService.getContactById(id));
     }
+
+    @PreAuthorize("hasAuthority('CONTACT_UPDATE')")
 
     @PutMapping("/{id}")
     public ResponseEntity<ContactResponse> updateContact(
@@ -55,6 +61,8 @@ public class ContactController {
     ) {
         return ResponseEntity.ok(contactService.updateContact(id, request, currentUser.getId()));
     }
+
+    @PreAuthorize("hasAuthority('CONTACT_ARCHIVE')")
 
     @PatchMapping("/{id}/archive")
     public ResponseEntity<ContactResponse> archiveContact(

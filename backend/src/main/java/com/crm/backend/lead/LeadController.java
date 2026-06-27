@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/leads")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES_REP')")
 public class LeadController {
 
     private final LeadService leadService;
@@ -24,6 +23,8 @@ public class LeadController {
         this.leadService = leadService;
     }
 
+    @PreAuthorize("hasAuthority('LEAD_CREATE')")
+
     @PostMapping
     public ResponseEntity<LeadResponse> createLead(
             @Valid @RequestBody CreateLeadRequest request,
@@ -31,6 +32,7 @@ public class LeadController {
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(leadService.createLead(request, currentUser.getId()));
     }
+    @PreAuthorize("hasAuthority('LEAD_VIEW')")
 
     @GetMapping
     public ResponseEntity<Page<LeadResponse>> getLeads(
@@ -40,11 +42,13 @@ public class LeadController {
     ) {
         return ResponseEntity.ok(leadService.getLeads(keyword, status, pageable));
     }
+    @PreAuthorize("hasAuthority('LEAD_VIEW')")
 
     @GetMapping("/{id}")
     public ResponseEntity<LeadResponse> getLeadById(@PathVariable Long id) {
         return ResponseEntity.ok(leadService.getLeadById(id));
     }
+    @PreAuthorize("hasAuthority('LEAD_UPDATE')")
 
     @PutMapping("/{id}")
     public ResponseEntity<LeadResponse> updateLead(
@@ -55,6 +59,8 @@ public class LeadController {
         return ResponseEntity.ok(leadService.updateLead(id, request, currentUser.getId()));
     }
 
+    @PreAuthorize("hasAuthority('LEAD_ARCHIVE')")
+
     @PatchMapping("/{id}/archive")
     public ResponseEntity<LeadResponse> archiveLead(
             @PathVariable Long id,
@@ -62,6 +68,7 @@ public class LeadController {
     ) {
         return ResponseEntity.ok(leadService.archiveLead(id, currentUser.getId()));
     }
+    @PreAuthorize("hasAuthority('LEAD_CONVERT')")
 
     @PatchMapping("/{id}/convert")
     public ResponseEntity<LeadResponse> convertLead(

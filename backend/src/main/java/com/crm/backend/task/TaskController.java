@@ -1,9 +1,9 @@
 package com.crm.backend.task;
 
+import com.crm.backend.security.CustomUserDetails;
 import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.task.dto.TaskResponse;
 import com.crm.backend.task.dto.UpdateTaskRequest;
-import com.crm.backend.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'SALES_REP', 'SUPPORT_STAFF')")
+
 public class TaskController {
 
     private final TaskService taskService;
@@ -25,6 +25,12 @@ public class TaskController {
     }
 
     @PostMapping
+    @PreAuthorize(
+            "hasAuthority('TASK_CREATE') and " +
+                    "(#request.assignedToUserId() == null or " +
+                    "#request.assignedToUserId() == authentication.principal.id or " +
+                    "hasAuthority('TASK_ASSIGN'))"
+    )
     public ResponseEntity<TaskResponse> createTask(
             @Valid @RequestBody CreateTaskRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
@@ -33,6 +39,7 @@ public class TaskController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('TASK_VIEW')")
     public ResponseEntity<Page<TaskResponse>> getTasks(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) TaskStatus status,
@@ -46,11 +53,21 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('TASK_VIEW')")
     public ResponseEntity<TaskResponse> getTaskById(@PathVariable Long id) {
         return ResponseEntity.ok(taskService.getTaskById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(
+            "hasAuthority('TASK_UPDATE') and " +
+                    "(#request.assignedToUserId() == null or " +
+                    "#request.assignedToUserId() == authentication.principal.id or " +
+                    "hasAuthority('TASK_ASSIGN')) and " +
+                    "(#request.status() == null or " +
+                    "#request.status().name() != 'COMPLETED' or " +
+                    "hasAuthority('TASK_COMPLETE'))"
+    )
     public ResponseEntity<TaskResponse> updateTask(
             @PathVariable Long id,
             @Valid @RequestBody UpdateTaskRequest request,

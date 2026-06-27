@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/users")
-@PreAuthorize("hasRole('ADMIN')")
+
 public class UserController {
 
     private final UserService userService;
@@ -26,6 +26,10 @@ public class UserController {
     }
 
     @PostMapping
+    @PreAuthorize(
+            "hasAuthority('USER_CREATE') and " +
+                    "hasAuthority('USER_ROLE_CHANGE')"
+    )
     public ResponseEntity<UserResponse> createUser(
             @Valid @RequestBody CreateUserRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
@@ -35,6 +39,7 @@ public class UserController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     public ResponseEntity<Page<UserResponse>> getAllUsers(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) UserStatus status,
@@ -45,11 +50,19 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize(
+            "hasAuthority('USER_UPDATE') and " +
+                    "hasAuthority('USER_ROLE_CHANGE') and " +
+                    "(#request.status() == null or " +
+                    "#request.status().name() != 'INACTIVE' or " +
+                    "hasAuthority('USER_DEACTIVATE'))"
+    )
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request,
@@ -61,6 +74,7 @@ public class UserController {
 
 
     @PatchMapping("/{id}/deactivate")
+    @PreAuthorize("hasAuthority('USER_DEACTIVATE')")
     public ResponseEntity<UserResponse> deactivateUser(
             @PathVariable Long id,
             @AuthenticationPrincipal CustomUserDetails currentUser
