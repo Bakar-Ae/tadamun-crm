@@ -2,6 +2,8 @@ package com.crm.backend.auth;
 
 import com.crm.backend.notification.NotificationService;
 import com.crm.backend.notification.NotificationType;
+import com.crm.backend.permission.Permission;
+import com.crm.backend.permission.PermissionName;
 import com.crm.backend.security.CustomUserDetails;
 import com.crm.backend.security.CustomUserDetailsService;
 import com.crm.backend.security.JwtService;
@@ -15,6 +17,8 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Comparator;
 
 @Service
 public class AuthService {
@@ -121,7 +125,14 @@ public class AuthService {
                 userDetails.getId(),
                 userDetails.getFullName(),
                 userDetails.getUsername(),
-                userDetails.getAuthorities().iterator().next().getAuthority(),
+                "ROLE_" + userDetails.getUser().getRole().getName().name(),
+                userDetails.getUser()
+                        .getRole()
+                        .getPermissions()
+                        .stream()
+                        .map(Permission::getName)
+                        .sorted(Comparator.comparing(PermissionName::name))
+                        .toList(),
                 userDetails.getUser().isPasswordChangeRequired()
         );
     }

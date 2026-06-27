@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
+import type { PermissionName } from './services/permissionService'
 import {
   Navigate,
   Route,
@@ -66,6 +67,11 @@ const ResetPasswordPage = lazy(() =>
     default: module.ResetPasswordPage,
   })),
 );
+const RolePermissionsPage = lazy(() =>
+  import('./pages/RolePermissionsPage').then((module) => ({
+    default: module.RolePermissionsPage,
+  })),
+)
 
 function PageLoader() {
   return (
@@ -85,7 +91,10 @@ function getStoredUser() {
   }
 
   try {
-    return JSON.parse(storedUser) as { passwordChangeRequired?: boolean };
+    return JSON.parse(storedUser) as {
+     passwordChangeRequired?: boolean
+     permissions?: PermissionName[]
+  }
   } catch {
     localStorage.removeItem("user");
     return null;
@@ -102,7 +111,13 @@ function PublicOnly({ children }: { children: ReactNode }) {
   return children;
 }
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
+function ProtectedRoute({
+  children,
+  requiredPermission,
+}: {
+  children: ReactNode;
+  requiredPermission?: PermissionName;
+}) {
   const location = useLocation();
   const token = localStorage.getItem("token");
   const user = getStoredUser();
@@ -114,6 +129,13 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (passwordChangeRequired && location.pathname !== "/change-password") {
     return <Navigate to="/change-password" replace />;
+  }
+
+  if (
+    requiredPermission &&
+    !user?.permissions?.includes(requiredPermission)
+  ) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -155,6 +177,14 @@ function App() {
           element={
             <ProtectedRoute>
               <UsersPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/roles-permissions"
+          element={
+            <ProtectedRoute requiredPermission="PERMISSION_MANAGE">
+              <RolePermissionsPage />
             </ProtectedRoute>
           }
         />

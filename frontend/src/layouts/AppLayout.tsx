@@ -10,8 +10,10 @@ import {
   NotebookText,
   ShieldCheck,
   Users,
+  KeyRound,
   X,
 } from 'lucide-react'
+import type { PermissionName } from '../services/permissionService'
 import { NavLink, useNavigate } from 'react-router'
 import { CommandMenu } from '../components/CommandMenu'
 import { NotificationPanel } from '../components/NotificationPanel'
@@ -30,6 +32,7 @@ type NavItem = {
   path: string
   icon: typeof LayoutDashboard
   description: string
+  requiredPermission?: PermissionName
 }
 
 type NavGroup = {
@@ -57,30 +60,35 @@ const navGroups: NavGroup[] = [
         path: '/customers',
         icon: BriefcaseBusiness,
         description: 'Customer accounts and profiles',
+        requiredPermission: 'CUSTOMER_VIEW',
       },
       {
         label: 'Leads',
         path: '/leads',
         icon: ClipboardList,
         description: 'Sales opportunities and status',
+        requiredPermission: 'LEAD_VIEW',
       },
       {
         label: 'Contacts',
         path: '/contacts',
         icon: Contact,
         description: 'People connected to customers',
+        requiredPermission: 'CONTACT_VIEW',
       },
       {
         label: 'Tasks',
         path: '/tasks',
         icon: NotebookText,
         description: 'Assigned work and follow-ups',
+        requiredPermission: 'TASK_VIEW',
       },
       {
         label: 'Notes',
         path: '/notes',
         icon: FileText,
         description: 'Customer and lead notes',
+        requiredPermission: 'NOTE_VIEW',
       },
     ],
   },
@@ -92,6 +100,7 @@ const navGroups: NavGroup[] = [
         path: '/reports',
         icon: BarChart3,
         description: 'CRM totals and reports',
+        requiredPermission: 'REPORT_VIEW',
       },
     ],
   },
@@ -103,20 +112,60 @@ const navGroups: NavGroup[] = [
         path: '/users',
         icon: Users,
         description: 'Team accounts and access',
+        requiredPermission: 'USER_VIEW',
+      },
+      {
+        label: 'Roles & Permissions',
+        path: '/roles-permissions',
+        icon: KeyRound,
+        description: 'Role access and security rules',
+        requiredPermission: 'PERMISSION_MANAGE',
       },
       {
         label: 'Audit Logs',
         path: '/audit-logs',
         icon: ShieldCheck,
         description: 'Security activity history',
+        requiredPermission: 'AUDIT_LOG_VIEW',
       },
     ],
   },
 ]
 
+function getStoredPermissions(): Set<PermissionName> | null {
+  const storedUser = localStorage.getItem('user')
+
+  if (!storedUser) return null
+
+  try {
+    const user = JSON.parse(storedUser) as {
+      permissions?: PermissionName[]
+    }
+
+    return Array.isArray(user.permissions)
+      ? new Set(user.permissions)
+      : null
+  } catch {
+    return null
+  }
+}
+
 export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
+  const storedPermissions = getStoredPermissions()
+
+  const visibleNavGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) =>
+          !item.requiredPermission ||
+          storedPermissions === null ||
+          storedPermissions.has(item.requiredPermission),
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
 
   async function logout() {
     const refreshToken = localStorage.getItem('refreshToken')
@@ -177,7 +226,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">
-          {navGroups.map((group) => (
+          {visibleNavGroups.map((group) => (
             <section key={group.title} className="mb-6 last:mb-0">
               <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--crm-text-muted)]">
                 {group.title}

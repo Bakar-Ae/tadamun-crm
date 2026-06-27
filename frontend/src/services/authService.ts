@@ -1,4 +1,5 @@
 import { api } from './api'
+import type { PermissionName } from './permissionService'
 
 export type LoginRequest = {
   email: string
@@ -13,6 +14,7 @@ export type LoginResponse = {
   fullName: string
   email: string
   role: string
+  permissions: PermissionName[]
   passwordChangeRequired: boolean
 }
 

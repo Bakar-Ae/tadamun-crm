@@ -70,6 +70,7 @@ export function LoginPage() {
           fullName: response.fullName,
           email: response.email,
           role: response.role,
+          permissions: response.permissions,
           passwordChangeRequired: response.passwordChangeRequired,
         }),
       )
