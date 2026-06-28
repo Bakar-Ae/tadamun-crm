@@ -8,30 +8,45 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final NotificationPreferenceService preferenceService;
 
     public NotificationService(
             NotificationRepository notificationRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            NotificationPreferenceService preferenceService
     ) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
+        this.preferenceService = preferenceService;
     }
 
     @Transactional
-    public Notification createNotification(
+    public Optional<Notification> createNotification(
             Long recipientUserId,
             String title,
             String message,
             NotificationType type
     ) {
+        boolean allowed = preferenceService.allowsInAppNotification(
+                recipientUserId,
+                type
+        );
+
+        if (!allowed) {
+            return Optional.empty();
+        }
+
         User recipientUser = userRepository.findById(recipientUserId)
-                .orElseThrow(() -> new IllegalArgumentException("Recipient user not found"));
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Recipient user not found")
+                );
 
         Notification notification = new Notification();
         notification.setRecipientUser(recipientUser);
@@ -39,7 +54,7 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setType(type);
 
-        return notificationRepository.save(notification);
+        return Optional.of(notificationRepository.save(notification));
     }
 
     @Transactional(readOnly = true)

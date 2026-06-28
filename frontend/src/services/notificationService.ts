@@ -33,6 +33,14 @@ export type PageResponse<T> = {
 export type UnreadNotificationCountResponse = {
   unreadCount: number
 }
+export type NotificationPreferences = {
+  emailEnabled: boolean
+  inAppEnabled: boolean
+  taskNotificationsEnabled: boolean
+  customerNotificationsEnabled: boolean
+  leadNotificationsEnabled: boolean
+  reportNotificationsEnabled: boolean
+}
 
 export async function getNotifications(page = 0, size = 10) {
   const response = await api.get<PageResponse<NotificationResponse>>('/notifications', {
@@ -53,4 +61,22 @@ export async function getUnreadNotificationCount() {
 
 export async function markNotificationAsRead(id: number) {
   await api.patch(`/notifications/${id}/read`)
+}
+export async function getNotificationPreferences() {
+  const response = await api.get<NotificationPreferences>(
+    '/notifications/preferences',
+  )
+
+  return response.data
+}
+
+export async function updateNotificationPreferences(
+  preferences: NotificationPreferences,
+) {
+  const response = await api.put<NotificationPreferences>(
+    '/notifications/preferences',
+    preferences,
+  )
+
+  return response.data
 }

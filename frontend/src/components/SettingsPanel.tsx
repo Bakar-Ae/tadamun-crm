@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { Modal } from "./ui";
+import { NotificationPreferencesSection } from "./NotificationPreferencesSection";
 import {
   getDashboardPreferences,
   saveDashboardPreferences,
   type DashboardPreferences,
 } from "../lib/dashboardPreferences";
+
 
 export function SettingsPanel() {
   const [open, setOpen] = useState(false);
@@ -98,6 +100,7 @@ export function SettingsPanel() {
                   }`}
                 >
                   {density}
+                  <NotificationPreferencesSection />
                 </button>
               ))}
             </div>
