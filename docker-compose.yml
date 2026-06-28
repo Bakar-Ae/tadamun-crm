@@ -64,6 +64,11 @@ services:
       SERVER_PORT: ${SERVER_PORT}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       MANAGEMENT_HEALTH_MAIL_ENABLED: ${MANAGEMENT_HEALTH_MAIL_ENABLED}
+      ATTACHMENT_STORAGE_PATH: ${ATTACHMENT_STORAGE_PATH:-/data/attachments}
+      ATTACHMENT_MAX_FILE_SIZE: ${ATTACHMENT_MAX_FILE_SIZE:-10MB}
+      ATTACHMENT_MAX_REQUEST_SIZE: ${ATTACHMENT_MAX_REQUEST_SIZE:-11MB}
+      ATTACHMENT_MAX_SIZE_BYTES: ${ATTACHMENT_MAX_SIZE_BYTES:-10485760}
+      ATTACHMENT_ALLOWED_CONTENT_TYPES: ${ATTACHMENT_ALLOWED_CONTENT_TYPES:-application/pdf,image/png,image/jpeg,text/plain,text/csv,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet}
 
       MAIL_HOST: ${MAIL_HOST}
       MAIL_PORT: ${MAIL_PORT}
@@ -80,6 +85,9 @@ services:
       MAIL_CONNECTION_TIMEOUT_MS: ${MAIL_CONNECTION_TIMEOUT_MS}
       MAIL_TIMEOUT_MS: ${MAIL_TIMEOUT_MS}
       MAIL_WRITE_TIMEOUT_MS: ${MAIL_WRITE_TIMEOUT_MS}
+
+    volumes:
+      - crm_attachment_data:/data/attachments
       
     ports:
       - "${BACKEND_PORT}:8081"
@@ -127,3 +135,4 @@ services:
 
 volumes:
   crm_mysql_data:
+  crm_attachment_data:
