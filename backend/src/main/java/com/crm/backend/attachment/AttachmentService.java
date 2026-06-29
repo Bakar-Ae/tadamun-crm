@@ -7,8 +7,8 @@ import com.crm.backend.lead.Lead;
 import com.crm.backend.lead.LeadRepository;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -241,7 +241,7 @@ public class AttachmentService {
                     "contentType", attachment.getContentType(),
                     "sizeBytes", attachment.getSizeBytes()
             ));
-        } catch (JsonProcessingException exception) {
+        } catch (JacksonException exception) {
             return "{}";
         }
     }
