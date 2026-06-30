@@ -1,212 +1,319 @@
 # Tadamun CRM
 
-Tadamun CRM is a full-stack customer relationship management system built with Java 21, Spring Boot, React, TypeScript, MySQL, and Docker.
+Tadamun CRM is a CRM application built to help businesses manage customers, leads, contacts, tasks, notes, and users in one place.
 
-The project is designed as an enterprise-style modular monolith for managing customers, leads, contacts, tasks, notes, users, reports, notifications, and audit logs.
+This project was built with Java 21, Spring Boot, React, TypeScript, MySQL, and Docker. The goal was to practice building a production-style full-stack application using a modular architecture.
 
-## Project Status
+---
 
-Version 1 is working and demo-ready.
+## Features
 
-Completed:
+Current version includes:
 
-- Authentication with JWT access tokens
+- JWT authentication
+
 - Refresh tokens and logout
-- Password change and password reset
-- Login rate limiting
+
+- Password change and reset
+
 - Role-based access control
+
+- Login rate limiting
+
 - User management
+
 - Customer management
+
 - Lead management
+
 - Contact management
+
 - Task management
+
 - Notes
+
 - Notifications
+
 - Dashboard
+
 - Reports
+
 - Audit logs
-- Search, filters, pagination, detail drawers, and quick create
-- Light and dark frontend themes
-- Dockerized frontend, backend, and MySQL
+
+- Search, filtering, pagination
+
+- Quick create actions
+
+- Detail drawers
+
+- Light and dark mode
+
+- Docker support
+
 - Health checks
-- Security and handover documentation
+
+---
 
 ## Tech Stack
 
 ### Backend
 
 - Java 21
+
 - Spring Boot
+
 - Spring Security
+
 - JWT
+
 - Hibernate / JPA
-- Maven
-- MySQL
+
 - Flyway
+
+- MySQL
+
+- Maven
+
 - Spring Boot Actuator
 
 ### Frontend
 
 - React
+
 - TypeScript
+
 - Vite
+
 - Tailwind CSS
+
 - Axios
+
 - Framer Motion
+
 - Recharts
-- Lucide icons
+
+- Lucide Icons
 
 ### DevOps
 
 - Docker
+
 - Docker Compose
-- Nginx frontend container
-- MySQL container
-- Environment-based configuration
+
+- Nginx
+
 - Git
 
-## Architecture
+---
 
-The system uses a modular monolith architecture.
+## Project Structure
 
-Backend layers:
+### Backend
 
-- Controller layer
-- Service layer
-- Repository layer
-- Entity layer
-- DTO layer
-- Security layer
-- Exception handling layer
-- Configuration layer
+```
 
-Frontend structure:
+controller
 
-- Pages
-- Layouts
-- Components
-- Shared UI components
-- Services
-- Utility libraries
+service
 
-## Environment Setup
+repository
 
-Copy the example environment file:
+entity
+
+dto
+
+security
+
+config
+
+exception
+
+```
+
+### Frontend
+
+```
+
+pages
+
+layouts
+
+components
+
+services
+
+shared
+
+utils
+
+```
+
+---
+
+## Getting Started
+
+Clone the repository and copy the example environment file.
 
 ```powershell
+
 copy .env.example .env
+
 ```
 
-Update `.env` with your local values.
+Update the values in `.env` before running the project.
 
-Do not commit `.env`.
+---
 
-## Run With Docker
+## Running with Docker
 
-From the project root:
+Start everything:
 
 ```powershell
+
 docker compose up -d
+
 ```
 
-Rebuild after code changes:
+Rebuild containers:
 
 ```powershell
+
 docker compose up -d --build
+
 ```
 
-If you only need to rebuild the frontend:
+Rebuild only the frontend:
 
 ```powershell
+
 docker compose up -d --no-deps --build frontend
+
 ```
 
-Check containers:
+Check running containers:
 
 ```powershell
+
 docker ps
+
 ```
 
 Expected containers:
 
-- `crm_frontend`
-- `crm_backend`
-- `crm_mysql`
+```
 
-## Local URLs
+crm_frontend
 
-Frontend:
+crm_backend
 
-```text
+crm_mysql
+
+```
+
+---
+
+## Local Development
+
+Frontend
+
+```
+
 http://localhost:5173
+
 ```
 
-Backend health:
+Backend Health
 
-```text
+```
+
 http://localhost:8081/actuator/health
+
 ```
 
-Backend info:
+Backend Info
 
-```text
+```
+
 http://localhost:8081/actuator/info
+
 ```
 
-## Backend Checks
+---
+
+## Running Tests
+
+Backend
 
 ```powershell
+
 cd backend
+
 mvn clean test
+
 ```
 
-## Frontend Checks
+Frontend
 
 ```powershell
+
 cd frontend
+
 npm run build
+
 npm run lint
+
 ```
 
-## Security Notes
+---
 
-- Never commit `.env`
-- Use a long random `JWT_SECRET`
-- Use strong database passwords
-- Rotate any password shared in chat, screenshots, or demos
-- Keep production CORS restricted to the real domain
-- Do not expose MySQL publicly in production
-- Use HTTPS in production
-- Store production secrets in a secret manager or secure deployment environment
+## Security
+
+A few things worth keeping in mind:
+
+- Don't commit `.env`
+
+- Use a strong JWT secret
+
+- Use secure database credentials
+
+- Restrict CORS in production
+
+- Keep MySQL private
+
+- Use HTTPS when deploying
+
+---
 
 ## Documentation
 
-Important documents are stored in `docs/`.
+Project documentation can be found in the `docs` folder, including deployment notes, security review, demo guide, and handover documents.
 
-Recommended reading:
+---
 
-- `docs/phase-41-handover-summary.md`
-- `docs/phase-42-security-review.md`
-- `docs/phase-43-demo-script.md`
-- `docs/phase-44-company-handover-package.md`
+## Next Steps
 
-## Future Roadmap
+Some features I'd like to add in future versions:
 
-Recommended next improvements:
+- File uploads
 
-- Advanced permissions
-- Advanced reporting
-- File attachments
-- Email delivery configuration
 - Calendar integration
+
+- Email support
+
 - Workflow automation
-- Multi-tenant SaaS support
-- Billing and subscriptions
+
+- Team dashboards
+
+- AI-assisted insights
+
 - Public API
-- Mobile application
-- AI insights
-- Team performance dashboards
 
-## Summary
+- Mobile app
 
-Tadamun CRM Version 1 demonstrates backend engineering, frontend engineering, database design, authentication, authorization, audit logging, Docker deployment, and professional CRM UI/UX design.
+- Multi-tenant SaaS support
+
+---
+
+## About
+
+This project was built as a personal full-stack learning project to gain experience with backend development, frontend development, authentication, Docker, database design, and building larger applications with a clean architecture.
