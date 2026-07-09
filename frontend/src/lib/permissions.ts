@@ -73,6 +73,16 @@ export const permissionGroups: PermissionGroup[] = [
     permissions: ['NOTE_VIEW', 'NOTE_CREATE', 'NOTE_UPDATE'],
   },
   {
+  id: 'attachments',
+  label: 'Attachments',
+  description: 'View, upload, and remove CRM documents.',
+  permissions: [
+    'ATTACHMENT_VIEW',
+    'ATTACHMENT_UPLOAD',
+    'ATTACHMENT_DELETE',
+  ],
+},
+  {
     id: 'insights',
     label: 'Dashboard and reports',
     description: 'Access business summaries, reports, and exports.',
