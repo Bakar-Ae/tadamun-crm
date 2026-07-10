@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
 import toast from 'react-hot-toast'
-import { Download, FileText, Paperclip, Trash2, UploadCloud } from 'lucide-react'
-import { EmptyState, LoadingState } from './ui'
+import { Download, FileText, LoaderCircle, Paperclip, Trash2, UploadCloud } from 'lucide-react'
+import { EmptyState, ErrorState, LoadingState } from './ui'
 import {
   deleteAttachment,
   downloadAttachment,
@@ -30,39 +30,84 @@ function formatFileSize(sizeBytes: number) {
   return `${(sizeBytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
+
 export function AttachmentPanel({ ownerType, ownerId }: AttachmentPanelProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [attachments, setAttachments] = useState<AttachmentResponse[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [deletingId, setDeletingId] = useState<number | null>(null)
 
-  const loadAttachments = useCallback(async () => {
-    setLoading(true)
+  const fetchAttachments = useCallback(async () => {
+    const response =
+      ownerType === 'customer'
+        ? await getCustomerAttachments(ownerId, 0, 10)
+        : await getLeadAttachments(ownerId, 0, 10)
 
-    try {
-      const response =
-        ownerType === 'customer'
-          ? await getCustomerAttachments(ownerId, 0, 10)
-          : await getLeadAttachments(ownerId, 0, 10)
-
-      setAttachments(response.content)
-    } catch {
-      toast.error('Could not load attachments')
-      setAttachments([])
-    } finally {
-      setLoading(false)
-    }
+    return response.content
   }, [ownerId, ownerType])
 
   useEffect(() => {
-    loadAttachments()
-  }, [loadAttachments])
+    let active = true
+
+    fetchAttachments()
+      .then((content) => {
+        if (!active) return
+
+        setAttachments(content)
+        setLoadError(false)
+      })
+      .catch(() => {
+        if (!active) return
+
+        setAttachments([])
+        setLoadError(true)
+        toast.error('Could not load attachments')
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false)
+        }
+      })
+
+    return () => {
+      active = false
+    }
+  }, [fetchAttachments])
+
+  async function retryLoad() {
+    setLoading(true)
+    setLoadError(false)
+
+    try {
+      setAttachments(await fetchAttachments())
+    } catch {
+      setAttachments([])
+      setLoadError(true)
+      toast.error('Could not load attachments')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function handleFileSelected(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
 
     if (!file) {
+      return
+    }
+
+    if (file.size === 0) {
+      toast.error('The selected file is empty')
+      event.target.value = ''
+      return
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      toast.error('File must be 10 MB or smaller')
+      event.target.value = ''
       return
     }
 
@@ -113,18 +158,28 @@ export function AttachmentPanel({ ownerType, ownerId }: AttachmentPanelProps) {
             Files
           </h3>
           <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
-            Store documents, images, and useful account files.
+            PDF, PNG, JPG, TXT, CSV, DOCX or XLSX. Maximum 10 MB.
           </p>
         </div>
 
         <button
           type="button"
+          aria-busy={uploading}
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
           className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-[var(--crm-primary)] px-3 text-xs font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <UploadCloud size={15} />
-          {uploading ? 'Uploading...' : 'Upload'}
+          {uploading ? (
+            <>
+              <LoaderCircle size={15} className="animate-spin" />
+              <span>Uploading...</span>
+            </>
+          ) : (
+            <>
+              <UploadCloud size={15} />
+              <span>Upload</span>
+            </>
+          )}
         </button>
 
         <input
@@ -139,6 +194,8 @@ export function AttachmentPanel({ ownerType, ownerId }: AttachmentPanelProps) {
       <div className="mt-4">
         {loading ? (
           <LoadingState message="Loading files..." />
+        ) : loadError ? (
+          <ErrorState message="Files could not be loaded." onRetry={retryLoad} />
         ) : attachments.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -176,10 +233,15 @@ export function AttachmentPanel({ ownerType, ownerId }: AttachmentPanelProps) {
                     type="button"
                     onClick={() => handleDelete(attachment)}
                     disabled={deletingId === attachment.id}
+                    aria-busy={deletingId === attachment.id}
                     className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--crm-border)] text-[var(--crm-text-muted)] transition hover:border-rose-300 hover:bg-rose-500/10 hover:text-rose-500 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={`Delete ${attachment.originalFileName}`}
                   >
-                    <Trash2 size={15} />
+                    {deletingId === attachment.id ? (
+                      <LoaderCircle size={15} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={15} />
+                    )}
                   </button>
                 </div>
               </div>
