@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Users,
   KeyRound,
+  CalendarDays,
   X,
 } from 'lucide-react'
 import type { PermissionName } from '../services/permissionService'
@@ -81,6 +82,13 @@ const navGroups: NavGroup[] = [
         path: '/tasks',
         icon: NotebookText,
         description: 'Assigned work and follow-ups',
+        requiredPermission: 'TASK_VIEW',
+      },
+      {
+        label: 'Calendar',
+        path: '/calendar',
+        icon: CalendarDays,
+        description: 'Tasks and follow-ups by date',
         requiredPermission: 'TASK_VIEW',
       },
       {

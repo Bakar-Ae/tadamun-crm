@@ -252,3 +252,96 @@ html[data-density="compact"] .crm-glass {
     transition-duration: 0.01ms !important;
   }
 }
+
+.crm-calendar {
+  --fc-border-color: var(--crm-border);
+  --fc-button-bg-color: var(--crm-primary);
+  --fc-button-border-color: var(--crm-primary);
+  --fc-button-hover-bg-color: var(--crm-primary-deep);
+  --fc-button-hover-border-color: var(--crm-primary-deep);
+  --fc-button-active-bg-color: var(--crm-primary-deep);
+  --fc-button-active-border-color: var(--crm-primary-deep);
+  --fc-event-bg-color: var(--crm-primary);
+  --fc-event-border-color: transparent;
+  --fc-list-event-hover-bg-color: var(--crm-card-subtle);
+  --fc-neutral-bg-color: var(--crm-card-subtle);
+  --fc-page-bg-color: transparent;
+  --fc-today-bg-color: rgba(109, 93, 251, 0.09);
+  color: var(--crm-text);
+}
+
+.crm-calendar .fc .fc-toolbar {
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.crm-calendar .fc .fc-toolbar-title {
+  color: var(--crm-text);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.crm-calendar .fc .fc-button {
+  border-radius: 0.75rem;
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-height: 2.5rem;
+  padding-inline: 0.8rem;
+}
+
+.crm-calendar .fc-theme-standard td,
+.crm-calendar .fc-theme-standard th,
+.crm-calendar .fc-theme-standard .fc-scrollgrid {
+  border-color: var(--crm-border);
+}
+
+.crm-calendar .fc .fc-col-header-cell-cushion,
+.crm-calendar .fc .fc-daygrid-day-number,
+.crm-calendar .fc .fc-list-day-text,
+.crm-calendar .fc .fc-list-day-side-text {
+  color: var(--crm-text-muted);
+}
+
+.crm-calendar .fc .fc-event {
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 650;
+  padding: 0.12rem 0.25rem;
+}
+
+.crm-calendar .crm-calendar-event-low {
+  background: #0284c7;
+}
+
+.crm-calendar .crm-calendar-event-medium {
+  background: #4f46e5;
+}
+
+.crm-calendar .crm-calendar-event-high {
+  background: #d97706;
+}
+
+.crm-calendar .crm-calendar-event-urgent {
+  background: #dc2626;
+}
+
+@media (max-width: 767px) {
+  .crm-calendar .fc .fc-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .crm-calendar .fc .fc-toolbar-chunk {
+    display: flex;
+    justify-content: center;
+  }
+
+  .crm-calendar .fc .fc-button {
+    flex: 1;
+  }
+
+  .crm-calendar .fc .fc-toolbar-title {
+    font-size: 1rem;
+  }
+}

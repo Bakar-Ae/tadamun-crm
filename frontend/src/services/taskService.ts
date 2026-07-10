@@ -69,6 +69,11 @@ export async function getTasks(
   return response.data
 }
 
+export async function getTaskById(id: number) {
+  const response = await api.get<TaskResponse>(`/tasks/${id}`)
+  return response.data
+}
+
 export async function createTask(request: CreateTaskRequest) {
   const response = await api.post<TaskResponse>('/tasks', request)
   return response.data
@@ -76,5 +81,43 @@ export async function createTask(request: CreateTaskRequest) {
 
 export async function updateTask(id: number, request: UpdateTaskRequest) {
   const response = await api.put<TaskResponse>(`/tasks/${id}`, request)
+  return response.data
+}
+export type CalendarTaskResponse = {
+  id: number
+  title: string
+  status: TaskStatus
+  priority: TaskPriority
+  dueDate: string
+  assignedToUserId: number | null
+  assignedToUserName: string | null
+  customerId: number | null
+  customerName: string | null
+  leadId: number | null
+  leadName: string | null
+}
+
+export type CalendarTaskQuery = {
+  from: string
+  to: string
+  assignedToUserId?: number | null
+  page?: number
+  size?: number
+}
+
+export async function getCalendarTasks(query: CalendarTaskQuery) {
+  const response = await api.get<PageResponse<CalendarTaskResponse>>(
+    '/tasks/calendar',
+    {
+      params: {
+        from: query.from,
+        to: query.to,
+        assignedToUserId: query.assignedToUserId || undefined,
+        page: query.page ?? 0,
+        size: query.size ?? 500,
+      },
+    },
+  )
+
   return response.data
 }

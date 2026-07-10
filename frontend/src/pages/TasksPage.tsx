@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import toast from 'react-hot-toast'
+import { useSearchParams } from 'react-router'
 import {
   Activity,
   AlertTriangle,
@@ -26,7 +27,15 @@ import {
   ErrorState,
   PaginationBar,
 } from '../components/ui'
-import { getTasks, updateTask, type TaskFilters, type TaskPriority, type TaskResponse, type TaskStatus } from '../services/taskService'
+import {
+  getTaskById,
+  getTasks,
+  updateTask,
+  type TaskFilters,
+  type TaskPriority,
+  type TaskResponse,
+  type TaskStatus,
+} from '../services/taskService'
 import { getCustomers, type CustomerResponse } from '../services/customerService'
 import { getLeads, type LeadResponse } from '../services/leadService'
 import { getUsers, type PageResponse, type UserResponse } from '../services/userService'
@@ -71,6 +80,8 @@ function isOverdue(task: TaskResponse) {
 }
 
 export function TasksPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const linkedTaskId = searchParams.get('taskId')
   const [tasks, setTasks] = useState<PageResponse<TaskResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<TaskStatus | ''>('')
@@ -165,6 +176,37 @@ export function TasksPage() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    if (!linkedTaskId) {
+      return
+    }
+
+    const taskId = Number(linkedTaskId)
+
+    if (!Number.isInteger(taskId) || taskId <= 0) {
+      return
+    }
+
+    let ignore = false
+
+    getTaskById(taskId)
+      .then((task) => {
+        if (!ignore) {
+          setSelectedTask(task)
+          setEditingTask(false)
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          toast.error('Could not open task')
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [linkedTaskId])
 
   useEffect(() => {
     let ignore = false
@@ -687,6 +729,12 @@ async function saveTaskEdit() {
         onClose={() => {
           setSelectedTask(null)
           setEditingTask(false)
+
+          if (linkedTaskId) {
+            const nextParams = new URLSearchParams(searchParams)
+            nextParams.delete('taskId')
+            setSearchParams(nextParams, { replace: true })
+          }
         }}
         footer={
           selectedTask && (

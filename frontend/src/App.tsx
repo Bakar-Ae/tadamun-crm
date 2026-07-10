@@ -71,6 +71,11 @@ const RolePermissionsPage = lazy(() =>
   import('./pages/RolePermissionsPage').then((module) => ({
     default: module.RolePermissionsPage,
   })),
+);
+const CalendarPage = lazy(() =>
+  import('./pages/CalendarPage').then((module) => ({
+    default: module.CalendarPage,
+  })),
 )
 
 function PageLoader() {
@@ -217,6 +222,14 @@ function App() {
           element={
             <ProtectedRoute>
               <TasksPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute requiredPermission="TASK_VIEW">
+              <CalendarPage />
             </ProtectedRoute>
           }
         />
