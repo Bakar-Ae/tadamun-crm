@@ -29,9 +29,6 @@ import {
   ActivityTimeline,
   DetailDrawer,
   type ActivityTimelineItem,
-
-
-  
 } from '../components/ui'
 import {
   archiveCustomer,
@@ -42,6 +39,7 @@ import {
   type CustomerStatus,
   type CustomerType,
 } from '../services/customerService'
+import { AttachmentPanel } from '../components/AttachmentPanel'
 import type { PageResponse } from '../services/userService'
 import { getCustomerNotes } from '../services/noteService'
 import { getContacts, type ContactResponse } from '../services/contactService'
@@ -810,8 +808,10 @@ function loadRelatedContacts(customerId: number) {
                   ))}
               </div>
             </section>
+            <AttachmentPanel ownerType="customer" ownerId={selectedCustomer.id} />
              </div>
            )}
+           
            <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
             <h3 className="font-semibold text-[var(--crm-text)]">Recent activity</h3>
             <div className="mt-4">

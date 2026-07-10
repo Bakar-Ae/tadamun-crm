@@ -30,6 +30,7 @@ import {
   PaginationBar,
   type ActivityTimelineItem,
 } from '../components/ui'
+import { AttachmentPanel } from '../components/AttachmentPanel'
 import { archiveLead, convertLead, getLeads, updateLead, type LeadFilters, type LeadResponse, type LeadStatus,} from '../services/leadService'
 import { getLeadNotes } from '../services/noteService'
 import { getTasks, type TaskResponse } from '../services/taskService'
@@ -904,6 +905,7 @@ function loadRelatedTasks(leadId: number) {
              </section>
 
               <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
+                <AttachmentPanel ownerType="lead" ownerId={selectedLead.id} />
                 <h3 className="font-semibold text-[var(--crm-text)]">Recent activity</h3>
                 <div className="mt-4">
                   <ActivityTimeline
