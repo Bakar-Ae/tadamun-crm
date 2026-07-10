@@ -10,9 +10,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 
 public interface TaskRepository extends JpaRepository<CrmTask, Long> {
-    default long countByStatus(TaskStatus status) {
-        return 0;
-    }
+    long countByStatus(TaskStatus status);
 
     @Query("""
             SELECT t FROM CrmTask t

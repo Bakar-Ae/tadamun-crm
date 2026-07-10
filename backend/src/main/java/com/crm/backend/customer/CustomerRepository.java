@@ -9,9 +9,7 @@ import org.springframework.data.repository.query.Param;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
 
-    default long countByStatus(CustomerStatus status) {
-        return 0;
-    }
+    long countByStatus(CustomerStatus status);
 
     boolean existsByEmail(String email);
 

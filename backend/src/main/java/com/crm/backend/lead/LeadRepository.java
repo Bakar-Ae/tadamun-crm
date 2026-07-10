@@ -7,9 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface LeadRepository extends JpaRepository<Lead, Long> {
-    default long countByStatus(LeadStatus status) {
-        return 0;
-    }
+    long countByStatus(LeadStatus status);
 
     @Query("""
             SELECT l FROM Lead l
