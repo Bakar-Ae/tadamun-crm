@@ -17,7 +17,6 @@ class LocalAttachmentStorageServiceTest {
 
     @TempDir
     Path temporaryDirectory;
-
     private LocalAttachmentStorageService storageService;
 
     @BeforeEach
