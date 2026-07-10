@@ -2,9 +2,12 @@ package com.crm.backend.task;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
 
 public interface TaskRepository extends JpaRepository<CrmTask, Long> {
     default long countByStatus(TaskStatus status) {
@@ -29,6 +32,22 @@ public interface TaskRepository extends JpaRepository<CrmTask, Long> {
             @Param("assignedToUserId") Long assignedToUserId,
             @Param("customerId") Long customerId,
             @Param("leadId") Long leadId,
+            Pageable pageable
+    );
+    @EntityGraph(attributePaths = {"assignedToUser", "customer", "lead"})
+    @Query("""
+        SELECT t FROM CrmTask t
+        WHERE t.dueDate IS NOT NULL
+        AND t.dueDate >= :from
+        AND t.dueDate < :to
+        AND (:assignedToUserId IS NULL
+             OR t.assignedToUser.id = :assignedToUserId)
+        ORDER BY t.dueDate ASC
+        """)
+    Page<CrmTask> findCalendarTasks(
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            @Param("assignedToUserId") Long assignedToUserId,
             Pageable pageable
     );
 }

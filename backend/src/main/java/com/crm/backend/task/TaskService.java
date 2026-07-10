@@ -5,6 +5,7 @@ import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.Lead;
 import com.crm.backend.lead.LeadRepository;
+import com.crm.backend.task.dto.CalendarTaskResponse;
 import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.task.dto.TaskResponse;
 import com.crm.backend.task.dto.UpdateTaskRequest;
@@ -12,10 +13,16 @@ import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 
 @Service
 public class TaskService {
@@ -27,6 +34,7 @@ public class TaskService {
     private final LeadRepository leadRepository;
     private final TaskMapper taskMapper;
     private final AuditLogService auditLogService;
+    private final ZoneId appTimeZone;
 
     public TaskService(
             TaskRepository taskRepository,
@@ -34,8 +42,8 @@ public class TaskService {
             CustomerRepository customerRepository,
             LeadRepository leadRepository,
             TaskMapper taskMapper,
-            AuditLogService auditLogService
-
+            AuditLogService auditLogService,
+            @Value("${app.time-zone:Africa/Mogadishu}") String appTimeZone
     ) {
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
@@ -43,6 +51,7 @@ public class TaskService {
         this.leadRepository = leadRepository;
         this.taskMapper = taskMapper;
         this.auditLogService = auditLogService;
+        this.appTimeZone = ZoneId.of(appTimeZone);
     }
 
     @Transactional
@@ -84,6 +93,35 @@ public class TaskService {
     ) {
         return taskRepository.searchTasks(keyword, status, priority, assignedToUserId, customerId, leadId, pageable)
                 .map(taskMapper::toResponse);
+    }
+    @Transactional(readOnly = true)
+    public Page<CalendarTaskResponse> getCalendarTasks(
+            OffsetDateTime from,
+            OffsetDateTime to,
+            Long assignedToUserId,
+            Pageable pageable
+    ) {
+        if (!from.isBefore(to)) {
+            throw new IllegalArgumentException("'from' must be before 'to'");
+        }
+
+        if (Duration.between(from, to).compareTo(Duration.ofDays(93)) > 0) {
+            throw new IllegalArgumentException("Calendar range cannot exceed 93 days");
+        }
+
+        if (pageable.getPageSize() > 500) {
+            throw new IllegalArgumentException("Calendar page size cannot exceed 500");
+        }
+
+        LocalDateTime localFrom =
+                from.atZoneSameInstant(appTimeZone).toLocalDateTime();
+
+        LocalDateTime localTo =
+                to.atZoneSameInstant(appTimeZone).toLocalDateTime();
+
+        return taskRepository
+                .findCalendarTasks(localFrom, localTo, assignedToUserId, pageable)
+                .map(taskMapper::toCalendarResponse);
     }
 
     @Transactional(readOnly = true)
@@ -154,4 +192,5 @@ public class TaskService {
         return leadRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Lead not found"));
     }
+
 }

@@ -1,17 +1,21 @@
 package com.crm.backend.task;
 
 import com.crm.backend.security.CustomUserDetails;
+import com.crm.backend.task.dto.CalendarTaskResponse;
 import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.task.dto.TaskResponse;
 import com.crm.backend.task.dto.UpdateTaskRequest;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.OffsetDateTime;
 
 @RestController
 @RequestMapping("/api/v1/tasks")
@@ -50,6 +54,48 @@ public class TaskController {
             Pageable pageable
     ) {
         return ResponseEntity.ok(taskService.getTasks(keyword, status, priority, assignedToUserId, customerId, leadId, pageable));
+    }
+    @GetMapping("/calendar")
+    @PreAuthorize(
+            "hasAuthority('TASK_VIEW') and " +
+                    "(#assignedToUserId == null or " +
+                    "#assignedToUserId == authentication.principal.id or " +
+                    "hasAuthority('TASK_ASSIGN'))"
+    )
+    public ResponseEntity<Page<CalendarTaskResponse>> getCalendarTasks(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            OffsetDateTime from,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            OffsetDateTime to,
+
+            @RequestParam(required = false)
+            Long assignedToUserId,
+
+            Pageable pageable,
+
+            @AuthenticationPrincipal
+            CustomUserDetails currentUser
+    ) {
+        boolean canViewTeam = currentUser.getAuthorities()
+                .stream()
+                .anyMatch(authority ->
+                        authority.getAuthority().equals("TASK_ASSIGN")
+                );
+
+        Long effectiveAssignedUserId =
+                canViewTeam ? assignedToUserId : currentUser.getId();
+
+        return ResponseEntity.ok(
+                taskService.getCalendarTasks(
+                        from,
+                        to,
+                        effectiveAssignedUserId,
+                        pageable
+                )
+        );
     }
 
     @GetMapping("/{id}")
