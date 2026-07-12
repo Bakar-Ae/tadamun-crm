@@ -54,3 +54,21 @@ export async function getAdvancedReport(from: string, to: string) {
 
   return response.data
 }
+
+export type ReportExportFormat = 'excel' | 'pdf'
+
+export async function downloadAdvancedReport(
+  format: ReportExportFormat,
+  from: string,
+  to: string,
+) {
+  const response = await api.get<Blob>(
+    `/reports/advanced/export/${format}`,
+    {
+      params: { from, to },
+      responseType: 'blob',
+    },
+  )
+
+  return response.data
+}

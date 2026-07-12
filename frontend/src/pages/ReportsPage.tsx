@@ -9,7 +9,10 @@ import {
   RefreshCw,
   Target,
   UsersRound,
+  FileText,
+  FileSpreadsheet,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
 import { NavLink } from 'react-router'
 import {
   Bar,
@@ -37,9 +40,11 @@ import {
   StatusBadge,
 } from '../components/ui'
 import {
+  downloadAdvancedReport,
   getAdvancedReport,
   type AdvancedReport,
   type ReportBreakdownItem,
+  type ReportExportFormat,
 } from '../services/reportService'
 import { formatStatus, priorityVariant, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage } from '../lib/errors'
@@ -166,6 +171,35 @@ function downloadReportCsv(report: AdvancedReport) {
 function breakdownHasData(items: ReportBreakdownItem[]) {
   return items.some((item) => item.count > 0)
 }
+function hasReportExportPermission() {
+  const storedUser = localStorage.getItem('user')
+
+  if (!storedUser) return false
+
+  try {
+    const user = JSON.parse(storedUser) as {
+      permissions?: string[]
+    }
+
+    return user.permissions?.includes('REPORT_EXPORT') === true
+  } catch {
+    return false
+  }
+}
+
+function saveBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = fileName
+
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+
+  URL.revokeObjectURL(url)
+}
 
 export function ReportsPage() {
   const [preset, setPreset] = useState<RangePreset>('30')
@@ -177,6 +211,10 @@ export function ReportsPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [filterError, setFilterError] = useState('')
+  const [exportingFormat, setExportingFormat] =
+    useState<ReportExportFormat | null>(null)
+
+  const canExportReports = hasReportExportPermission()
 
   useEffect(() => {
     let ignore = false
@@ -253,6 +291,32 @@ export function ReportsPage() {
     setReport(null)
     setRequestVersion((current) => current + 1)
   }
+  async function exportServerReport(format: ReportExportFormat) {
+    setExportingFormat(format)
+
+    try {
+      const blob = await downloadAdvancedReport(
+        format,
+        startOfDayIso(requestedRange.fromDate),
+        endExclusiveIso(requestedRange.toDate),
+      )
+
+      const extension = format === 'excel' ? 'xlsx' : 'pdf'
+
+      saveBlob(
+        blob,
+        `tadamun-report-${requestedRange.fromDate}-to-${requestedRange.toDate}.${extension}`,
+      )
+
+      toast.success(
+        `${format === 'excel' ? 'Excel' : 'PDF'} report downloaded`,
+      )
+    } catch {
+      toast.error('Could not download the report. Please try again.')
+    } finally {
+      setExportingFormat(null)
+    }
+  }
 
   const hasData = report ? reportHasData(report) : false
   const leadHasData = report ? breakdownHasData(report.leadStatusBreakdown) : false
@@ -265,11 +329,36 @@ export function ReportsPage() {
         title="Reports"
         description="Compare customer, lead, task, and activity results for a selected period."
         action={
-          report && (
-            <PageActionButton icon={Download} onClick={() => downloadReportCsv(report)}>
-              Export CSV
-            </PageActionButton>
-          )
+          report && canExportReports ? (
+            <div className="flex flex-wrap gap-2">
+              <PageActionButton
+                icon={Download}
+                onClick={() => downloadReportCsv(report)}
+              >
+                CSV
+              </PageActionButton>
+
+              <button
+                type="button"
+                disabled={exportingFormat !== null}
+                onClick={() => exportServerReport('excel')}
+                className="crm-focus inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-4 text-sm font-semibold text-[var(--crm-text)] transition hover:bg-[var(--crm-surface-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <FileSpreadsheet size={17} />
+                {exportingFormat === 'excel' ? 'Preparing...' : 'Excel'}
+              </button>
+
+              <button
+                type="button"
+                disabled={exportingFormat !== null}
+                onClick={() => exportServerReport('pdf')}
+                className="crm-focus inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-surface)] px-4 text-sm font-semibold text-[var(--crm-text)] transition hover:bg-[var(--crm-surface-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <FileText size={17} />
+                {exportingFormat === 'pdf' ? 'Preparing...' : 'PDF'}
+              </button>
+            </div>
+          ) : undefined
         }
       >
         <GlassCard>
