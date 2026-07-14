@@ -55,6 +55,11 @@ export async function getCustomers(
   return response.data
 }
 
+export async function getCustomerById(id: number) {
+  const response = await api.get<CustomerResponse>(`/customers/${id}`)
+  return response.data
+}
+
 export async function createCustomer(request: CreateCustomerRequest) {
   const response = await api.post<CustomerResponse>('/customers', request)
   return response.data

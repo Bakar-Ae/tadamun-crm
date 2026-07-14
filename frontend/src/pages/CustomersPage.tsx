@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import toast from 'react-hot-toast'
+import { useSearchParams } from 'react-router'
 import {
   Activity,
   Archive,
@@ -32,6 +33,7 @@ import {
 } from '../components/ui'
 import {
   archiveCustomer,
+  getCustomerById,
   getCustomers,
   updateCustomer,
   type CustomerFilters,
@@ -70,6 +72,8 @@ const cardAnimation: Variants = {
 }
 
 export function CustomersPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const linkedCustomerId = searchParams.get('customerId')
   const [customers, setCustomers] = useState<PageResponse<CustomerResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<CustomerStatus | ''>('')
@@ -139,6 +143,44 @@ export function CustomersPage() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    const customerId = Number(linkedCustomerId)
+
+    if (!linkedCustomerId || !Number.isSafeInteger(customerId) || customerId < 1) {
+      return
+    }
+
+    let ignore = false
+
+    Promise.allSettled([
+      getCustomerById(customerId),
+      getCustomerActivity(customerId, 0, 20),
+      getContacts(0, 5, { customerId }),
+    ]).then(([customerResult, activityResult, contactsResult]) => {
+      if (ignore) {
+        return
+      }
+
+      if (customerResult.status === 'rejected') {
+        toast.error('Customer could not be opened')
+        return
+      }
+
+      setSelectedCustomer(customerResult.value)
+      setEditingCustomer(false)
+      setCustomerActivity(
+        activityResult.status === 'fulfilled' ? activityResult.value.content : [],
+      )
+      setRelatedContacts(
+        contactsResult.status === 'fulfilled' ? contactsResult.value.content : [],
+      )
+    })
+
+    return () => {
+      ignore = true
+    }
+  }, [linkedCustomerId])
 
   useEffect(() => {
     function refreshAfterCreate() {
@@ -570,6 +612,11 @@ function loadRelatedContacts(customerId: number) {
              setEditingCustomer(false)
              setCustomerActivity([])
              setRelatedContacts([])
+             if (searchParams.has('customerId')) {
+               const nextSearchParams = new URLSearchParams(searchParams)
+               nextSearchParams.delete('customerId')
+               setSearchParams(nextSearchParams, { replace: true })
+             }
            }}
            footer={
              selectedCustomer && (

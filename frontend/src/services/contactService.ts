@@ -55,6 +55,11 @@ export async function getContacts(
   return response.data
 }
 
+export async function getContactById(id: number) {
+  const response = await api.get<ContactResponse>(`/contacts/${id}`)
+  return response.data
+}
+
 export async function createContact(request: CreateContactRequest) {
   const response = await api.post<ContactResponse>('/contacts', request)
   return response.data

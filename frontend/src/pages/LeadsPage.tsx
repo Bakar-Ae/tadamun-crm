@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import toast from 'react-hot-toast'
+import { useSearchParams } from 'react-router'
 import {
   Archive,
   BriefcaseBusiness,
@@ -31,7 +32,7 @@ import {
   type ActivityTimelineItem,
 } from '../components/ui'
 import { AttachmentPanel } from '../components/AttachmentPanel'
-import { archiveLead, convertLead, getLeads, updateLead, type LeadFilters, type LeadResponse, type LeadStatus,} from '../services/leadService'
+import { archiveLead, convertLead, getLeadById, getLeads, updateLead, type LeadFilters, type LeadResponse, type LeadStatus,} from '../services/leadService'
 import { getLeadActivity } from '../services/activityService'
 import type { PageResponse } from '../services/userService'
 import {
@@ -67,6 +68,8 @@ const cardAnimation: Variants = {
 }
 
 export function LeadsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const linkedLeadId = searchParams.get('leadId')
   const [leads, setLeads] = useState<PageResponse<LeadResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<LeadStatus | ''>('')
@@ -133,6 +136,40 @@ export function LeadsPage() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    const leadId = Number(linkedLeadId)
+
+    if (!linkedLeadId || !Number.isSafeInteger(leadId) || leadId < 1) {
+      return
+    }
+
+    let ignore = false
+
+    Promise.allSettled([
+      getLeadById(leadId),
+      getLeadActivity(leadId, 0, 20),
+    ]).then(([leadResult, activityResult]) => {
+      if (ignore) {
+        return
+      }
+
+      if (leadResult.status === 'rejected') {
+        toast.error('Lead could not be opened')
+        return
+      }
+
+      setSelectedLead(leadResult.value)
+      setEditingLead(false)
+      setLeadActivity(
+        activityResult.status === 'fulfilled' ? activityResult.value.content : [],
+      )
+    })
+
+    return () => {
+      ignore = true
+    }
+  }, [linkedLeadId])
 
   useEffect(() => {
     function refreshAfterCreate() {
@@ -583,6 +620,11 @@ function loadLeadActivity(leadId: number) {
             setSelectedLead(null)
             setEditingLead(false)
             setLeadActivity([])
+            if (searchParams.has('leadId')) {
+              const nextSearchParams = new URLSearchParams(searchParams)
+              nextSearchParams.delete('leadId')
+              setSearchParams(nextSearchParams, { replace: true })
+            }
           }}
           footer={
             selectedLead && (

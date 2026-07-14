@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { motion, type Variants } from 'framer-motion'
 import toast from 'react-hot-toast'
+import { useSearchParams } from 'react-router'
 import { Activity, Archive, Building2, Filter, Mail, Phone, Plus, RotateCcw, UserRound, UsersRound } from 'lucide-react'
 import { AppLayout } from '../layouts/AppLayout'
 import {
@@ -19,6 +20,7 @@ import {
 } from '../components/ui'
 import {
   archiveContact,
+  getContactById,
   getContacts,
   updateContact,
   type ContactFilters,
@@ -54,6 +56,8 @@ const cardAnimation: Variants = {
 }
 
 export function ContactsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const linkedContactId = searchParams.get('contactId')
   const [contacts, setContacts] = useState<PageResponse<ContactResponse> | null>(null)
   const [keyword, setKeyword] = useState('')
   const [statusFilter, setStatusFilter] = useState<ContactStatus | ''>('')
@@ -121,6 +125,33 @@ export function ContactsPage() {
       ignore = true
     }
   }, [])
+
+  useEffect(() => {
+    const contactId = Number(linkedContactId)
+
+    if (!linkedContactId || !Number.isSafeInteger(contactId) || contactId < 1) {
+      return
+    }
+
+    let ignore = false
+
+    getContactById(contactId)
+      .then((contact) => {
+        if (!ignore) {
+          setSelectedContact(contact)
+          setEditingContact(false)
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          toast.error('Contact could not be opened')
+        }
+      })
+
+    return () => {
+      ignore = true
+    }
+  }, [linkedContactId])
 
   useEffect(() => {
     let ignore = false
@@ -553,6 +584,11 @@ async function saveContactEdit() {
         onClose={() => {
           setSelectedContact(null)
           setEditingContact(false)
+          if (searchParams.has('contactId')) {
+            const nextSearchParams = new URLSearchParams(searchParams)
+            nextSearchParams.delete('contactId')
+            setSearchParams(nextSearchParams, { replace: true })
+          }
         }}
         footer={
           selectedContact && (

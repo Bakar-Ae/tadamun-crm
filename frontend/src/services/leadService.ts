@@ -58,6 +58,11 @@ export async function getLeads(
   return response.data
 }
 
+export async function getLeadById(id: number) {
+  const response = await api.get<LeadResponse>(`/leads/${id}`)
+  return response.data
+}
+
 export async function createLead(request: CreateLeadRequest) {
   const response = await api.post<LeadResponse>('/leads', request)
   return response.data
