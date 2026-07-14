@@ -1,6 +1,7 @@
 package com.crm.backend.user;
 
 import com.crm.backend.role.RoleName;
+import com.crm.backend.dashboard.TeamMemberWorkloadProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,12 +9,82 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    @Query("""
+        SELECT COUNT(u) FROM User u
+        LEFT JOIN u.team team
+        WHERE (
+            :allAccess = true
+            OR u.id = :currentUserId
+            OR (
+                :teamAccess = true
+                AND :currentTeamId IS NOT NULL
+                AND team.id = :currentTeamId
+            )
+        )
+        """)
+    long countAccessibleUsers(
+            @Param("allAccess") boolean allAccess,
+            @Param("teamAccess") boolean teamAccess,
+            @Param("currentUserId") Long currentUserId,
+            @Param("currentTeamId") Long currentTeamId
+    );
+
+    @Query(value = """
+        SELECT
+            u.id AS userId,
+            u.full_name AS fullName,
+            COALESCE((
+                SELECT COUNT(*) FROM customers c
+                WHERE c.owner_user_id = u.id AND c.status = 'ACTIVE'
+            ), 0) AS activeCustomers,
+            COALESCE((
+                SELECT COUNT(*) FROM leads l
+                WHERE l.assigned_to_user_id = u.id
+                  AND l.status IN ('NEW', 'CONTACTED', 'QUALIFIED')
+            ), 0) AS activeLeads,
+            COALESCE((
+                SELECT COUNT(*) FROM tasks t
+                WHERE t.assigned_to_user_id = u.id
+                  AND t.status IN ('OPEN', 'IN_PROGRESS')
+            ), 0) AS openTasks,
+            COALESCE((
+                SELECT COUNT(*) FROM tasks t
+                WHERE t.assigned_to_user_id = u.id
+                  AND t.status = 'COMPLETED'
+            ), 0) AS completedTasks,
+            COALESCE((
+                SELECT COUNT(*) FROM audit_logs a
+                WHERE a.actor_user_id = u.id
+                  AND a.created_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 30 DAY)
+            ), 0) AS recentActivities
+        FROM users u
+        WHERE u.status = 'ACTIVE'
+          AND (
+              :allAccess = TRUE
+              OR u.id = :currentUserId
+              OR (
+                  :teamAccess = TRUE
+                  AND :currentTeamId IS NOT NULL
+                  AND u.team_id = :currentTeamId
+              )
+          )
+        ORDER BY openTasks DESC, recentActivities DESC, u.full_name ASC
+        """, nativeQuery = true)
+    List<TeamMemberWorkloadProjection> findDashboardMemberWorkloads(
+            @Param("allAccess") boolean allAccess,
+            @Param("teamAccess") boolean teamAccess,
+            @Param("currentUserId") Long currentUserId,
+            @Param("currentTeamId") Long currentTeamId,
+            Pageable pageable
+    );
 
     @Query("""
         SELECT u FROM User u

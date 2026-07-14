@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 public class CustomerMapper {
 
     public CustomerResponse toResponse(Customer customer) {
+        var owner = customer.getOwnerUser();
+        var team = owner == null ? null : owner.getTeam();
+
         return new CustomerResponse(
                 customer.getId(),
                 customer.getName(),
@@ -15,6 +18,10 @@ public class CustomerMapper {
                 customer.getCompanyName(),
                 customer.getCustomerType(),
                 customer.getStatus(),
+                owner == null ? null : owner.getId(),
+                owner == null ? null : owner.getFullName(),
+                team == null ? null : team.getId(),
+                team == null ? null : team.getName(),
                 customer.getCreatedAt(),
                 customer.getUpdatedAt()
         );

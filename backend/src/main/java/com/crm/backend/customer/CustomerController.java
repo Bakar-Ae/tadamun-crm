@@ -3,14 +3,12 @@ package com.crm.backend.customer;
 import com.crm.backend.customer.dto.CreateCustomerRequest;
 import com.crm.backend.customer.dto.CustomerResponse;
 import com.crm.backend.customer.dto.UpdateCustomerRequest;
-import com.crm.backend.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,11 +24,10 @@ public class CustomerController {
     @PostMapping
     @PreAuthorize("hasAuthority('CUSTOMER_CREATE')")
     public ResponseEntity<CustomerResponse> createCustomer(
-            @Valid @RequestBody CreateCustomerRequest request,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @Valid @RequestBody CreateCustomerRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(customerService.createCustomer(request, currentUser.getId()));
+                .body(customerService.createCustomer(request));
     }
 
     @GetMapping
@@ -63,29 +60,16 @@ public class CustomerController {
     @PreAuthorize("hasAuthority('CUSTOMER_UPDATE')")
     public ResponseEntity<CustomerResponse> updateCustomer(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateCustomerRequest request,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @Valid @RequestBody UpdateCustomerRequest request
     ) {
-        return ResponseEntity.ok(
-                customerService.updateCustomer(
-                        id,
-                        request,
-                        currentUser.getId()
-                )
-        );
+        return ResponseEntity.ok(customerService.updateCustomer(id, request));
     }
 
     @PatchMapping("/{id}/archive")
     @PreAuthorize("hasAuthority('CUSTOMER_ARCHIVE')")
     public ResponseEntity<CustomerResponse> archiveCustomer(
-            @PathVariable Long id,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @PathVariable Long id
     ) {
-        return ResponseEntity.ok(
-                customerService.archiveCustomer(
-                        id,
-                        currentUser.getId()
-                )
-        );
+        return ResponseEntity.ok(customerService.archiveCustomer(id));
     }
 }

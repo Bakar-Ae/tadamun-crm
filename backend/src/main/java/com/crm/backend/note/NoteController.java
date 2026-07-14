@@ -3,14 +3,12 @@ package com.crm.backend.note;
 import com.crm.backend.note.dto.CreateNoteRequest;
 import com.crm.backend.note.dto.NoteResponse;
 import com.crm.backend.note.dto.UpdateNoteRequest;
-import com.crm.backend.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,11 +24,10 @@ public class NoteController {
     @PostMapping
     @PreAuthorize("hasAuthority('NOTE_CREATE')")
     public ResponseEntity<NoteResponse> createNote(
-            @Valid @RequestBody CreateNoteRequest request,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @Valid @RequestBody CreateNoteRequest request
     ) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(noteService.createNote(request, currentUser.getId()));
+                .body(noteService.createNote(request));
     }
 
     @GetMapping("/customers/{customerId}")

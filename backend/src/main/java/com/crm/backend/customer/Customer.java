@@ -1,5 +1,6 @@
 package com.crm.backend.customer;
 
+import com.crm.backend.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,6 +34,10 @@ public class Customer {
     @Enumerated(EnumType.STRING)
     @Column(name = "customer_type", nullable = false, length = 50)
     private CustomerType customerType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_user_id")
+    private User ownerUser;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

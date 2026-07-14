@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Link } from "react-router";
 import {
+  Activity,
+  AlertTriangle,
   ArrowRight,
   BarChart3,
   ClipboardList,
@@ -25,10 +27,16 @@ import {
 } from "recharts";
 import { AppLayout } from "../layouts/AppLayout";
 import {
-  getDashboardSummary,
+  getTeamDashboard,
   type DashboardSummary,
+  type TeamDashboard,
 } from "../services/dashboardService";
 import { GlassCard, PageShell } from "../components/ui";
+import {
+  formatAuditAction,
+  formatDateTime,
+  formatEntityName,
+} from "../lib/formatters";
 
 const containerAnimation: Variants = {
   hidden: { opacity: 0 },
@@ -359,6 +367,122 @@ function TaskFocusCard({ openTasks, completedTasks }: TaskFocusCardProps) {
   );
 }
 
+function TeamWorkloadPanel({ dashboard }: { dashboard: TeamDashboard | null }) {
+  const members = dashboard?.members ?? [];
+
+  return (
+    <motion.div variants={cardAnimation} className="min-w-0">
+      <GlassCard className="min-w-0 overflow-hidden p-0">
+        <div className="flex flex-col gap-3 border-b border-[var(--crm-border)] p-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--crm-text-muted)]">
+              {dashboard?.scope === "OWN" ? "My workload" : "Team workload"}
+            </p>
+            <h2 className="mt-2 text-xl font-semibold text-[var(--crm-text)]">
+              {dashboard?.teamName ?? "Workload"}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 rounded-2xl border border-amber-200/70 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
+            <AlertTriangle size={16} />
+            {dashboard?.overdueTasks ?? 0} overdue
+          </div>
+        </div>
+
+        {members.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[680px] text-left text-sm">
+              <thead className="bg-[var(--crm-card-subtle)] text-xs uppercase tracking-[0.08em] text-[var(--crm-text-muted)]">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Team member</th>
+                  <th className="px-5 py-3 font-semibold">Customers</th>
+                  <th className="px-5 py-3 font-semibold">Leads</th>
+                  <th className="px-5 py-3 font-semibold">Open tasks</th>
+                  <th className="px-5 py-3 font-semibold">Completed</th>
+                  <th className="px-5 py-3 font-semibold">30-day activity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--crm-border)]">
+                {members.map((member) => (
+                  <tr key={member.userId} className="transition hover:bg-violet-500/5">
+                    <td className="px-5 py-4 font-semibold text-[var(--crm-text)]">
+                      {member.fullName}
+                    </td>
+                    <td className="px-5 py-4 text-[var(--crm-text-muted)]">
+                      {member.activeCustomers}
+                    </td>
+                    <td className="px-5 py-4 text-[var(--crm-text-muted)]">
+                      {member.activeLeads}
+                    </td>
+                    <td className="px-5 py-4 font-semibold text-[var(--crm-text)]">
+                      {member.openTasks}
+                    </td>
+                    <td className="px-5 py-4 text-[var(--crm-text-muted)]">
+                      {member.completedTasks}
+                    </td>
+                    <td className="px-5 py-4 text-[var(--crm-text-muted)]">
+                      {member.recentActivities}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="p-5 text-sm text-[var(--crm-text-muted)]">
+            No active team members are available for this view.
+          </div>
+        )}
+      </GlassCard>
+    </motion.div>
+  );
+}
+
+function RecentActivityPanel({ dashboard }: { dashboard: TeamDashboard | null }) {
+  const activity = dashboard?.recentActivity ?? [];
+
+  return (
+    <motion.div variants={cardAnimation}>
+      <GlassCard className="h-full p-0">
+        <div className="border-b border-[var(--crm-border)] p-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--crm-text-muted)]">
+            Recent activity
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-[var(--crm-text)]">
+            Latest changes
+          </h2>
+        </div>
+
+        {activity.length > 0 ? (
+          <div className="divide-y divide-[var(--crm-border)]">
+            {activity.map((item) => (
+              <div key={item.id} className="flex gap-3 p-4">
+                <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[var(--crm-soft-gradient)] text-[var(--crm-primary)]">
+                  <Activity size={16} />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-[var(--crm-text)]">
+                    {formatAuditAction(item.action)}
+                  </p>
+                  <p className="mt-1 truncate text-sm text-[var(--crm-text-muted)]">
+                    {item.actorName} · {formatEntityName(item.entityType, item.entityId)}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--crm-text-muted)]">
+                    {formatDateTime(item.createdAt)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="p-5 text-sm text-[var(--crm-text-muted)]">
+            No recent changes are available for this view.
+          </div>
+        )}
+      </GlassCard>
+    </motion.div>
+  );
+}
+
 type SalesRow = {
   name: string;
   metric: string;
@@ -466,6 +590,7 @@ function SalesTable({ rows }: { rows: SalesRow[] }) {
 
 export function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [teamDashboard, setTeamDashboard] = useState<TeamDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -473,9 +598,10 @@ export function DashboardPage() {
   const loadDashboard = useCallback(() => {
     setLoading(true);
 
-    getDashboardSummary()
-      .then((summaryData) => {
-        setSummary(summaryData);
+    getTeamDashboard()
+      .then((dashboardData) => {
+        setTeamDashboard(dashboardData);
+        setSummary(dashboardData.summary);
         setUpdatedAt(new Date());
       })
       .catch(() => {
@@ -490,10 +616,11 @@ export function DashboardPage() {
   useEffect(() => {
     let ignore = false;
 
-    getDashboardSummary()
-      .then((summaryData) => {
+    getTeamDashboard()
+      .then((dashboardData) => {
         if (!ignore) {
-          setSummary(summaryData);
+          setTeamDashboard(dashboardData);
+          setSummary(dashboardData.summary);
           setUpdatedAt(new Date());
         }
       })
@@ -542,9 +669,12 @@ export function DashboardPage() {
     {
       label: "Users",
       value: loading ? "-" : totalUsers,
-      caption: "Team accounts",
+      caption:
+        teamDashboard?.scope === "OWN"
+          ? "Your account"
+          : teamDashboard?.teamName ?? "Team accounts",
       icon: Users,
-      path: "/users",
+      path: teamDashboard?.scope === "OWN" ? "/dashboard" : "/users",
       sparkline: buildSparkline(totalUsers),
     },
     {
@@ -732,6 +862,16 @@ export function DashboardPage() {
         >
           <PipelineCard summary={summary} />
           <TaskFocusCard openTasks={openTasks} completedTasks={completedTasks} />
+        </motion.section>
+
+        <motion.section
+          className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]"
+          variants={containerAnimation}
+          initial="hidden"
+          animate="show"
+        >
+          <TeamWorkloadPanel dashboard={teamDashboard} />
+          <RecentActivityPanel dashboard={teamDashboard} />
         </motion.section>
 
         <motion.section

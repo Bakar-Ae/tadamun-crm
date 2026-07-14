@@ -1,6 +1,7 @@
 package com.crm.backend.user;
 
 import com.crm.backend.role.Role;
+import com.crm.backend.team.Team;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -34,6 +35,10 @@ public class User {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "team_id")
+    private Team team;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

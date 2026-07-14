@@ -13,6 +13,10 @@ public record CustomerResponse(
         String companyName,
         CustomerType customerType,
         CustomerStatus status,
+        Long ownerUserId,
+        String ownerName,
+        Long ownerTeamId,
+        String ownerTeamName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

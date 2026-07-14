@@ -1,5 +1,7 @@
 package com.crm.backend.report;
 
+import com.crm.backend.role.DataScope;
+import com.crm.backend.security.DataScopeContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,17 +23,30 @@ class ReportAnalyticsRepositoryTest {
     void aggregateQueriesShouldExecuteAgainstMySql() {
         LocalDateTime from = LocalDateTime.now().minusYears(10);
         LocalDateTime to = LocalDateTime.now().plusYears(10);
+        DataScopeContext context = new DataScopeContext(
+                1L, null, DataScope.ALL
+        );
 
-        assertTrue(reportAnalyticsRepository.countCustomersCreated(from, to) >= 0);
-        assertNotNull(reportAnalyticsRepository.countLeadsByStatus(from, to));
-        assertNotNull(reportAnalyticsRepository.countTasksByStatus(from, to));
-        assertNotNull(reportAnalyticsRepository.countTasksByPriority(from, to));
+        assertTrue(reportAnalyticsRepository.countCustomersCreated(
+                from, to, context
+        ) >= 0);
+        assertNotNull(reportAnalyticsRepository.countLeadsByStatus(
+                from, to, context
+        ));
+        assertNotNull(reportAnalyticsRepository.countTasksByStatus(
+                from, to, context
+        ));
+        assertNotNull(reportAnalyticsRepository.countTasksByPriority(
+                from, to, context
+        ));
         assertTrue(reportAnalyticsRepository.countAuditEventsByAction(
-                "LEAD_CONVERTED", from, to
+                "LEAD_CONVERTED", from, to, context
         ) >= 0);
         assertTrue(reportAnalyticsRepository.countAuditEventsByEntityType(
-                "CUSTOMER", from, to
+                "CUSTOMER", from, to, context
         ) >= 0);
-        assertNotNull(reportAnalyticsRepository.countDailyActivity(from, to));
+        assertNotNull(reportAnalyticsRepository.countDailyActivity(
+                from, to, context
+        ));
     }
 }

@@ -28,6 +28,10 @@ public class Role {
     @Column(length = 255)
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "data_scope", nullable = false, length = 20)
+    private DataScope dataScope;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "role_permissions",

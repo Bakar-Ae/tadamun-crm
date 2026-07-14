@@ -1,6 +1,5 @@
 package com.crm.backend.task;
 
-import com.crm.backend.security.CustomUserDetails;
 import com.crm.backend.task.dto.CalendarTaskResponse;
 import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.task.dto.TaskResponse;
@@ -12,7 +11,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.OffsetDateTime;
@@ -36,10 +34,9 @@ public class TaskController {
                     "hasAuthority('TASK_ASSIGN'))"
     )
     public ResponseEntity<TaskResponse> createTask(
-            @Valid @RequestBody CreateTaskRequest request,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @Valid @RequestBody CreateTaskRequest request
     ) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.createTask(request, currentUser.getId()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(taskService.createTask(request));
     }
 
     @GetMapping
@@ -74,25 +71,13 @@ public class TaskController {
             @RequestParam(required = false)
             Long assignedToUserId,
 
-            Pageable pageable,
-
-            @AuthenticationPrincipal
-            CustomUserDetails currentUser
+            Pageable pageable
     ) {
-        boolean canViewTeam = currentUser.getAuthorities()
-                .stream()
-                .anyMatch(authority ->
-                        authority.getAuthority().equals("TASK_ASSIGN")
-                );
-
-        Long effectiveAssignedUserId =
-                canViewTeam ? assignedToUserId : currentUser.getId();
-
         return ResponseEntity.ok(
                 taskService.getCalendarTasks(
                         from,
                         to,
-                        effectiveAssignedUserId,
+                        assignedToUserId,
                         pageable
                 )
         );
@@ -116,9 +101,8 @@ public class TaskController {
     )
     public ResponseEntity<TaskResponse> updateTask(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateTaskRequest request,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @Valid @RequestBody UpdateTaskRequest request
     ) {
-        return ResponseEntity.ok(taskService.updateTask(id, request, currentUser.getId()));
+        return ResponseEntity.ok(taskService.updateTask(id, request));
     }
 }

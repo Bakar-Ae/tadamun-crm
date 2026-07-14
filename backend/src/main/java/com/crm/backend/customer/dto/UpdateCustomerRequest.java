@@ -26,6 +26,8 @@ public record UpdateCustomerRequest(
         CustomerType customerType,
 
         @NotNull(message = "Status is required")
-        CustomerStatus status
+        CustomerStatus status,
+
+        Long ownerUserId
 ) {
 }

@@ -5,6 +5,9 @@ import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.Lead;
 import com.crm.backend.lead.LeadRepository;
+import com.crm.backend.role.DataScope;
+import com.crm.backend.security.DataScopeContext;
+import com.crm.backend.security.DataScopeService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import tools.jackson.core.JacksonException;
@@ -28,6 +31,7 @@ public class AttachmentService {
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
+    private final DataScopeService dataScopeService;
 
     public AttachmentService(
             AttachmentRepository attachmentRepository,
@@ -36,7 +40,8 @@ public class AttachmentService {
             LeadRepository leadRepository,
             UserRepository userRepository,
             AuditLogService auditLogService,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            DataScopeService dataScopeService
     ) {
         this.attachmentRepository = attachmentRepository;
         this.storageService = storageService;
@@ -45,15 +50,22 @@ public class AttachmentService {
         this.userRepository = userRepository;
         this.auditLogService = auditLogService;
         this.objectMapper = objectMapper;
+        this.dataScopeService = dataScopeService;
     }
 
     @Transactional
     public AttachmentResponse uploadToCustomer(
             Long customerId,
-            MultipartFile file,
-            Long actorUserId
+            MultipartFile file
     ) {
-        Customer customer = customerRepository.findById(customerId)
+        DataScopeContext context = dataScopeService.currentContext();
+        Customer customer = customerRepository.findAccessibleById(
+                        customerId,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
                 .orElseThrow(() ->
                         new IllegalArgumentException("Customer not found")
                 );
@@ -62,17 +74,23 @@ public class AttachmentService {
                 file,
                 customer,
                 null,
-                findUser(actorUserId)
+                findUser(context.userId())
         );
     }
 
     @Transactional
     public AttachmentResponse uploadToLead(
             Long leadId,
-            MultipartFile file,
-            Long actorUserId
+            MultipartFile file
     ) {
-        Lead lead = leadRepository.findById(leadId)
+        DataScopeContext context = dataScopeService.currentContext();
+        Lead lead = leadRepository.findAccessibleById(
+                        leadId,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
                 .orElseThrow(() ->
                         new IllegalArgumentException("Lead not found")
                 );
@@ -81,7 +99,7 @@ public class AttachmentService {
                 file,
                 null,
                 lead,
-                findUser(actorUserId)
+                findUser(context.userId())
         );
     }
 
@@ -90,9 +108,8 @@ public class AttachmentService {
             Long customerId,
             Pageable pageable
     ) {
-        if (!customerRepository.existsById(customerId)) {
-            throw new IllegalArgumentException("Customer not found");
-        }
+        DataScopeContext context = dataScopeService.currentContext();
+        requireAccessibleCustomer(customerId, context);
 
         return attachmentRepository
                 .findByCustomerIdAndStatusOrderByCreatedAtDesc(
@@ -108,9 +125,8 @@ public class AttachmentService {
             Long leadId,
             Pageable pageable
     ) {
-        if (!leadRepository.existsById(leadId)) {
-            throw new IllegalArgumentException("Lead not found");
-        }
+        DataScopeContext context = dataScopeService.currentContext();
+        requireAccessibleLead(leadId, context);
 
         return attachmentRepository
                 .findByLeadIdAndStatusOrderByCreatedAtDesc(
@@ -123,7 +139,8 @@ public class AttachmentService {
 
     @Transactional(readOnly = true)
     public AttachmentDownload download(Long attachmentId) {
-        Attachment attachment = findActiveAttachment(attachmentId);
+        DataScopeContext context = dataScopeService.currentContext();
+        Attachment attachment = findAccessibleActiveAttachment(attachmentId, context);
 
         return new AttachmentDownload(
                 storageService.load(attachment.getStorageKey()),
@@ -134,16 +151,17 @@ public class AttachmentService {
     }
 
     @Transactional
-    public void delete(Long attachmentId, Long actorUserId) {
-        Attachment attachment = findActiveAttachment(attachmentId);
-        User actor = findUser(actorUserId);
+    public void delete(Long attachmentId) {
+        DataScopeContext context = dataScopeService.currentContext();
+        Attachment attachment = findAccessibleActiveAttachment(attachmentId, context);
+        User actor = findUser(context.userId());
 
         attachment.setStatus(AttachmentStatus.DELETED);
         attachment.setDeletedAt(LocalDateTime.now());
         attachment.setDeletedByUser(actor);
 
         auditLogService.log(
-                actorUserId,
+                context.userId(),
                 "ATTACHMENT_DELETED",
                 "ATTACHMENT",
                 attachment.getId(),
@@ -192,9 +210,19 @@ public class AttachmentService {
         }
     }
 
-    private Attachment findActiveAttachment(Long id) {
+    private Attachment findAccessibleActiveAttachment(
+            Long id,
+            DataScopeContext context
+    ) {
         return attachmentRepository
-                .findByIdAndStatus(id, AttachmentStatus.ACTIVE)
+                .findAccessibleByIdAndStatus(
+                        id,
+                        AttachmentStatus.ACTIVE,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
                 .orElseThrow(() ->
                         new IllegalArgumentException("Attachment not found")
                 );
@@ -205,6 +233,46 @@ public class AttachmentService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("User not found")
                 );
+    }
+
+    private void requireAccessibleCustomer(
+            Long customerId,
+            DataScopeContext context
+    ) {
+        customerRepository.findAccessibleById(
+                        customerId,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Customer not found")
+                );
+    }
+
+    private void requireAccessibleLead(
+            Long leadId,
+            DataScopeContext context
+    ) {
+        leadRepository.findAccessibleById(
+                        leadId,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Lead not found")
+                );
+    }
+
+    private boolean isAllAccess(DataScopeContext context) {
+        return context.scope() == DataScope.ALL;
+    }
+
+    private boolean isTeamAccess(DataScopeContext context) {
+        return context.scope() == DataScope.TEAM;
     }
 
     private String cleanOriginalFileName(String originalFileName) {

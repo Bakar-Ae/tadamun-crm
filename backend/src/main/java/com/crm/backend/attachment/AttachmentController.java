@@ -1,6 +1,5 @@
 package com.crm.backend.attachment;
 
-import com.crm.backend.security.CustomUserDetails;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -10,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,14 +34,12 @@ public class AttachmentController {
     )
     public ResponseEntity<AttachmentResponse> uploadToCustomer(
             @PathVariable Long customerId,
-            @RequestPart("file") MultipartFile file,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @RequestPart("file") MultipartFile file
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 attachmentService.uploadToCustomer(
                         customerId,
-                        file,
-                        currentUser.getId()
+                        file
                 )
         );
     }
@@ -58,14 +54,12 @@ public class AttachmentController {
     )
     public ResponseEntity<AttachmentResponse> uploadToLead(
             @PathVariable Long leadId,
-            @RequestPart("file") MultipartFile file,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @RequestPart("file") MultipartFile file
     ) {
         return ResponseEntity.status(HttpStatus.CREATED).body(
                 attachmentService.uploadToLead(
                         leadId,
-                        file,
-                        currentUser.getId()
+                        file
                 )
         );
     }
@@ -144,13 +138,9 @@ public class AttachmentController {
     @DeleteMapping("/{attachmentId}")
     @PreAuthorize("hasAuthority('ATTACHMENT_DELETE')")
     public ResponseEntity<Void> delete(
-            @PathVariable Long attachmentId,
-            @AuthenticationPrincipal CustomUserDetails currentUser
+            @PathVariable Long attachmentId
     ) {
-        attachmentService.delete(
-                attachmentId,
-                currentUser.getId()
-        );
+        attachmentService.delete(attachmentId);
 
         return ResponseEntity.noContent().build();
     }

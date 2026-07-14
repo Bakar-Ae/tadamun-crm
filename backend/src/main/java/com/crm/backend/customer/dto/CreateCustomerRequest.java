@@ -22,6 +22,8 @@ public record CreateCustomerRequest(
         String companyName,
 
         @NotNull(message = "Customer type is required")
-        CustomerType customerType
+        CustomerType customerType,
+
+        Long ownerUserId
 ) {
 }

@@ -1,14 +1,18 @@
 package com.crm.backend.security;
 
+import com.crm.backend.role.DataScope;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -18,6 +22,15 @@ class SecurityEndpointTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @MockitoBean
+    private DataScopeService dataScopeService;
+
+    @BeforeEach
+    void setUpDataScope() {
+        when(dataScopeService.currentContext())
+                .thenReturn(new DataScopeContext(1L, 1L, DataScope.ALL));
+    }
 
     @Test
     void protectedEndpointShouldRejectRequestWithoutToken() throws Exception {

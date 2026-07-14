@@ -5,12 +5,16 @@ import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.Lead;
 import com.crm.backend.lead.LeadRepository;
+import com.crm.backend.role.DataScope;
+import com.crm.backend.security.DataScopeContext;
+import com.crm.backend.security.DataScopeService;
 import com.crm.backend.task.dto.CalendarTaskResponse;
 import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.task.dto.TaskResponse;
 import com.crm.backend.task.dto.UpdateTaskRequest;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
+import com.crm.backend.user.UserStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +38,7 @@ public class TaskService {
     private final LeadRepository leadRepository;
     private final TaskMapper taskMapper;
     private final AuditLogService auditLogService;
+    private final DataScopeService dataScopeService;
     private final ZoneId appTimeZone;
 
     public TaskService(
@@ -43,6 +48,7 @@ public class TaskService {
             LeadRepository leadRepository,
             TaskMapper taskMapper,
             AuditLogService auditLogService,
+            DataScopeService dataScopeService,
             @Value("${app.time-zone:Africa/Mogadishu}") String appTimeZone
     ) {
         this.taskRepository = taskRepository;
@@ -51,24 +57,26 @@ public class TaskService {
         this.leadRepository = leadRepository;
         this.taskMapper = taskMapper;
         this.auditLogService = auditLogService;
+        this.dataScopeService = dataScopeService;
         this.appTimeZone = ZoneId.of(appTimeZone);
     }
 
     @Transactional
-    public TaskResponse createTask(CreateTaskRequest request, Long actorUserId) {
+    public TaskResponse createTask(CreateTaskRequest request) {
+        DataScopeContext context = dataScopeService.currentContext();
         CrmTask task = new CrmTask();
         task.setTitle(request.title());
         task.setDescription(request.description());
         task.setPriority(request.priority());
         task.setStatus(TaskStatus.OPEN);
         task.setDueDate(request.dueDate());
-        task.setAssignedToUser(findUserOrNull(request.assignedToUserId()));
-        task.setCustomer(findCustomerOrNull(request.customerId()));
-        task.setLead(findLeadOrNull(request.leadId()));
+        task.setAssignedToUser(resolveAssignee(request.assignedToUserId(), context));
+        task.setCustomer(findAccessibleCustomerOrNull(request.customerId(), context));
+        task.setLead(findAccessibleLeadOrNull(request.leadId(), context));
 
         CrmTask savedTask = taskRepository.save(task);
         auditLogService.log(
-                actorUserId,
+                context.userId(),
                 "TASK_CREATED",
                 "TASK",
                 savedTask.getId(),
@@ -91,7 +99,21 @@ public class TaskService {
             Long leadId,
             Pageable pageable
     ) {
-        return taskRepository.searchTasks(keyword, status, priority, assignedToUserId, customerId, leadId, pageable)
+        DataScopeContext context = dataScopeService.currentContext();
+
+        return taskRepository.searchAccessibleTasks(
+                        keyword,
+                        status,
+                        priority,
+                        assignedToUserId,
+                        customerId,
+                        leadId,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId(),
+                        pageable
+                )
                 .map(taskMapper::toResponse);
     }
     @Transactional(readOnly = true)
@@ -101,6 +123,8 @@ public class TaskService {
             Long assignedToUserId,
             Pageable pageable
     ) {
+        DataScopeContext context = dataScopeService.currentContext();
+
         if (!from.isBefore(to)) {
             throw new IllegalArgumentException("'from' must be before 'to'");
         }
@@ -120,18 +144,29 @@ public class TaskService {
                 to.atZoneSameInstant(appTimeZone).toLocalDateTime();
 
         return taskRepository
-                .findCalendarTasks(localFrom, localTo, assignedToUserId, pageable)
+                .findAccessibleCalendarTasks(
+                        localFrom,
+                        localTo,
+                        assignedToUserId,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId(),
+                        pageable
+                )
                 .map(taskMapper::toCalendarResponse);
     }
 
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(Long id) {
-        return taskMapper.toResponse(findTaskOrThrow(id));
+        DataScopeContext context = dataScopeService.currentContext();
+        return taskMapper.toResponse(findAccessibleTaskOrThrow(id, context));
     }
 
     @Transactional
-    public TaskResponse updateTask(Long id, UpdateTaskRequest request, Long actorUserId) {
-        CrmTask task = findTaskOrThrow(id);
+    public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
+        DataScopeContext context = dataScopeService.currentContext();
+        CrmTask task = findAccessibleTaskOrThrow(id, context);
         TaskStatus previousStatus = task.getStatus();
 
         task.setTitle(request.title());
@@ -139,16 +174,16 @@ public class TaskService {
         task.setStatus(request.status());
         task.setPriority(request.priority());
         task.setDueDate(request.dueDate());
-        task.setAssignedToUser(findUserOrNull(request.assignedToUserId()));
-        task.setCustomer(findCustomerOrNull(request.customerId()));
-        task.setLead(findLeadOrNull(request.leadId()));
+        task.setAssignedToUser(resolveAssignee(request.assignedToUserId(), context));
+        task.setCustomer(findAccessibleCustomerOrNull(request.customerId(), context));
+        task.setLead(findAccessibleLeadOrNull(request.leadId(), context));
 
         String action = previousStatus != TaskStatus.COMPLETED && task.getStatus() == TaskStatus.COMPLETED
                 ? "TASK_COMPLETED"
                 : "TASK_UPDATED";
 
         auditLogService.log(
-                actorUserId,
+                context.userId(),
                 action,
                 "TASK",
                 task.getId(),
@@ -161,36 +196,77 @@ public class TaskService {
         return taskMapper.toResponse(task);
     }
 
-    private CrmTask findTaskOrThrow(Long id) {
-        return taskRepository.findById(id)
+    private CrmTask findAccessibleTaskOrThrow(Long id, DataScopeContext context) {
+        return taskRepository.findAccessibleById(
+                        id,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
                 .orElseThrow(() -> new IllegalArgumentException("Task not found"));
     }
 
-    private User findUserOrNull(Long id) {
-        if (id == null) {
-            return null;
+    private User resolveAssignee(Long requestedUserId, DataScopeContext context) {
+        Long assigneeId = requestedUserId == null
+                ? context.userId()
+                : requestedUserId;
+
+        User assignee = userRepository.findById(assigneeId)
+                .orElseThrow(() -> new IllegalArgumentException("Assigned user not found"));
+
+        if (assignee.getStatus() != UserStatus.ACTIVE) {
+            throw new IllegalArgumentException("Assigned user must be active");
         }
 
-        return userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Assigned user not found"));
+        Long assigneeTeamId = assignee.getTeam() == null
+                ? null
+                : assignee.getTeam().getId();
+
+        dataScopeService.requireAccess(
+                context,
+                assignee.getId(),
+                assigneeTeamId
+        );
+        return assignee;
     }
 
-    private Customer findCustomerOrNull(Long id) {
+    private Customer findAccessibleCustomerOrNull(Long id, DataScopeContext context) {
         if (id == null) {
             return null;
         }
 
-        return customerRepository.findById(id)
+        return customerRepository.findAccessibleById(
+                        id,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
     }
 
-    private Lead findLeadOrNull(Long id) {
+    private Lead findAccessibleLeadOrNull(Long id, DataScopeContext context) {
         if (id == null) {
             return null;
         }
 
-        return leadRepository.findById(id)
+        return leadRepository.findAccessibleById(
+                        id,
+                        isAllAccess(context),
+                        isTeamAccess(context),
+                        context.userId(),
+                        context.teamId()
+                )
                 .orElseThrow(() -> new IllegalArgumentException("Lead not found"));
+    }
+
+    private boolean isAllAccess(DataScopeContext context) {
+        return context.scope() == DataScope.ALL;
+    }
+
+    private boolean isTeamAccess(DataScopeContext context) {
+        return context.scope() == DataScope.TEAM;
     }
 
 }

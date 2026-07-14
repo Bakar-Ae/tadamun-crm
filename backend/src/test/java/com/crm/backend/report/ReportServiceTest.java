@@ -1,8 +1,12 @@
 package com.crm.backend.report;
 
 import com.crm.backend.customer.CustomerRepository;
+import com.crm.backend.customer.CustomerStatus;
 import com.crm.backend.lead.LeadRepository;
 import com.crm.backend.lead.LeadStatus;
+import com.crm.backend.role.DataScope;
+import com.crm.backend.security.DataScopeContext;
+import com.crm.backend.security.DataScopeService;
 import com.crm.backend.task.TaskPriority;
 import com.crm.backend.task.TaskRepository;
 import com.crm.backend.task.TaskStatus;
@@ -23,19 +27,69 @@ import static org.mockito.Mockito.when;
 class ReportServiceTest {
 
     private ReportAnalyticsRepository analyticsRepository;
+    private CustomerRepository customerRepository;
+    private LeadRepository leadRepository;
+    private TaskRepository taskRepository;
+    private DataScopeService dataScopeService;
+    private DataScopeContext context;
     private ReportService reportService;
 
     @BeforeEach
     void setUp() {
         analyticsRepository = mock(ReportAnalyticsRepository.class);
+        customerRepository = mock(CustomerRepository.class);
+        leadRepository = mock(LeadRepository.class);
+        taskRepository = mock(TaskRepository.class);
+        dataScopeService = mock(DataScopeService.class);
+        context = new DataScopeContext(1L, null, DataScope.ALL);
+
+        when(dataScopeService.currentContext()).thenReturn(context);
 
         reportService = new ReportService(
-                mock(CustomerRepository.class),
-                mock(LeadRepository.class),
-                mock(TaskRepository.class),
+                customerRepository,
+                leadRepository,
+                taskRepository,
                 analyticsRepository,
+                dataScopeService,
                 "Africa/Mogadishu"
         );
+    }
+
+    @Test
+    void summaryReportShouldUseAccessibleCounts() {
+        when(customerRepository.countAccessibleByStatus(
+                CustomerStatus.ACTIVE, true, false, 1L, null
+        )).thenReturn(3L);
+        when(customerRepository.countAccessibleByStatus(
+                CustomerStatus.ARCHIVED, true, false, 1L, null
+        )).thenReturn(1L);
+        when(leadRepository.countAccessibleByStatus(
+                LeadStatus.NEW, true, false, 1L, null
+        )).thenReturn(2L);
+        when(leadRepository.countAccessibleByStatus(
+                LeadStatus.CONTACTED, true, false, 1L, null
+        )).thenReturn(1L);
+        when(leadRepository.countAccessibleByStatus(
+                LeadStatus.QUALIFIED, true, false, 1L, null
+        )).thenReturn(1L);
+        when(leadRepository.countAccessibleByStatus(
+                LeadStatus.CONVERTED, true, false, 1L, null
+        )).thenReturn(1L);
+        when(leadRepository.countAccessibleByStatus(
+                LeadStatus.ARCHIVED, true, false, 1L, null
+        )).thenReturn(1L);
+        when(taskRepository.countAccessibleByStatus(
+                TaskStatus.OPEN, true, false, 1L, null
+        )).thenReturn(4L);
+        when(taskRepository.countAccessibleByStatus(
+                TaskStatus.COMPLETED, true, false, 1L, null
+        )).thenReturn(2L);
+
+        ReportSummaryResponse response = reportService.getSummaryReport();
+
+        assertEquals(4, response.totalCustomers());
+        assertEquals(6, response.totalLeads());
+        assertEquals(6, response.totalTasks());
     }
 
     @Test
@@ -58,27 +112,37 @@ class ReportServiceTest {
         LocalDateTime localFrom = LocalDateTime.of(2026, 7, 1, 3, 0);
         LocalDateTime localTo = LocalDateTime.of(2026, 7, 3, 3, 0);
 
-        when(analyticsRepository.countCustomersCreated(localFrom, localTo))
+        when(analyticsRepository.countCustomersCreated(
+                localFrom, localTo, context
+        ))
                 .thenReturn(3L);
-        when(analyticsRepository.countLeadsByStatus(localFrom, localTo))
+        when(analyticsRepository.countLeadsByStatus(
+                localFrom, localTo, context
+        ))
                 .thenReturn(List.of(
                         new ReportBreakdownItem("NEW", 2),
                         new ReportBreakdownItem("QUALIFIED", 1)
                 ));
-        when(analyticsRepository.countTasksByStatus(localFrom, localTo))
+        when(analyticsRepository.countTasksByStatus(
+                localFrom, localTo, context
+        ))
                 .thenReturn(List.of(new ReportBreakdownItem("OPEN", 4)));
-        when(analyticsRepository.countTasksByPriority(localFrom, localTo))
+        when(analyticsRepository.countTasksByPriority(
+                localFrom, localTo, context
+        ))
                 .thenReturn(List.of(new ReportBreakdownItem("HIGH", 4)));
         when(analyticsRepository.countAuditEventsByAction(
-                "LEAD_CONVERTED", localFrom, localTo
+                "LEAD_CONVERTED", localFrom, localTo, context
         )).thenReturn(1L);
         when(analyticsRepository.countAuditEventsByAction(
-                "TASK_COMPLETED", localFrom, localTo
+                "TASK_COMPLETED", localFrom, localTo, context
         )).thenReturn(2L);
         when(analyticsRepository.countAuditEventsByEntityType(
-                "CUSTOMER", localFrom, localTo
+                "CUSTOMER", localFrom, localTo, context
         )).thenReturn(5L);
-        when(analyticsRepository.countDailyActivity(localFrom, localTo))
+        when(analyticsRepository.countDailyActivity(
+                localFrom, localTo, context
+        ))
                 .thenReturn(List.of(
                         new ReportDailyActivity(LocalDate.of(2026, 7, 1), 6)
                 ));

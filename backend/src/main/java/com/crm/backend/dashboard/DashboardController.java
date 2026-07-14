@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/dashboard")
-@PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+@PreAuthorize("hasAuthority('DASHBOARD_VIEW')")
 public class DashboardController {
 
     private final DashboardService dashboardService;
@@ -18,5 +18,10 @@ public class DashboardController {
     @GetMapping("/summary")
     public ResponseEntity<DashboardSummaryResponse> getSummary() {
         return ResponseEntity.ok(dashboardService.getSummary());
+    }
+
+    @GetMapping("/team")
+    public ResponseEntity<TeamDashboardResponse> getTeamDashboard() {
+        return ResponseEntity.ok(dashboardService.getTeamDashboard());
     }
 }
