@@ -9,6 +9,13 @@ import org.springframework.data.repository.query.Param;
 
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
+    @EntityGraph(attributePaths = {"actorUser"})
+    Page<AuditLog> findByEntityTypeAndEntityId(
+            String entityType,
+            Long entityId,
+            Pageable pageable
+    );
+
     Page<AuditLog> findByEntityType(String entityType, Pageable pageable);
 
     Page<AuditLog> findByActorUserId(Long actorUserId, Pageable pageable);

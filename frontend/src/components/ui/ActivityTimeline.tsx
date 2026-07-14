@@ -1,5 +1,10 @@
 import { ClipboardList, FileText, ShieldCheck } from 'lucide-react'
-import { formatDateTime } from '../../lib/formatters'
+import {
+   formatDateTime,
+   formatStatus,
+   statusVariant,
+   } from '../../lib/formatters'
+   import { StatusBadge } from './StatusBadge'
 
 export type ActivityTimelineItem = {
   id: string | number
@@ -7,6 +12,7 @@ export type ActivityTimelineItem = {
   title: string
   description?: string | null
   actor?: string | null
+  status?: string | null
   createdAt: string | null
 }
 
@@ -63,11 +69,22 @@ export function ActivityTimeline({
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-semibold text-[var(--crm-text)]">{item.title}</p>
-                  <p className="text-xs text-[var(--crm-text-muted)]">
-                    {formatDateTime(item.createdAt)}
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-semibold text-[var(--crm-text)]">
+                    {item.title}
                   </p>
+              
+                  {item.status && (
+                    <StatusBadge variant={statusVariant(item.status)}>
+                      {formatStatus(item.status)}
+                    </StatusBadge>
+                  )}
                 </div>
+              
+                <p className="text-xs text-[var(--crm-text-muted)]">
+                  {formatDateTime(item.createdAt)}
+                </p>
+              </div>
 
                 {item.description && (
                   <p className="mt-2 text-sm leading-6 text-[var(--crm-text-muted)]">

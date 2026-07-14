@@ -32,8 +32,7 @@ import {
 } from '../components/ui'
 import { AttachmentPanel } from '../components/AttachmentPanel'
 import { archiveLead, convertLead, getLeads, updateLead, type LeadFilters, type LeadResponse, type LeadStatus,} from '../services/leadService'
-import { getLeadNotes } from '../services/noteService'
-import { getTasks, type TaskResponse } from '../services/taskService'
+import { getLeadActivity } from '../services/activityService'
 import type { PageResponse } from '../services/userService'
 import {
   formatDateTime,
@@ -88,8 +87,6 @@ export function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<LeadResponse | null>(null)
   const [leadActivity, setLeadActivity] = useState<ActivityTimelineItem[]>([])
   const [activityLoading, setActivityLoading] = useState(false)
-  const [relatedTasks, setRelatedTasks] = useState<TaskResponse[]>([])
-  const [relatedTasksLoading, setRelatedTasksLoading] = useState(false)
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null)
 
   const loadLeads = useCallback((
@@ -301,35 +298,14 @@ async function saveLeadEdit() {
 function loadLeadActivity(leadId: number) {
   setActivityLoading(true)
 
-  getLeadNotes(leadId, 0, 5)
-    .then((notes) => {
-      setLeadActivity(
-        notes.content.map((note) => ({
-          id: note.id,
-          type: 'note',
-          title: 'Note added',
-          description: note.content,
-          actor: note.createdByUserName,
-          createdAt: note.createdAt,
-        })),
-      )
+  getLeadActivity(leadId, 0, 20)
+    .then((activity) => {
+      setLeadActivity(activity.content)
     })
     .catch(() => {
       setLeadActivity([])
     })
     .finally(() => setActivityLoading(false))
-}
-function loadRelatedTasks(leadId: number) {
-  setRelatedTasksLoading(true)
-
-  getTasks(0, 5, { leadId })
-    .then((tasks) => {
-      setRelatedTasks(tasks.content)
-    })
-    .catch(() => {
-      setRelatedTasks([])
-    })
-    .finally(() => setRelatedTasksLoading(false))
 }
 
   function goToPreviousPage() {
@@ -522,7 +498,6 @@ function loadRelatedTasks(leadId: number) {
                            setSelectedLead(lead)
                            setEditingLead(false)
                            loadLeadActivity(lead.id)
-                           loadRelatedTasks(lead.id)
                          }}
                           className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--crm-border)] px-3 text-xs font-semibold text-[var(--crm-text-muted)] transition hover:border-violet-300 hover:bg-violet-500/10 hover:text-[var(--crm-primary)]"
                         >
@@ -608,7 +583,6 @@ function loadRelatedTasks(leadId: number) {
             setSelectedLead(null)
             setEditingLead(false)
             setLeadActivity([])
-            setRelatedTasks([])
           }}
           footer={
             selectedLead && (
@@ -858,61 +832,16 @@ function loadRelatedTasks(leadId: number) {
                   {formatDateTime(selectedLead.updatedAt)}.
                 </p>
               </section>
-              <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
-               <div className="flex items-center justify-between gap-3">
-                 <h3 className="font-semibold text-[var(--crm-text)]">Related tasks</h3>
-                 <span className="text-xs font-semibold text-[var(--crm-text-muted)]">
-                   {relatedTasks.length} shown
-                 </span>
-               </div>
-             
-               <div className="mt-4 space-y-3">
-                 {relatedTasksLoading && (
-                   <p className="text-sm text-[var(--crm-text-muted)]">Loading tasks...</p>
-                 )}
-             
-                 {!relatedTasksLoading && relatedTasks.length === 0 && (
-                   <p className="text-sm text-[var(--crm-text-muted)]">
-                     No tasks linked to this lead yet.
-                   </p>
-                 )}
-             
-                 {!relatedTasksLoading &&
-                   relatedTasks.map((task) => (
-                     <div
-                       key={task.id}
-                       className="rounded-xl border border-[var(--crm-border)] bg-[var(--crm-surface)] p-3"
-                     >
-                       <div className="flex items-start justify-between gap-3">
-                         <div>
-                           <p className="font-semibold text-[var(--crm-text)]">{task.title}</p>
-                           <p className="mt-1 text-sm text-[var(--crm-text-muted)]">
-                             {task.assignedToUserName ?? 'Unassigned'}
-                           </p>
-                         </div>
-             
-                         <StatusBadge variant={statusVariant(task.status)}>
-                           {formatStatus(task.status)}
-                         </StatusBadge>
-                       </div>
-             
-                       <p className="mt-2 text-xs text-[var(--crm-text-muted)]">
-                         Priority: {formatStatus(task.priority)} · Due: {formatDateTime(task.dueDate)}
-                       </p>
-                     </div>
-                   ))}
-               </div>
-             </section>
 
               <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
                 <AttachmentPanel ownerType="lead" ownerId={selectedLead.id} />
-                <h3 className="font-semibold text-[var(--crm-text)]">Recent activity</h3>
+                <h3 className="font-semibold text-[var(--crm-text)]">Activity</h3>
                 <div className="mt-4">
                   <ActivityTimeline
                     items={leadActivity}
                     loading={activityLoading}
                     emptyTitle="No lead activity yet"
-                    emptyMessage="Notes for this lead will appear here."
+                    emptyMessage="Notes, tasks, and lead changes will appear here."
                   />
                 </div>
               </section>

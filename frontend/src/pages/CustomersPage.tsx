@@ -41,7 +41,7 @@ import {
 } from '../services/customerService'
 import { AttachmentPanel } from '../components/AttachmentPanel'
 import type { PageResponse } from '../services/userService'
-import { getCustomerNotes } from '../services/noteService'
+import { getCustomerActivity } from '../services/activityService'
 import { getContacts, type ContactResponse } from '../services/contactService'
 import {formatDateTime,formatStatus, getEmptyMessage, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage, getSaveErrorMessage } from '../lib/errors'
@@ -298,25 +298,15 @@ function cancelEditingCustomer() {
 function loadCustomerActivity(customerId: number) {
   setActivityLoading(true)
 
-  getCustomerNotes(customerId, 0, 5)
-    .then((notes) => {
-      setCustomerActivity(
-        notes.content.map((note) => ({
-          id: note.id,
-          type: 'note',
-          title: 'Note added',
-          description: note.content,
-          actor: note.createdByUserName,
-          createdAt: note.createdAt,
-        })),
-      )
+  getCustomerActivity(customerId, 0, 20)
+    .then((activity) => {
+      setCustomerActivity(activity.content)
     })
     .catch(() => {
       setCustomerActivity([])
     })
     .finally(() => setActivityLoading(false))
 }
-
 function loadRelatedContacts(customerId: number) {
   setRelatedContactsLoading(true)
 
@@ -813,13 +803,13 @@ function loadRelatedContacts(customerId: number) {
            )}
            
            <section className="rounded-2xl border border-[var(--crm-border)] bg-[var(--crm-card-subtle)] p-4">
-            <h3 className="font-semibold text-[var(--crm-text)]">Recent activity</h3>
+            <h3 className="font-semibold text-[var(--crm-text)]">Activity</h3>
             <div className="mt-4">
               <ActivityTimeline
                 items={customerActivity}
                 loading={activityLoading}
                 emptyTitle="No customer activity yet"
-                emptyMessage="Notes for this customer will appear here."
+                emptyMessage="Notes, tasks, and account changes will appear here."
               />
             </div>
           </section>

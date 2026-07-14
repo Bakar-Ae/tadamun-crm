@@ -11,8 +11,10 @@ import java.util.Optional;
 
 public interface NoteRepository extends JpaRepository<Note, Long> {
 
+    @EntityGraph(attributePaths = {"createdByUser"})
     Page<Note> findByCustomerId(Long customerId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"createdByUser"})
     Page<Note> findByLeadId(Long leadId, Pageable pageable);
 
     @EntityGraph(attributePaths = {
