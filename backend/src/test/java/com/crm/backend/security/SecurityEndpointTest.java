@@ -1,15 +1,24 @@
 package com.crm.backend.security;
 
 import com.crm.backend.role.DataScope;
+import com.crm.backend.search.GlobalSearchResponse;
+import com.crm.backend.search.GlobalSearchService;
+import com.crm.backend.search.SearchModule;
+import com.crm.backend.search.SearchResultResponse;
+import com.crm.backend.support.MySqlTestContainerConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
@@ -18,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(MySqlTestContainerConfiguration.class)
 class SecurityEndpointTest {
 
     @Autowired
@@ -25,6 +35,9 @@ class SecurityEndpointTest {
 
     @MockitoBean
     private DataScopeService dataScopeService;
+
+    @MockitoBean
+    private GlobalSearchService globalSearchService;
 
     @BeforeEach
     void setUpDataScope() {
@@ -36,6 +49,65 @@ class SecurityEndpointTest {
     void protectedEndpointShouldRejectRequestWithoutToken() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void globalSearchShouldRejectRequestWithoutAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/search").param("q", "tadamun"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "viewer@crm.com",
+            authorities = {"CUSTOMER_VIEW"}
+    )
+    void globalSearchShouldReturnRequestedModuleResults() throws Exception {
+        GlobalSearchResponse response = new GlobalSearchResponse(
+                "tadamun",
+                List.of(new SearchResultResponse(
+                        SearchModule.CUSTOMER,
+                        42L,
+                        "Tadamun Company",
+                        "Tadamun Business Solutions",
+                        "ACTIVE",
+                        null,
+                        null
+                ))
+        );
+
+        when(globalSearchService.search(
+                "tadamun",
+                5,
+                Set.of(SearchModule.CUSTOMER)
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                        get("/api/v1/search")
+                                .param("q", "tadamun")
+                                .param("limitPerModule", "5")
+                                .param("modules", "CUSTOMER")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.query").value("tadamun"))
+                .andExpect(jsonPath("$.results[0].module").value("CUSTOMER"))
+                .andExpect(jsonPath("$.results[0].id").value(42))
+                .andExpect(jsonPath("$.results[0].title").value("Tadamun Company"));
+    }
+
+    @Test
+    @WithMockUser(username = "viewer@crm.com")
+    void globalSearchShouldReturnBadRequestForInvalidQuery() throws Exception {
+        when(globalSearchService.search("a", 5, null))
+                .thenThrow(new IllegalArgumentException(
+                        "Search query must contain between 2 and 100 characters"
+                ));
+
+        mockMvc.perform(get("/api/v1/search").param("q", "a"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        "Search query must contain between 2 and 100 characters"
+                ));
     }
 
     @Test

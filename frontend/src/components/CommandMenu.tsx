@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { formatStatus } from '../lib/formatters'
+import { getGlobalSearchResultPath } from '../lib/globalSearch'
 import {
   searchWorkspace,
   type GlobalSearchResult,
@@ -49,29 +50,6 @@ const searchModules: Array<{
   { value: 'TASK', label: 'Tasks', icon: NotebookText },
   { value: 'NOTE', label: 'Notes', icon: FileText },
 ]
-
-function getResultPath(result: GlobalSearchResult) {
-  switch (result.module) {
-    case 'CUSTOMER':
-      return `/customers?customerId=${result.id}`
-    case 'LEAD':
-      return `/leads?leadId=${result.id}`
-    case 'CONTACT':
-      return `/contacts?contactId=${result.id}`
-    case 'TASK':
-      return `/tasks?taskId=${result.id}`
-    case 'NOTE':
-      if (result.parentModule === 'CUSTOMER' && result.parentId) {
-        return `/customers?customerId=${result.parentId}`
-      }
-
-      if (result.parentModule === 'LEAD' && result.parentId) {
-        return `/leads?leadId=${result.parentId}`
-      }
-
-      return '/notes'
-  }
-}
 
 export function CommandMenu() {
   const [open, setOpen] = useState(false)
@@ -321,7 +299,7 @@ export function CommandMenu() {
                             <Command.Item
                               key={`${result.module}-${result.id}`}
                               value={`${result.module}-${result.id}`}
-                              onSelect={() => runCommand(getResultPath(result))}
+                              onSelect={() => runCommand(getGlobalSearchResultPath(result))}
                               className="mt-1 flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl px-3 py-2 text-left text-sm text-[var(--crm-text)] outline-none aria-selected:bg-violet-500/10"
                             >
                               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-[var(--crm-primary)] ring-1 ring-violet-300/20">
