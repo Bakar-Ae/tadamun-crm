@@ -6,6 +6,7 @@ import {
   Routes,
   useLocation,
 } from "react-router";
+import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 
 const LoginPage = lazy(() =>
   import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })),
@@ -148,8 +149,9 @@ function ProtectedRoute({
 
 function App() {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
+    <RouteErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
         <Route
           path="/"
           element={
@@ -274,8 +276,9 @@ function App() {
           }
         />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </RouteErrorBoundary>
   );
 }
 
