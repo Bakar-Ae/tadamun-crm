@@ -6,6 +6,8 @@ Version 2 completed and validated.
 ## Public Deployment
 - Frontend: https://tadamun-crm-web.up.railway.app
 - Backend health: https://tadamun-crm-production.up.railway.app/actuator/health
+- Release tag: `v2.0.0`
+- Main branch: `main`
 
 ## Major Version 2 Improvements
 - Role and permission system improved.
@@ -27,11 +29,13 @@ Version 2 completed and validated.
 - Local frontend build passed.
 - Public frontend loads over HTTPS.
 - Public backend health endpoint returns UP.
+- Frontend security headers were checked.
 - Secrets are ignored by Git.
 - Database backups are ignored by Git.
 - Attachment persistence was checked locally.
 - Docker services were checked.
 - Production logs were reviewed.
+- Git release tag `v2.0.0` was pushed.
 
 ## Known Remaining Work
 - Configure scheduled production database backups.
