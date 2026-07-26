@@ -46,61 +46,63 @@ Outputs:
 - Flyway migration
 - Organization tests
 
-## Phase 74 - Tenant Context Foundation
+## Phase 74 - Organization Membership Foundation
 
 Goal:
 
-Resolve the active tenant safely for every authenticated request.
-
-Outputs:
-
-- Tenant context
-- Tenant request resolver
-- Tenant-aware authentication claims
-- Missing-tenant rejection
-- Context cleanup tests
-
-## Phase 75 - Tenant Data Isolation
-
-Goal:
-
-Prevent records belonging to one tenant from being accessed by another tenant.
-
-Outputs:
-
-- Tenant ownership on CRM entities
-- Tenant-scoped repository queries
-- Service-layer ownership validation
-- Cross-tenant access tests
-- Audited platform access rules
-
-## Phase 76 - Existing Data Migration
-
-Goal:
-
-Move existing Version 2 data into a default organization without data loss.
-
-Outputs:
-
-- Default organization
-- Existing-user memberships
-- Existing-record tenant ownership
-- Safe Flyway backfill migration
-- Migration validation and rollback plan
-
-## Phase 77 - Organization Memberships
-
-Goal:
-
-Allow users to belong to organizations with controlled membership status.
+Connect global users to organizations before tenant access is resolved.
 
 Outputs:
 
 - Organization membership entity
-- Membership roles and statuses
-- Membership API
-- Membership lifecycle rules
-- Membership tests
+- Membership repository and service
+- Membership status model
+- Organization role assignment
+- Membership validation tests
+
+## Phase 75 - Existing Tenant Bootstrap Migration
+
+Goal:
+
+Move existing Version 2 users and records into a default organization without
+breaking current behavior.
+
+Outputs:
+
+- Default Tadamun organization
+- Existing-user memberships
+- Existing role and team migration mapping
+- Existing-record organization ownership
+- Data validation and rollback plan
+
+## Phase 76 - Tenant Context Foundation
+
+Goal:
+
+Resolve and validate the active organization for every tenant-owned request.
+
+Outputs:
+
+- Tenant context
+- Tenant request filter
+- `X-Organization-Id` resolution
+- Active membership validation
+- Missing-tenant rejection
+- Context cleanup tests
+
+## Phase 77 - Tenant Data Isolation
+
+Goal:
+
+Enforce organization ownership across repositories, services, and APIs.
+
+Outputs:
+
+- Tenant-scoped repository queries
+- Service-layer ownership validation
+- Tenant-aware entity authorization
+- Cross-tenant access tests
+- Audited platform-access rules
 
 ## Phase 78 - Organization Invitations
 
