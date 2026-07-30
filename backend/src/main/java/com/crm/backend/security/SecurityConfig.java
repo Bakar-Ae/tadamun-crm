@@ -1,7 +1,9 @@
 package com.crm.backend.security;
 
+import com.crm.backend.security.tenant.TenantResolutionFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,13 +28,16 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final TenantResolutionFilter tenantResolutionFilter;
     private final String allowedOrigins;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            TenantResolutionFilter tenantResolutionFilter,
             @Value("${app.cors.allowed-origins}") String allowedOrigins
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.tenantResolutionFilter = tenantResolutionFilter;
         this.allowedOrigins = allowedOrigins;
     }
 
@@ -71,6 +76,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(
+                        tenantResolutionFilter,
+                        JwtAuthenticationFilter.class
+                )
                 .build();
     }
 
@@ -86,7 +95,14 @@ public class SecurityConfig {
         );
 
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                TenantResolutionFilter.ORGANIZATION_HEADER
+        ));
+        configuration.setExposedHeaders(List.of(
+                TenantResolutionFilter.ORGANIZATION_HEADER
+        ));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -98,6 +114,26 @@ public class SecurityConfig {
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
+    }
+
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter>
+    jwtAuthenticationFilterRegistration() {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(jwtAuthenticationFilter);
+
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<TenantResolutionFilter>
+    tenantResolutionFilterRegistration() {
+        FilterRegistrationBean<TenantResolutionFilter> registration =
+                new FilterRegistrationBean<>(tenantResolutionFilter);
+
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
