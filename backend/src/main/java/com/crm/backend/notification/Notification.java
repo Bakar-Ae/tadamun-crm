@@ -1,5 +1,6 @@
 package com.crm.backend.notification;
 
+import com.crm.backend.organization.Organization;
 import com.crm.backend.user.User;
 import jakarta.persistence.*;
 
@@ -12,6 +13,10 @@ public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id", updatable = false)
+    private Organization organization;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "recipient_user_id", nullable = false)
@@ -43,6 +48,14 @@ public class Notification {
 
     public Long getId() {
         return id;
+    }
+
+    public Organization getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(Organization organization) {
+        this.organization = organization;
     }
 
     public User getRecipientUser() {

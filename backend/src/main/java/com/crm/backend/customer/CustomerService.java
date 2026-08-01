@@ -1,12 +1,14 @@
 package com.crm.backend.customer;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.common.ResourceNotFoundException;
 import com.crm.backend.customer.dto.CreateCustomerRequest;
 import com.crm.backend.customer.dto.CustomerResponse;
 import com.crm.backend.customer.dto.UpdateCustomerRequest;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -26,26 +28,34 @@ public class CustomerService {
     private final AuditLogService auditLogService;
     private final UserRepository userRepository;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public CustomerService(
             CustomerRepository customerRepository,
             CustomerMapper customerMapper,
             AuditLogService auditLogService,
             UserRepository userRepository,
-            DataScopeService dataScopeService
+            DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.customerRepository = customerRepository;
         this.customerMapper = customerMapper;
         this.auditLogService = auditLogService;
         this.userRepository = userRepository;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
     @Transactional
     public CustomerResponse createCustomer(CreateCustomerRequest request) {
         DataScopeContext context = dataScopeService.currentContext();
+        Long organizationId =
+                currentOrganizationProvider.getOrganizationId();
 
-        if (hasText(request.email()) && customerRepository.existsByEmail(request.email())) {
+        if (hasText(request.email()) && customerRepository.existsByOrganizationIdAndEmail(
+                organizationId,
+                request.email()
+        )) {
             throw new IllegalArgumentException("Customer email already exists");
         }
 
@@ -59,6 +69,9 @@ public class CustomerService {
         customer.setCustomerType(request.customerType());
         customer.setStatus(CustomerStatus.ACTIVE);
         customer.setOwnerUser(owner);
+        customer.setOrganization(
+                currentOrganizationProvider.getOrganizationReference()
+        );
 
         Customer savedCustomer = customerRepository.save(customer);
 
@@ -79,7 +92,8 @@ public class CustomerService {
     public Page<CustomerResponse> getCustomers(String keyword, CustomerStatus status, CustomerType customerType, Pageable pageable) {
         DataScopeContext context = dataScopeService.currentContext();
 
-        return customerRepository.searchAccessibleCustomers(
+        return customerRepository.searchAccessibleCustomersInOrganization(
+                        currentOrganizationProvider.getOrganizationId(),
                         keyword,
                         status,
                         customerType,
@@ -104,8 +118,15 @@ public class CustomerService {
         Customer customer = findAccessibleCustomerOrThrow(id, context);
         CustomerStatus previousStatus = customer.getStatus();
 
-        if (hasText(request.email()) && customerRepository.existsByEmailAndIdNot(request.email(), id)) {
-            throw new IllegalArgumentException("Customer email already exists");
+        if (hasText(request.email())
+                && customerRepository.existsByOrganizationIdAndEmailAndIdNot(
+                currentOrganizationProvider.getOrganizationId(),
+                request.email(),
+                id
+        )) {
+            throw new IllegalArgumentException(
+                    "Customer email already exists"
+            );
         }
 
         customer.setName(request.name());
@@ -164,14 +185,17 @@ public class CustomerService {
 
 
     private Customer findAccessibleCustomerOrThrow(Long id, DataScopeContext context) {
-        return customerRepository.findAccessibleById(
+        return customerRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         context.scope() == DataScope.ALL,
                         context.scope() == DataScope.TEAM,
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Customer not found")
+                );
     }
 
     private User resolveOwner(Long requestedOwnerUserId, DataScopeContext context) {
@@ -181,6 +205,8 @@ public class CustomerService {
 
         User owner = userRepository.findById(ownerUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer owner not found"));
+
+        currentOrganizationProvider.requireActiveUserMembership(owner.getId());
 
         if (owner.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalArgumentException("Customer owner must be active");

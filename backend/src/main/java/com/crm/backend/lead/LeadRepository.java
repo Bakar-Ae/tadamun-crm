@@ -10,31 +10,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface LeadRepository extends JpaRepository<Lead, Long> {
-    long countByStatus(LeadStatus status);
-
-    @Query("""
-        SELECT COUNT(l) FROM Lead l
-        LEFT JOIN l.assignedToUser assignee
-        LEFT JOIN assignee.team assigneeTeam
-        WHERE l.status = :status
-        AND (
-            :allAccess = true
-            OR assignee.id = :currentUserId
-            OR (
-                :teamAccess = true
-                AND :currentTeamId IS NOT NULL
-                AND assigneeTeam.id = :currentTeamId
-            )
-        )
-        """)
-    long countAccessibleByStatus(
-            @Param("status") LeadStatus status,
-            @Param("allAccess") boolean allAccess,
-            @Param("teamAccess") boolean teamAccess,
-            @Param("currentUserId") Long currentUserId,
-            @Param("currentTeamId") Long currentTeamId
-    );
-
     @EntityGraph(attributePaths = {
             "assignedToUser",
             "assignedToUser.team",
@@ -44,7 +19,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
         SELECT l FROM Lead l
         LEFT JOIN l.assignedToUser assignee
         LEFT JOIN assignee.team assigneeTeam
-        WHERE (
+        WHERE l.organization.id = :organizationId
+        AND (
             :allAccess = true
             OR assignee.id = :currentUserId
             OR (
@@ -62,7 +38,8 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
         )
         AND (:status IS NULL OR l.status = :status)
         """)
-    Page<Lead> searchAccessibleLeads(
+    Page<Lead> searchAccessibleLeadsInOrganization(
+            @Param("organizationId") Long organizationId,
             @Param("keyword") String keyword,
             @Param("status") LeadStatus status,
             @Param("allAccess") boolean allAccess,
@@ -71,6 +48,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             @Param("currentTeamId") Long currentTeamId,
             Pageable pageable
     );
+
     @EntityGraph(attributePaths = {
             "assignedToUser",
             "assignedToUser.team",
@@ -81,6 +59,7 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
         LEFT JOIN l.assignedToUser assignee
         LEFT JOIN assignee.team assigneeTeam
         WHERE l.id = :id
+        AND l.organization.id = :organizationId
         AND (
             :allAccess = true
             OR assignee.id = :currentUserId
@@ -91,8 +70,34 @@ public interface LeadRepository extends JpaRepository<Lead, Long> {
             )
         )
         """)
-    Optional<Lead> findAccessibleById(
+    Optional<Lead> findAccessibleByIdInOrganization(
             @Param("id") Long id,
+            @Param("organizationId") Long organizationId,
+            @Param("allAccess") boolean allAccess,
+            @Param("teamAccess") boolean teamAccess,
+            @Param("currentUserId") Long currentUserId,
+            @Param("currentTeamId") Long currentTeamId
+    );
+
+    @Query("""
+        SELECT COUNT(l) FROM Lead l
+        LEFT JOIN l.assignedToUser assignee
+        LEFT JOIN assignee.team assigneeTeam
+        WHERE l.organization.id = :organizationId
+        AND l.status = :status
+        AND (
+            :allAccess = true
+            OR assignee.id = :currentUserId
+            OR (
+                :teamAccess = true
+                AND :currentTeamId IS NOT NULL
+                AND assigneeTeam.id = :currentTeamId
+            )
+        )
+        """)
+    long countAccessibleByStatusInOrganization(
+            @Param("organizationId") Long organizationId,
+            @Param("status") LeadStatus status,
             @Param("allAccess") boolean allAccess,
             @Param("teamAccess") boolean teamAccess,
             @Param("currentUserId") Long currentUserId,

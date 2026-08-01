@@ -1,6 +1,7 @@
 package com.crm.backend.security;
 
 import com.crm.backend.role.DataScope;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.search.GlobalSearchResponse;
 import com.crm.backend.search.GlobalSearchService;
 import com.crm.backend.search.SearchModule;
@@ -39,10 +40,15 @@ class SecurityEndpointTest {
     @MockitoBean
     private GlobalSearchService globalSearchService;
 
+    @MockitoBean
+    private CurrentOrganizationProvider currentOrganizationProvider;
+
     @BeforeEach
-    void setUpDataScope() {
+    void setUpRequestContext() {
         when(dataScopeService.currentContext())
                 .thenReturn(new DataScopeContext(1L, 1L, DataScope.ALL));
+        when(currentOrganizationProvider.getOrganizationId())
+                .thenReturn(1L);
     }
 
     @Test

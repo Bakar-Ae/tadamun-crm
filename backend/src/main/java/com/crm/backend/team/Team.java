@@ -1,5 +1,6 @@
 package com.crm.backend.team;
 
+import com.crm.backend.organization.Organization;
 import com.crm.backend.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,7 +20,11 @@ public class Team {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 120)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "organization_id", nullable = false, updatable = false)
+    private Organization organization;
+
+    @Column(nullable = false, length = 120)
     private String name;
 
     @Column(length = 255)

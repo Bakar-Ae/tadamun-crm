@@ -34,6 +34,12 @@ public interface OrganizationMembershipRepository
             Long userId
     );
 
+    boolean existsByOrganizationIdAndUserIdAndStatus(
+            Long organizationId,
+            Long userId,
+            OrganizationMembershipStatus status
+    );
+
     @EntityGraph(attributePaths = {"organization", "user", "role"})
     Page<OrganizationMembership> findByOrganizationId(
             Long organizationId,

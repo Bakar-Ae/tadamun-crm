@@ -1,5 +1,6 @@
 package com.crm.backend.report;
 
+import com.crm.backend.organization.OrganizationRepository;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.support.MySqlTestContainerConfiguration;
@@ -22,6 +23,9 @@ class ReportAnalyticsRepositoryTest {
     @Autowired
     private ReportAnalyticsRepository reportAnalyticsRepository;
 
+    @Autowired
+    private OrganizationRepository organizationRepository;
+
     @Test
     void aggregateQueriesShouldExecuteAgainstMySql() {
         LocalDateTime from = LocalDateTime.now().minusYears(10);
@@ -29,27 +33,30 @@ class ReportAnalyticsRepositoryTest {
         DataScopeContext context = new DataScopeContext(
                 1L, null, DataScope.ALL
         );
+        Long organizationId = organizationRepository.findBySlug("tadamun")
+                .orElseThrow()
+                .getId();
 
         assertTrue(reportAnalyticsRepository.countCustomersCreated(
-                from, to, context
+                from, to, context, organizationId
         ) >= 0);
         assertNotNull(reportAnalyticsRepository.countLeadsByStatus(
-                from, to, context
+                from, to, context, organizationId
         ));
         assertNotNull(reportAnalyticsRepository.countTasksByStatus(
-                from, to, context
+                from, to, context, organizationId
         ));
         assertNotNull(reportAnalyticsRepository.countTasksByPriority(
-                from, to, context
+                from, to, context, organizationId
         ));
         assertTrue(reportAnalyticsRepository.countAuditEventsByAction(
-                "LEAD_CONVERTED", from, to, context
+                "LEAD_CONVERTED", from, to, context, organizationId
         ) >= 0);
         assertTrue(reportAnalyticsRepository.countAuditEventsByEntityType(
-                "CUSTOMER", from, to, context
+                "CUSTOMER", from, to, context, organizationId
         ) >= 0);
         assertNotNull(reportAnalyticsRepository.countDailyActivity(
-                from, to, context
+                from, to, context, organizationId
         ));
     }
 }

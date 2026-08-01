@@ -1,5 +1,6 @@
 package com.crm.backend.note;
 
+import com.crm.backend.common.ResourceNotFoundException;
 import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.Lead;
@@ -10,6 +11,7 @@ import com.crm.backend.note.dto.UpdateNoteRequest;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -26,6 +28,7 @@ public class NoteService {
     private final UserRepository userRepository;
     private final NoteMapper noteMapper;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public NoteService(
             NoteRepository noteRepository,
@@ -33,7 +36,8 @@ public class NoteService {
             LeadRepository leadRepository,
             UserRepository userRepository,
             NoteMapper noteMapper,
-            DataScopeService dataScopeService
+            DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.noteRepository = noteRepository;
         this.customerRepository = customerRepository;
@@ -41,6 +45,7 @@ public class NoteService {
         this.userRepository = userRepository;
         this.noteMapper = noteMapper;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
     @Transactional
@@ -49,6 +54,9 @@ public class NoteService {
         validateOwner(request.customerId(), request.leadId());
 
         Note note = new Note();
+        note.setOrganization(
+                currentOrganizationProvider.getOrganizationReference()
+        );
         note.setContent(request.content());
         note.setCustomer(findAccessibleCustomerOrNull(request.customerId(), context));
         note.setLead(findAccessibleLeadOrNull(request.leadId(), context));
@@ -61,7 +69,11 @@ public class NoteService {
     public Page<NoteResponse> getCustomerNotes(Long customerId, Pageable pageable) {
         DataScopeContext context = dataScopeService.currentContext();
         findAccessibleCustomerOrNull(customerId, context);
-        return noteRepository.findByCustomerId(customerId, pageable)
+        return noteRepository.findByOrganizationIdAndCustomerId(
+                        currentOrganizationProvider.getOrganizationId(),
+                        customerId,
+                        pageable
+                )
                 .map(noteMapper::toResponse);
     }
 
@@ -69,7 +81,11 @@ public class NoteService {
     public Page<NoteResponse> getLeadNotes(Long leadId, Pageable pageable) {
         DataScopeContext context = dataScopeService.currentContext();
         findAccessibleLeadOrNull(leadId, context);
-        return noteRepository.findByLeadId(leadId, pageable)
+        return noteRepository.findByOrganizationIdAndLeadId(
+                        currentOrganizationProvider.getOrganizationId(),
+                        leadId,
+                        pageable
+                )
                 .map(noteMapper::toResponse);
     }
 
@@ -91,14 +107,15 @@ public class NoteService {
     }
 
     private Note findAccessibleNoteOrThrow(Long id, DataScopeContext context) {
-        return noteRepository.findAccessibleById(
+        return noteRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Note not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Note not found"));
     }
 
     private Customer findAccessibleCustomerOrNull(Long id, DataScopeContext context) {
@@ -106,14 +123,15 @@ public class NoteService {
             return null;
         }
 
-        return customerRepository.findAccessibleById(
+        return customerRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
     }
 
     private Lead findAccessibleLeadOrNull(Long id, DataScopeContext context) {
@@ -121,14 +139,15 @@ public class NoteService {
             return null;
         }
 
-        return leadRepository.findAccessibleById(
+        return leadRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Lead not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found"));
     }
 
     private User findUserOrThrow(Long id) {

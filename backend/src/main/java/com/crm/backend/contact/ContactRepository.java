@@ -17,28 +17,32 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
             "customer.ownerUser.team"
     })
     @Query("""
-            SELECT c FROM Contact c
-            LEFT JOIN c.customer customer
-            LEFT JOIN customer.ownerUser owner
-            LEFT JOIN owner.team ownerTeam
-            WHERE (:customerId IS NULL OR c.customer.id = :customerId)
-            AND (:keyword IS NULL OR :keyword = ''
-                OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR LOWER(c.position) LIKE LOWER(CONCAT('%', :keyword, '%')))
-            AND (:status IS NULL OR c.status = :status)
-            AND (
-                :allAccess = true
-                OR owner.id = :currentUserId
-                OR (
-                    :teamAccess = true
-                    AND :currentTeamId IS NOT NULL
-                    AND ownerTeam.id = :currentTeamId
-                )
+        SELECT c FROM Contact c
+        LEFT JOIN c.customer customer
+        LEFT JOIN customer.ownerUser owner
+        LEFT JOIN owner.team ownerTeam
+        WHERE c.organization.id = :organizationId
+        AND (:customerId IS NULL OR customer.id = :customerId)
+        AND (
+            :keyword IS NULL OR :keyword = ''
+            OR LOWER(c.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(c.email) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(c.phone) LIKE LOWER(CONCAT('%', :keyword, '%'))
+            OR LOWER(c.position) LIKE LOWER(CONCAT('%', :keyword, '%'))
+        )
+        AND (:status IS NULL OR c.status = :status)
+        AND (
+            :allAccess = true
+            OR owner.id = :currentUserId
+            OR (
+                :teamAccess = true
+                AND :currentTeamId IS NOT NULL
+                AND ownerTeam.id = :currentTeamId
             )
-            """)
-    Page<Contact> searchAccessibleContacts(
+        )
+        """)
+    Page<Contact> searchAccessibleContactsInOrganization(
+            @Param("organizationId") Long organizationId,
             @Param("customerId") Long customerId,
             @Param("keyword") String keyword,
             @Param("status") ContactStatus status,
@@ -55,23 +59,25 @@ public interface ContactRepository extends JpaRepository<Contact, Long> {
             "customer.ownerUser.team"
     })
     @Query("""
-            SELECT c FROM Contact c
-            LEFT JOIN c.customer customer
-            LEFT JOIN customer.ownerUser owner
-            LEFT JOIN owner.team ownerTeam
-            WHERE c.id = :id
-            AND (
-                :allAccess = true
-                OR owner.id = :currentUserId
-                OR (
-                    :teamAccess = true
-                    AND :currentTeamId IS NOT NULL
-                    AND ownerTeam.id = :currentTeamId
-                )
+        SELECT c FROM Contact c
+        LEFT JOIN c.customer customer
+        LEFT JOIN customer.ownerUser owner
+        LEFT JOIN owner.team ownerTeam
+        WHERE c.id = :id
+        AND c.organization.id = :organizationId
+        AND (
+            :allAccess = true
+            OR owner.id = :currentUserId
+            OR (
+                :teamAccess = true
+                AND :currentTeamId IS NOT NULL
+                AND ownerTeam.id = :currentTeamId
             )
-            """)
-    Optional<Contact> findAccessibleById(
+        )
+        """)
+    Optional<Contact> findAccessibleByIdInOrganization(
             @Param("id") Long id,
+            @Param("organizationId") Long organizationId,
             @Param("allAccess") boolean allAccess,
             @Param("teamAccess") boolean teamAccess,
             @Param("currentUserId") Long currentUserId,

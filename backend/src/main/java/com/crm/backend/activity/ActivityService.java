@@ -2,6 +2,7 @@ package com.crm.backend.activity;
 
 import com.crm.backend.audit.AuditLog;
 import com.crm.backend.audit.AuditLogRepository;
+import com.crm.backend.common.ResourceNotFoundException;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.LeadRepository;
 import com.crm.backend.note.Note;
@@ -9,6 +10,7 @@ import com.crm.backend.note.NoteRepository;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.CrmTask;
 import com.crm.backend.task.TaskRepository;
 import org.springframework.data.domain.Page;
@@ -35,6 +37,7 @@ public class ActivityService {
     private final CustomerRepository customerRepository;
     private final LeadRepository leadRepository;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public ActivityService(
             NoteRepository noteRepository,
@@ -42,7 +45,8 @@ public class ActivityService {
             AuditLogRepository auditLogRepository,
             CustomerRepository customerRepository,
             LeadRepository leadRepository,
-            DataScopeService dataScopeService
+            DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.noteRepository = noteRepository;
         this.taskRepository = taskRepository;
@@ -50,6 +54,7 @@ public class ActivityService {
         this.customerRepository = customerRepository;
         this.leadRepository = leadRepository;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
     @Transactional(readOnly = true)
@@ -58,16 +63,19 @@ public class ActivityService {
             Pageable pageable
     ) {
         DataScopeContext context = dataScopeService.currentContext();
-        requireCustomerAccess(customerId, context);
+        Long organizationId = currentOrganizationProvider.getOrganizationId();
+        requireCustomerAccess(customerId, context, organizationId);
 
         PageRequest sourcePage = createSourcePage(pageable);
 
-        Page<Note> notes = noteRepository.findByCustomerId(
+        Page<Note> notes = noteRepository.findByOrganizationIdAndCustomerId(
+                organizationId,
                 customerId,
                 sourcePage
         );
 
-        Page<CrmTask> tasks = taskRepository.searchAccessibleTasks(
+        Page<CrmTask> tasks = taskRepository.searchAccessibleTasksInOrganization(
+                organizationId,
                 null,
                 null,
                 null,
@@ -82,7 +90,8 @@ public class ActivityService {
         );
 
         Page<AuditLog> audits =
-                auditLogRepository.findByEntityTypeAndEntityId(
+                auditLogRepository.findByOrganizationIdAndEntityTypeAndEntityId(
+                        organizationId,
                         "CUSTOMER",
                         customerId,
                         sourcePage
@@ -97,16 +106,19 @@ public class ActivityService {
             Pageable pageable
     ) {
         DataScopeContext context = dataScopeService.currentContext();
-        requireLeadAccess(leadId, context);
+        Long organizationId = currentOrganizationProvider.getOrganizationId();
+        requireLeadAccess(leadId, context, organizationId);
 
         PageRequest sourcePage = createSourcePage(pageable);
 
-        Page<Note> notes = noteRepository.findByLeadId(
+        Page<Note> notes = noteRepository.findByOrganizationIdAndLeadId(
+                organizationId,
                 leadId,
                 sourcePage
         );
 
-        Page<CrmTask> tasks = taskRepository.searchAccessibleTasks(
+        Page<CrmTask> tasks = taskRepository.searchAccessibleTasksInOrganization(
+                organizationId,
                 null,
                 null,
                 null,
@@ -121,7 +133,8 @@ public class ActivityService {
         );
 
         Page<AuditLog> audits =
-                auditLogRepository.findByEntityTypeAndEntityId(
+                auditLogRepository.findByOrganizationIdAndEntityTypeAndEntityId(
+                        organizationId,
                         "LEAD",
                         leadId,
                         sourcePage
@@ -218,31 +231,35 @@ public class ActivityService {
 
     private void requireCustomerAccess(
             Long customerId,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
-        customerRepository.findAccessibleById(
+        customerRepository.findAccessibleByIdInOrganization(
                 customerId,
+                organizationId,
                 isAllAccess(context),
                 isTeamAccess(context),
                 context.userId(),
                 context.teamId()
         ).orElseThrow(
-                () -> new IllegalArgumentException("Customer not found")
+                () -> new ResourceNotFoundException("Customer not found")
         );
     }
 
     private void requireLeadAccess(
             Long leadId,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
-        leadRepository.findAccessibleById(
+        leadRepository.findAccessibleByIdInOrganization(
                 leadId,
+                organizationId,
                 isAllAccess(context),
                 isTeamAccess(context),
                 context.userId(),
                 context.teamId()
         ).orElseThrow(
-                () -> new IllegalArgumentException("Lead not found")
+                () -> new ResourceNotFoundException("Lead not found")
         );
     }
 

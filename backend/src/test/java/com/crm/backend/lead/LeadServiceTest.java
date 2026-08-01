@@ -1,5 +1,8 @@
 package com.crm.backend.lead;
 
+import com.crm.backend.organization.Organization;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
+
 import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
@@ -28,6 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+
 class LeadServiceTest {
 
     private LeadRepository leadRepository;
@@ -36,6 +40,8 @@ class LeadServiceTest {
     private LeadMapper leadMapper;
     private DataScopeService dataScopeService;
     private LeadService leadService;
+    private CurrentOrganizationProvider currentOrganizationProvider;
+    private Organization organization;
 
     @BeforeEach
     void setUp() {
@@ -45,6 +51,16 @@ class LeadServiceTest {
         leadMapper = mock(LeadMapper.class);
         AuditLogService auditLogService = mock(AuditLogService.class);
         dataScopeService = spy(new DataScopeService());
+        currentOrganizationProvider =
+                mock(CurrentOrganizationProvider.class);
+
+        organization = new Organization();
+        organization.setId(1L);
+
+        when(currentOrganizationProvider.getOrganizationId())
+                .thenReturn(1L);
+        when(currentOrganizationProvider.getOrganizationReference())
+                .thenReturn(organization);
 
         leadService = new LeadService(
                 leadRepository,
@@ -52,7 +68,8 @@ class LeadServiceTest {
                 userRepository,
                 leadMapper,
                 auditLogService,
-                dataScopeService
+                dataScopeService,
+                currentOrganizationProvider
         );
     }
 
@@ -70,6 +87,7 @@ class LeadServiceTest {
                 .thenAnswer(invocation -> {
                     Lead lead = invocation.getArgument(0);
                     assertSame(currentUser, lead.getAssignedToUser());
+                    assertSame(organization, lead.getOrganization());
                     return response(LeadStatus.NEW, 1L);
                 });
 
@@ -97,8 +115,9 @@ class LeadServiceTest {
         DataScopeContext context = context(1L, 10L, DataScope.TEAM);
 
         doReturn(context).when(dataScopeService).currentContext();
-        when(leadRepository.findAccessibleById(
-                99L,
+        when(leadRepository.findAccessibleByIdInOrganization(
+                99L, // lead ID
+                1L,  // organization ID
                 false,
                 true,
                 1L,
@@ -126,7 +145,14 @@ class LeadServiceTest {
         lead.setAssignedToUser(assignee);
 
         doReturn(context).when(dataScopeService).currentContext();
-        when(leadRepository.findAccessibleById(5L, true, false, 1L, 10L))
+        when(leadRepository.findAccessibleByIdInOrganization(
+                5L, // lead ID
+                1L, // organization ID
+                true,
+                false,
+                1L,
+                10L
+        ))
                 .thenReturn(Optional.of(lead));
         when(userRepository.findById(2L)).thenReturn(Optional.of(assignee));
         when(customerRepository.save(any(Customer.class)))
@@ -134,6 +160,7 @@ class LeadServiceTest {
                     Customer customer = invocation.getArgument(0);
                     customer.setId(50L);
                     assertSame(assignee, customer.getOwnerUser());
+                    assertSame(organization, customer.getOrganization());
                     return customer;
                 });
         when(leadMapper.toResponse(lead))

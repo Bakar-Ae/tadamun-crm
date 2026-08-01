@@ -4,6 +4,8 @@ import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.customer.CustomerStatus;
 import com.crm.backend.customer.CustomerType;
+import com.crm.backend.organization.Organization;
+import com.crm.backend.organization.OrganizationRepository;
 import com.crm.backend.role.Role;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.role.RoleRepository;
@@ -44,27 +46,44 @@ class GlobalSearchRepositoryTest {
     @Autowired
     private TeamRepository teamRepository;
 
+    @Autowired
+    private OrganizationRepository organizationRepository;
+
     @Test
     void customerSearchShouldEnforceOwnTeamAndAllScopes() {
         Role role = roleRepository.findByName(RoleName.ADMIN).orElseThrow();
-        Team salesTeam = createTeam("Phase 67 Sales");
-        Team supportTeam = createTeam("Phase 67 Support");
+        Organization organization = organizationRepository.findBySlug("tadamun")
+                .orElseThrow();
+        Team salesTeam = createTeam("Phase 67 Sales", organization);
+        Team supportTeam = createTeam("Phase 67 Support", organization);
 
         User owner = createUser("phase67.owner@crm.test", role, salesTeam);
         User teammate = createUser("phase67.teammate@crm.test", role, salesTeam);
         User outsider = createUser("phase67.outsider@crm.test", role, supportTeam);
 
-        createCustomer("Phase67Scope Owner", owner);
-        createCustomer("Phase67Scope Teammate", teammate);
-        createCustomer("Phase67Scope Outsider", outsider);
+        createCustomer("Phase67Scope Owner", owner, organization);
+        createCustomer("Phase67Scope Teammate", teammate, organization);
+        createCustomer("Phase67Scope Outsider", outsider, organization);
 
         assertEquals(
                 Set.of("Phase67Scope Owner"),
-                searchCustomerNames(false, false, owner.getId(), salesTeam.getId())
+                searchCustomerNames(
+                        organization.getId(),
+                        false,
+                        false,
+                        owner.getId(),
+                        salesTeam.getId()
+                )
         );
         assertEquals(
                 Set.of("Phase67Scope Owner", "Phase67Scope Teammate"),
-                searchCustomerNames(false, true, owner.getId(), salesTeam.getId())
+                searchCustomerNames(
+                        organization.getId(),
+                        false,
+                        true,
+                        owner.getId(),
+                        salesTeam.getId()
+                )
         );
         assertEquals(
                 Set.of(
@@ -72,12 +91,19 @@ class GlobalSearchRepositoryTest {
                         "Phase67Scope Teammate",
                         "Phase67Scope Outsider"
                 ),
-                searchCustomerNames(true, false, owner.getId(), salesTeam.getId())
+                searchCustomerNames(
+                        organization.getId(),
+                        true,
+                        false,
+                        owner.getId(),
+                        salesTeam.getId()
+                )
         );
     }
 
-    private Team createTeam(String name) {
+    private Team createTeam(String name, Organization organization) {
         Team team = new Team();
+        team.setOrganization(organization);
         team.setName(name);
         team.setDescription("Integration test team");
         team.setStatus(TeamStatus.ACTIVE);
@@ -95,8 +121,13 @@ class GlobalSearchRepositoryTest {
         return userRepository.save(user);
     }
 
-    private void createCustomer(String name, User owner) {
+    private void createCustomer(
+            String name,
+            User owner,
+            Organization organization
+    ) {
         Customer customer = new Customer();
+        customer.setOrganization(organization);
         customer.setName(name);
         customer.setEmail(name.toLowerCase().replace(' ', '.') + "@crm.test");
         customer.setCompanyName(name);
@@ -107,12 +138,15 @@ class GlobalSearchRepositoryTest {
     }
 
     private Set<String> searchCustomerNames(
+            Long organizationId,
             boolean allAccess,
             boolean teamAccess,
             Long userId,
             Long teamId
     ) {
-        Page<Customer> result = customerRepository.searchAccessibleCustomers(
+        Page<Customer> result =
+                customerRepository.searchAccessibleCustomersInOrganization(
+                organizationId,
                 "phase67scope",
                 null,
                 null,

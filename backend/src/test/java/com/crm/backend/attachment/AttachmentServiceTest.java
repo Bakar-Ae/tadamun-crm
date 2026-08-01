@@ -3,9 +3,11 @@ package com.crm.backend.attachment;
 import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.LeadRepository;
+import com.crm.backend.organization.Organization;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ class AttachmentServiceTest {
     private AttachmentRepository attachmentRepository;
     private LocalAttachmentStorageService storageService;
     private DataScopeService dataScopeService;
+    private CurrentOrganizationProvider currentOrganizationProvider;
     private AttachmentService attachmentService;
 
     @BeforeEach
@@ -31,6 +34,15 @@ class AttachmentServiceTest {
         attachmentRepository = mock(AttachmentRepository.class);
         storageService = mock(LocalAttachmentStorageService.class);
         dataScopeService = mock(DataScopeService.class);
+        currentOrganizationProvider =
+                mock(CurrentOrganizationProvider.class);
+        Organization organization = new Organization();
+        organization.setId(1L);
+        when(currentOrganizationProvider.getOrganizationId())
+                .thenReturn(1L);
+        when(currentOrganizationProvider.getOrganizationReference())
+                .thenReturn(organization);
+
         attachmentService = new AttachmentService(
                 attachmentRepository,
                 storageService,
@@ -39,7 +51,8 @@ class AttachmentServiceTest {
                 mock(UserRepository.class),
                 mock(AuditLogService.class),
                 mock(ObjectMapper.class),
-                dataScopeService
+                dataScopeService,
+                currentOrganizationProvider
         );
     }
 
@@ -48,8 +61,9 @@ class AttachmentServiceTest {
         DataScopeContext context =
                 new DataScopeContext(4L, 2L, DataScope.OWN);
         when(dataScopeService.currentContext()).thenReturn(context);
-        when(attachmentRepository.findAccessibleByIdAndStatus(
+        when(attachmentRepository.findAccessibleByIdAndStatusInOrganization(
                 22L,
+                1L,
                 AttachmentStatus.ACTIVE,
                 false,
                 false,

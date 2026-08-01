@@ -10,6 +10,7 @@ import com.crm.backend.note.NoteRepository;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.CrmTask;
 import com.crm.backend.task.TaskRepository;
 import com.crm.backend.task.TaskStatus;
@@ -37,6 +38,7 @@ class ActivityServiceTest {
     private CustomerRepository customerRepository;
     private LeadRepository leadRepository;
     private DataScopeService dataScopeService;
+    private CurrentOrganizationProvider currentOrganizationProvider;
     private ActivityService activityService;
 
     @BeforeEach
@@ -47,6 +49,8 @@ class ActivityServiceTest {
         customerRepository = mock(CustomerRepository.class);
         leadRepository = mock(LeadRepository.class);
         dataScopeService = mock(DataScopeService.class);
+        currentOrganizationProvider = mock(CurrentOrganizationProvider.class);
+        when(currentOrganizationProvider.getOrganizationId()).thenReturn(1L);
 
         activityService = new ActivityService(
                 noteRepository,
@@ -54,7 +58,8 @@ class ActivityServiceTest {
                 auditLogRepository,
                 customerRepository,
                 leadRepository,
-                dataScopeService
+                dataScopeService,
+                currentOrganizationProvider
         );
     }
 
@@ -64,8 +69,9 @@ class ActivityServiceTest {
                 new DataScopeContext(1L, null, DataScope.ALL);
 
         when(dataScopeService.currentContext()).thenReturn(context);
-        when(customerRepository.findAccessibleById(
+        when(customerRepository.findAccessibleByIdInOrganization(
                 10L,
+                1L,
                 true,
                 false,
                 1L,
@@ -101,14 +107,19 @@ class ActivityServiceTest {
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
 
-        when(noteRepository.findByCustomerId(10L, sourcePage))
+        when(noteRepository.findByOrganizationIdAndCustomerId(
+                1L,
+                10L,
+                sourcePage
+        ))
                 .thenReturn(new PageImpl<>(
                         List.of(note),
                         sourcePage,
                         1
                 ));
 
-        when(taskRepository.searchAccessibleTasks(
+        when(taskRepository.searchAccessibleTasksInOrganization(
+                eq(1L),
                 isNull(),
                 isNull(),
                 isNull(),
@@ -126,7 +137,8 @@ class ActivityServiceTest {
                 1
         ));
 
-        when(auditLogRepository.findByEntityTypeAndEntityId(
+        when(auditLogRepository.findByOrganizationIdAndEntityTypeAndEntityId(
+                1L,
                 "CUSTOMER",
                 10L,
                 sourcePage
@@ -163,8 +175,9 @@ class ActivityServiceTest {
                 new DataScopeContext(1L, 9L, DataScope.TEAM);
 
         when(dataScopeService.currentContext()).thenReturn(context);
-        when(customerRepository.findAccessibleById(
+        when(customerRepository.findAccessibleByIdInOrganization(
                 99L,
+                1L,
                 false,
                 true,
                 1L,

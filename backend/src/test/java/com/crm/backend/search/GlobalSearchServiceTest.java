@@ -9,6 +9,7 @@ import com.crm.backend.note.NoteRepository;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.TaskRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +37,7 @@ class GlobalSearchServiceTest {
     private TaskRepository taskRepository;
     private NoteRepository noteRepository;
     private DataScopeService dataScopeService;
+    private CurrentOrganizationProvider currentOrganizationProvider;
     private GlobalSearchService globalSearchService;
 
     @BeforeEach
@@ -46,6 +48,8 @@ class GlobalSearchServiceTest {
         taskRepository = mock(TaskRepository.class);
         noteRepository = mock(NoteRepository.class);
         dataScopeService = mock(DataScopeService.class);
+        currentOrganizationProvider = mock(CurrentOrganizationProvider.class);
+        when(currentOrganizationProvider.getOrganizationId()).thenReturn(1L);
 
         globalSearchService = new GlobalSearchService(
                 customerRepository,
@@ -53,7 +57,8 @@ class GlobalSearchServiceTest {
                 contactRepository,
                 taskRepository,
                 noteRepository,
-                dataScopeService
+                dataScopeService,
+                currentOrganizationProvider
         );
     }
 
@@ -120,7 +125,8 @@ class GlobalSearchServiceTest {
                 Sort.by(Sort.Direction.DESC, "updatedAt")
         );
 
-        when(customerRepository.searchAccessibleCustomers(
+        when(customerRepository.searchAccessibleCustomersInOrganization(
+                eq(1L),
                 eq("tadamun"),
                 isNull(),
                 isNull(),

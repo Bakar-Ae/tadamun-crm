@@ -8,6 +8,7 @@ import com.crm.backend.lead.LeadStatus;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.TaskRepository;
 import com.crm.backend.task.TaskStatus;
 import com.crm.backend.team.TeamRepository;
@@ -31,6 +32,7 @@ public class DashboardService {
     private final AuditLogRepository auditLogRepository;
     private final TeamRepository teamRepository;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
     private final ZoneId appTimeZone;
 
     public DashboardService(
@@ -41,6 +43,7 @@ public class DashboardService {
             AuditLogRepository auditLogRepository,
             TeamRepository teamRepository,
             DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider,
             @Value("${app.time-zone:Africa/Mogadishu}") String appTimeZone
     ) {
         this.userRepository = userRepository;
@@ -50,21 +53,30 @@ public class DashboardService {
         this.auditLogRepository = auditLogRepository;
         this.teamRepository = teamRepository;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
         this.appTimeZone = ZoneId.of(appTimeZone);
     }
 
     @Transactional(readOnly = true)
     public DashboardSummaryResponse getSummary() {
-        return buildSummary(dataScopeService.currentContext());
+        return buildSummary(
+                dataScopeService.currentContext(),
+                currentOrganizationProvider.getOrganizationId()
+        );
     }
 
     @Transactional(readOnly = true)
     public TeamDashboardResponse getTeamDashboard() {
         DataScopeContext context = dataScopeService.currentContext();
-        DashboardSummaryResponse summary = buildSummary(context);
+        Long organizationId = currentOrganizationProvider.getOrganizationId();
+        DashboardSummaryResponse summary = buildSummary(
+                context,
+                organizationId
+        );
 
         List<TeamMemberWorkloadResponse> members = userRepository
-                .findDashboardMemberWorkloads(
+                .findDashboardMemberWorkloadsInOrganization(
+                        organizationId,
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
@@ -76,7 +88,8 @@ public class DashboardService {
                 .toList();
 
         List<TeamActivityResponse> recentActivity = auditLogRepository
-                .findAccessibleRecentActivity(
+                .findAccessibleRecentActivityInOrganization(
+                        organizationId,
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
@@ -96,9 +109,10 @@ public class DashboardService {
         return new TeamDashboardResponse(
                 context.scope().name(),
                 context.scope() == DataScope.ALL ? null : context.teamId(),
-                resolveTeamName(context),
+                resolveTeamName(context, organizationId),
                 summary,
-                taskRepository.countAccessibleOverdue(
+                taskRepository.countAccessibleOverdueInOrganization(
+                        organizationId,
                         LocalDateTime.now(appTimeZone),
                         isAllAccess(context),
                         isTeamAccess(context),
@@ -111,29 +125,35 @@ public class DashboardService {
         );
     }
 
-    private DashboardSummaryResponse buildSummary(DataScopeContext context) {
+    private DashboardSummaryResponse buildSummary(
+            DataScopeContext context,
+            Long organizationId
+    ) {
         return new DashboardSummaryResponse(
-                userRepository.countAccessibleUsers(
+                userRepository.countAccessibleUsersInOrganization(
+                        organizationId,
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 ),
-                countCustomers(CustomerStatus.ACTIVE, context),
-                countCustomers(CustomerStatus.ARCHIVED, context),
-                countLeads(LeadStatus.NEW, context)
-                        + countLeads(LeadStatus.CONTACTED, context)
-                        + countLeads(LeadStatus.QUALIFIED, context),
-                countTasks(TaskStatus.OPEN, context),
-                countTasks(TaskStatus.COMPLETED, context)
+                countCustomers(CustomerStatus.ACTIVE, context, organizationId),
+                countCustomers(CustomerStatus.ARCHIVED, context, organizationId),
+                countLeads(LeadStatus.NEW, context, organizationId)
+                        + countLeads(LeadStatus.CONTACTED, context, organizationId)
+                        + countLeads(LeadStatus.QUALIFIED, context, organizationId),
+                countTasks(TaskStatus.OPEN, context, organizationId),
+                countTasks(TaskStatus.COMPLETED, context, organizationId)
         );
     }
 
     private long countCustomers(
             CustomerStatus status,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
-        return customerRepository.countAccessibleByStatus(
+        return customerRepository.countAccessibleByStatusInOrganization(
+                organizationId,
                 status,
                 isAllAccess(context),
                 isTeamAccess(context),
@@ -142,8 +162,13 @@ public class DashboardService {
         );
     }
 
-    private long countLeads(LeadStatus status, DataScopeContext context) {
-        return leadRepository.countAccessibleByStatus(
+    private long countLeads(
+            LeadStatus status,
+            DataScopeContext context,
+            Long organizationId
+    ) {
+        return leadRepository.countAccessibleByStatusInOrganization(
+                organizationId,
                 status,
                 isAllAccess(context),
                 isTeamAccess(context),
@@ -152,8 +177,13 @@ public class DashboardService {
         );
     }
 
-    private long countTasks(TaskStatus status, DataScopeContext context) {
-        return taskRepository.countAccessibleByStatus(
+    private long countTasks(
+            TaskStatus status,
+            DataScopeContext context,
+            Long organizationId
+    ) {
+        return taskRepository.countAccessibleByStatusInOrganization(
+                organizationId,
                 status,
                 isAllAccess(context),
                 isTeamAccess(context),
@@ -162,7 +192,10 @@ public class DashboardService {
         );
     }
 
-    private String resolveTeamName(DataScopeContext context) {
+    private String resolveTeamName(
+            DataScopeContext context,
+            Long organizationId
+    ) {
         if (context.scope() == DataScope.ALL) {
             return "All teams";
         }
@@ -173,7 +206,10 @@ public class DashboardService {
                     : "Unassigned team";
         }
 
-        return teamRepository.findById(context.teamId())
+        return teamRepository.findByIdAndOrganizationId(
+                        context.teamId(),
+                        organizationId
+                )
                 .map(team -> team.getName())
                 .orElse("Unassigned team");
     }

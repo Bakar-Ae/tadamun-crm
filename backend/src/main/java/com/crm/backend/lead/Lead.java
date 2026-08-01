@@ -1,6 +1,7 @@
 package com.crm.backend.lead;
 
 import com.crm.backend.customer.Customer;
+import com.crm.backend.organization.Organization;
 import com.crm.backend.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -20,6 +21,10 @@ public class Lead {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "organization_id", nullable = false, updatable = false)
+    private Organization organization;
 
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;

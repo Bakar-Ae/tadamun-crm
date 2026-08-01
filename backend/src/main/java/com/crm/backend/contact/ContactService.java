@@ -1,6 +1,7 @@
 package com.crm.backend.contact;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.common.ResourceNotFoundException;
 import com.crm.backend.contact.dto.ContactResponse;
 import com.crm.backend.contact.dto.CreateContactRequest;
 import com.crm.backend.contact.dto.UpdateContactRequest;
@@ -9,6 +10,7 @@ import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,19 +24,22 @@ public class ContactService {
     private final ContactMapper contactMapper;
     private final AuditLogService auditLogService;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public ContactService(
             ContactRepository contactRepository,
             CustomerRepository customerRepository,
             ContactMapper contactMapper,
             AuditLogService auditLogService,
-            DataScopeService dataScopeService
+            DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.contactRepository = contactRepository;
         this.customerRepository = customerRepository;
         this.contactMapper = contactMapper;
         this.auditLogService = auditLogService;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
     @Transactional
@@ -43,6 +48,9 @@ public class ContactService {
         Customer customer = findAccessibleCustomerOrThrow(request.customerId(), context);
 
         Contact contact = new Contact();
+        contact.setOrganization(
+                currentOrganizationProvider.getOrganizationReference()
+        );
         contact.setCustomer(customer);
         contact.setFullName(request.fullName());
         contact.setEmail(request.email());
@@ -66,7 +74,8 @@ public class ContactService {
     @Transactional(readOnly = true)
     public Page<ContactResponse> getContacts(Long customerId, String keyword, ContactStatus status, Pageable pageable) {
         DataScopeContext context = dataScopeService.currentContext();
-        return contactRepository.searchAccessibleContacts(
+        return contactRepository.searchAccessibleContactsInOrganization(
+                        currentOrganizationProvider.getOrganizationId(),
                         customerId,
                         keyword,
                         status,
@@ -129,25 +138,27 @@ public class ContactService {
     }
 
     private Contact findAccessibleContactOrThrow(Long id, DataScopeContext context) {
-        return contactRepository.findAccessibleById(
+        return contactRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Contact not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Contact not found"));
     }
 
     private Customer findAccessibleCustomerOrThrow(Long id, DataScopeContext context) {
-        return customerRepository.findAccessibleById(
+        return customerRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
     }
 
     private boolean isAllAccess(DataScopeContext context) {

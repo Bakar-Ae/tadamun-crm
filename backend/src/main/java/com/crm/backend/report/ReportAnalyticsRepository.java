@@ -27,14 +27,16 @@ public class ReportAnalyticsRepository {
     public long countCustomersCreated(
             LocalDateTime from,
             LocalDateTime to,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
         TypedQuery<Long> query = entityManager.createQuery("""
                         SELECT COUNT(customer)
                         FROM Customer customer
                         LEFT JOIN customer.ownerUser owner
                         LEFT JOIN owner.team ownerTeam
-                        WHERE customer.createdAt >= :from
+                        WHERE customer.organization.id = :organizationId
+                          AND customer.createdAt >= :from
                           AND customer.createdAt < :to
                           AND (
                               :allAccess = true
@@ -49,20 +51,22 @@ public class ReportAnalyticsRepository {
                 .setParameter("from", from)
                 .setParameter("to", to);
 
-        return applyScope(query, context).getSingleResult();
+        return applyScope(query, context, organizationId).getSingleResult();
     }
 
     public List<ReportBreakdownItem> countLeadsByStatus(
             LocalDateTime from,
             LocalDateTime to,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
         TypedQuery<Object[]> query = entityManager.createQuery("""
                         SELECT lead.status, COUNT(lead)
                         FROM Lead lead
                         LEFT JOIN lead.assignedToUser assignee
                         LEFT JOIN assignee.team assigneeTeam
-                        WHERE lead.createdAt >= :from
+                        WHERE lead.organization.id = :organizationId
+                          AND lead.createdAt >= :from
                           AND lead.createdAt < :to
                           AND (
                               :allAccess = true
@@ -79,7 +83,7 @@ public class ReportAnalyticsRepository {
                 .setParameter("from", from)
                 .setParameter("to", to);
 
-        return applyScope(query, context).getResultList()
+        return applyScope(query, context, organizationId).getResultList()
                 .stream()
                 .map(row -> new ReportBreakdownItem(
                         ((LeadStatus) row[0]).name(),
@@ -91,14 +95,16 @@ public class ReportAnalyticsRepository {
     public List<ReportBreakdownItem> countTasksByStatus(
             LocalDateTime from,
             LocalDateTime to,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
         TypedQuery<Object[]> query = entityManager.createQuery("""
                         SELECT task.status, COUNT(task)
                         FROM CrmTask task
                         LEFT JOIN task.assignedToUser assignee
                         LEFT JOIN assignee.team assigneeTeam
-                        WHERE task.createdAt >= :from
+                        WHERE task.organization.id = :organizationId
+                          AND task.createdAt >= :from
                           AND task.createdAt < :to
                           AND (
                               :allAccess = true
@@ -115,7 +121,7 @@ public class ReportAnalyticsRepository {
                 .setParameter("from", from)
                 .setParameter("to", to);
 
-        return applyScope(query, context).getResultList()
+        return applyScope(query, context, organizationId).getResultList()
                 .stream()
                 .map(row -> new ReportBreakdownItem(
                         ((TaskStatus) row[0]).name(),
@@ -127,14 +133,16 @@ public class ReportAnalyticsRepository {
     public List<ReportBreakdownItem> countTasksByPriority(
             LocalDateTime from,
             LocalDateTime to,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
         TypedQuery<Object[]> query = entityManager.createQuery("""
                         SELECT task.priority, COUNT(task)
                         FROM CrmTask task
                         LEFT JOIN task.assignedToUser assignee
                         LEFT JOIN assignee.team assigneeTeam
-                        WHERE task.createdAt >= :from
+                        WHERE task.organization.id = :organizationId
+                          AND task.createdAt >= :from
                           AND task.createdAt < :to
                           AND (
                               :allAccess = true
@@ -151,7 +159,7 @@ public class ReportAnalyticsRepository {
                 .setParameter("from", from)
                 .setParameter("to", to);
 
-        return applyScope(query, context).getResultList()
+        return applyScope(query, context, organizationId).getResultList()
                 .stream()
                 .map(row -> new ReportBreakdownItem(
                         ((TaskPriority) row[0]).name(),
@@ -164,14 +172,17 @@ public class ReportAnalyticsRepository {
             String action,
             LocalDateTime from,
             LocalDateTime to,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
         TypedQuery<Long> query = entityManager.createQuery("""
                         SELECT COUNT(auditLog)
                         FROM AuditLog auditLog
                         LEFT JOIN auditLog.actorUser actor
                         LEFT JOIN actor.team actorTeam
-                        WHERE auditLog.action = :action
+                        WHERE auditLog.organization.id = :organizationId
+                          AND auditLog.scope = com.crm.backend.audit.AuditLogScope.ORGANIZATION
+                          AND auditLog.action = :action
                           AND auditLog.createdAt >= :from
                           AND auditLog.createdAt < :to
                           AND (
@@ -188,21 +199,24 @@ public class ReportAnalyticsRepository {
                 .setParameter("from", from)
                 .setParameter("to", to);
 
-        return applyScope(query, context).getSingleResult();
+        return applyScope(query, context, organizationId).getSingleResult();
     }
 
     public long countAuditEventsByEntityType(
             String entityType,
             LocalDateTime from,
             LocalDateTime to,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
         TypedQuery<Long> query = entityManager.createQuery("""
                         SELECT COUNT(auditLog)
                         FROM AuditLog auditLog
                         LEFT JOIN auditLog.actorUser actor
                         LEFT JOIN actor.team actorTeam
-                        WHERE auditLog.entityType = :entityType
+                        WHERE auditLog.organization.id = :organizationId
+                          AND auditLog.scope = com.crm.backend.audit.AuditLogScope.ORGANIZATION
+                          AND auditLog.entityType = :entityType
                           AND auditLog.createdAt >= :from
                           AND auditLog.createdAt < :to
                           AND (
@@ -219,20 +233,23 @@ public class ReportAnalyticsRepository {
                 .setParameter("from", from)
                 .setParameter("to", to);
 
-        return applyScope(query, context).getSingleResult();
+        return applyScope(query, context, organizationId).getSingleResult();
     }
 
     @SuppressWarnings("unchecked")
     public List<ReportDailyActivity> countDailyActivity(
             LocalDateTime from,
             LocalDateTime to,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
         Query query = entityManager.createNativeQuery("""
                         SELECT DATE(a.created_at), COUNT(*)
                         FROM audit_logs a
                         LEFT JOIN users actor ON actor.id = a.actor_user_id
-                        WHERE a.created_at >= :from
+                        WHERE a.organization_id = :organizationId
+                          AND a.scope = 'ORGANIZATION'
+                          AND a.created_at >= :from
                           AND a.created_at < :to
                           AND (
                               :allAccess = TRUE
@@ -250,7 +267,11 @@ public class ReportAnalyticsRepository {
                 .setParameter("to", to);
 
         @SuppressWarnings("unchecked")
-        List<Object[]> rows = applyScope(query, context).getResultList();
+        List<Object[]> rows = applyScope(
+                query,
+                context,
+                organizationId
+        ).getResultList();
 
         return rows.stream()
                 .map(row -> new ReportDailyActivity(
@@ -262,8 +283,10 @@ public class ReportAnalyticsRepository {
 
     private <T> TypedQuery<T> applyScope(
             TypedQuery<T> query,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
+        query.setParameter("organizationId", organizationId);
         query.setParameter("allAccess", context.scope() == DataScope.ALL);
         query.setParameter("teamAccess", context.scope() == DataScope.TEAM);
         query.setParameter("currentUserId", context.userId());
@@ -271,7 +294,12 @@ public class ReportAnalyticsRepository {
         return query;
     }
 
-    private Query applyScope(Query query, DataScopeContext context) {
+    private Query applyScope(
+            Query query,
+            DataScopeContext context,
+            Long organizationId
+    ) {
+        query.setParameter("organizationId", organizationId);
         query.setParameter("allAccess", context.scope() == DataScope.ALL);
         query.setParameter("teamAccess", context.scope() == DataScope.TEAM);
         query.setParameter("currentUserId", context.userId());

@@ -8,6 +8,7 @@ import com.crm.backend.permission.PermissionName;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.TaskRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +32,7 @@ public class GlobalSearchService {
     private final TaskRepository taskRepository;
     private final NoteRepository noteRepository;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public GlobalSearchService(
             CustomerRepository customerRepository,
@@ -38,7 +40,8 @@ public class GlobalSearchService {
             ContactRepository contactRepository,
             TaskRepository taskRepository,
             NoteRepository noteRepository,
-            DataScopeService dataScopeService
+            DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.customerRepository = customerRepository;
         this.leadRepository = leadRepository;
@@ -46,6 +49,7 @@ public class GlobalSearchService {
         this.taskRepository = taskRepository;
         this.noteRepository = noteRepository;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
     @Transactional(readOnly = true)
@@ -59,6 +63,7 @@ public class GlobalSearchService {
         Set<SearchModule> modules = resolveModules(requestedModules);
 
         DataScopeContext context = dataScopeService.currentContext();
+        Long organizationId = currentOrganizationProvider.getOrganizationId();
 
         Pageable pageable = PageRequest.of(
                 0,
@@ -69,8 +74,8 @@ public class GlobalSearchService {
         List<SearchResultResponse> results = new ArrayList<>();
 
         if (canSearch(modules, SearchModule.CUSTOMER, PermissionName.CUSTOMER_VIEW)) {
-            customerRepository.searchAccessibleCustomers(
-                    query, null, null,
+            customerRepository.searchAccessibleCustomersInOrganization(
+                    organizationId, query, null, null,
                     isAllAccess(context),
                     isTeamAccess(context),
                     context.userId(),
@@ -94,8 +99,8 @@ public class GlobalSearchService {
         }
 
         if (canSearch(modules, SearchModule.LEAD, PermissionName.LEAD_VIEW)) {
-            leadRepository.searchAccessibleLeads(
-                    query, null,
+            leadRepository.searchAccessibleLeadsInOrganization(
+                    organizationId, query, null,
                     isAllAccess(context),
                     isTeamAccess(context),
                     context.userId(),
@@ -119,8 +124,8 @@ public class GlobalSearchService {
         }
 
         if (canSearch(modules, SearchModule.CONTACT, PermissionName.CONTACT_VIEW)) {
-            contactRepository.searchAccessibleContacts(
-                    null, query, null,
+            contactRepository.searchAccessibleContactsInOrganization(
+                    organizationId, null, query, null,
                     isAllAccess(context),
                     isTeamAccess(context),
                     context.userId(),
@@ -144,7 +149,8 @@ public class GlobalSearchService {
         }
 
         if (canSearch(modules, SearchModule.TASK, PermissionName.TASK_VIEW)) {
-            taskRepository.searchAccessibleTasks(
+            taskRepository.searchAccessibleTasksInOrganization(
+                    organizationId,
                     query, null, null, null, null, null,
                     isAllAccess(context),
                     isTeamAccess(context),
@@ -179,8 +185,8 @@ public class GlobalSearchService {
         }
 
         if (canSearch(modules, SearchModule.NOTE, PermissionName.NOTE_VIEW)) {
-            noteRepository.searchAccessibleNotes(
-                    query,
+            noteRepository.searchAccessibleNotesInOrganization(
+                    organizationId, query,
                     isAllAccess(context),
                     isTeamAccess(context),
                     context.userId(),

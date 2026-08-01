@@ -1,5 +1,6 @@
 package com.crm.backend.audit;
 
+import com.crm.backend.organization.Organization;
 import com.crm.backend.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -18,6 +19,14 @@ public class AuditLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "organization_id", updatable = false)
+    private Organization organization;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private AuditLogScope scope;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "actor_user_id")

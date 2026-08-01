@@ -1,4 +1,6 @@
 package com.crm.backend.customer;
+import com.crm.backend.organization.Organization;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 
 import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.customer.dto.CreateCustomerRequest;
@@ -31,6 +33,7 @@ class CustomerServiceTest {
     private DataScopeService dataScopeService;
     private CustomerService customerService;
     private DataScopeContext context;
+    private CurrentOrganizationProvider currentOrganizationProvider;
 
     @BeforeEach
     void setUp() {
@@ -39,14 +42,27 @@ class CustomerServiceTest {
         auditLogService = mock(AuditLogService.class);
         userRepository = mock(UserRepository.class);
         dataScopeService = mock(DataScopeService.class);
+        currentOrganizationProvider =
+                mock(CurrentOrganizationProvider.class);
+
+        Organization organization = new Organization();
+        organization.setId(1L);
+
+        when(currentOrganizationProvider.getOrganizationId())
+                .thenReturn(1L);
+        when(currentOrganizationProvider.getOrganizationReference())
+                .thenReturn(organization);
+
 
         customerService = new CustomerService(
                 customerRepository,
                 customerMapper,
                 auditLogService,
                 userRepository,
-                dataScopeService
+                dataScopeService,
+                currentOrganizationProvider
         );
+
 
         context = new DataScopeContext(1L, 10L, DataScope.ALL);
         when(dataScopeService.currentContext()).thenReturn(context);
@@ -63,7 +79,10 @@ class CustomerServiceTest {
                 null
         );
 
-        when(customerRepository.existsByEmail("test@company.com")).thenReturn(true);
+        when(customerRepository.existsByOrganizationIdAndEmail(
+                1L,
+                "test@company.com"
+        )).thenReturn(true);
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -109,7 +128,14 @@ class CustomerServiceTest {
         customer.setStatus(CustomerStatus.ACTIVE);
         customer.setOwnerUser(activeUser(1L, 10L));
 
-        when(customerRepository.findAccessibleById(1L, true, false, 1L, 10L))
+        when(customerRepository.findAccessibleByIdInOrganization(
+                1L,
+                1L,
+                true,
+                false,
+                1L,
+                10L
+        ))
                 .thenReturn(Optional.of(customer));
         when(customerRepository.save(any(Customer.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -123,7 +149,14 @@ class CustomerServiceTest {
 
     @Test
     void getCustomerByIdShouldRejectMissingOrInaccessibleCustomer() {
-        when(customerRepository.findAccessibleById(99L, true, false, 1L, 10L))
+        when(customerRepository.findAccessibleByIdInOrganization(
+                99L,
+                1L,
+                true,
+                false,
+                1L,
+                10L
+        ))
                 .thenReturn(Optional.empty());
 
         IllegalArgumentException exception = assertThrows(

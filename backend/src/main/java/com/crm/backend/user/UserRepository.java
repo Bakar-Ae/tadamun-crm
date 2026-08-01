@@ -17,20 +17,26 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByEmail(String email);
 
-    @Query("""
-        SELECT COUNT(u) FROM User u
-        LEFT JOIN u.team team
-        WHERE (
-            :allAccess = true
-            OR u.id = :currentUserId
-            OR (
-                :teamAccess = true
-                AND :currentTeamId IS NOT NULL
-                AND team.id = :currentTeamId
-            )
-        )
-        """)
-    long countAccessibleUsers(
+    @Query(value = """
+        SELECT COUNT(*)
+        FROM organization_memberships membership
+        JOIN users u ON u.id = membership.user_id
+        LEFT JOIN teams team ON team.id = u.team_id
+        WHERE membership.organization_id = :organizationId
+          AND membership.status = 'ACTIVE'
+          AND u.status = 'ACTIVE'
+          AND (
+              :allAccess = TRUE
+              OR u.id = :currentUserId
+              OR (
+                  :teamAccess = TRUE
+                  AND :currentTeamId IS NOT NULL
+                  AND team.id = :currentTeamId
+              )
+          )
+        """, nativeQuery = true)
+    long countAccessibleUsersInOrganization(
+            @Param("organizationId") Long organizationId,
             @Param("allAccess") boolean allAccess,
             @Param("teamAccess") boolean teamAccess,
             @Param("currentUserId") Long currentUserId,
@@ -43,30 +49,40 @@ public interface UserRepository extends JpaRepository<User, Long> {
             u.full_name AS fullName,
             COALESCE((
                 SELECT COUNT(*) FROM customers c
-                WHERE c.owner_user_id = u.id AND c.status = 'ACTIVE'
+                WHERE c.organization_id = :organizationId
+                  AND c.owner_user_id = u.id
+                  AND c.status = 'ACTIVE'
             ), 0) AS activeCustomers,
             COALESCE((
                 SELECT COUNT(*) FROM leads l
-                WHERE l.assigned_to_user_id = u.id
+                WHERE l.organization_id = :organizationId
+                  AND l.assigned_to_user_id = u.id
                   AND l.status IN ('NEW', 'CONTACTED', 'QUALIFIED')
             ), 0) AS activeLeads,
             COALESCE((
                 SELECT COUNT(*) FROM tasks t
-                WHERE t.assigned_to_user_id = u.id
+                WHERE t.organization_id = :organizationId
+                  AND t.assigned_to_user_id = u.id
                   AND t.status IN ('OPEN', 'IN_PROGRESS')
             ), 0) AS openTasks,
             COALESCE((
                 SELECT COUNT(*) FROM tasks t
-                WHERE t.assigned_to_user_id = u.id
+                WHERE t.organization_id = :organizationId
+                  AND t.assigned_to_user_id = u.id
                   AND t.status = 'COMPLETED'
             ), 0) AS completedTasks,
             COALESCE((
                 SELECT COUNT(*) FROM audit_logs a
-                WHERE a.actor_user_id = u.id
+                WHERE a.organization_id = :organizationId
+                  AND a.scope = 'ORGANIZATION'
+                  AND a.actor_user_id = u.id
                   AND a.created_at >= DATE_SUB(CURRENT_TIMESTAMP, INTERVAL 30 DAY)
             ), 0) AS recentActivities
-        FROM users u
-        WHERE u.status = 'ACTIVE'
+        FROM organization_memberships membership
+        JOIN users u ON u.id = membership.user_id
+        WHERE membership.organization_id = :organizationId
+          AND membership.status = 'ACTIVE'
+          AND u.status = 'ACTIVE'
           AND (
               :allAccess = TRUE
               OR u.id = :currentUserId
@@ -78,7 +94,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
           )
         ORDER BY openTasks DESC, recentActivities DESC, u.full_name ASC
         """, nativeQuery = true)
-    List<TeamMemberWorkloadProjection> findDashboardMemberWorkloads(
+    List<TeamMemberWorkloadProjection> findDashboardMemberWorkloadsInOrganization(
+            @Param("organizationId") Long organizationId,
             @Param("allAccess") boolean allAccess,
             @Param("teamAccess") boolean teamAccess,
             @Param("currentUserId") Long currentUserId,

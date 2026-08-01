@@ -2,6 +2,7 @@ package com.crm.backend.attachment;
 
 import com.crm.backend.customer.Customer;
 import com.crm.backend.lead.Lead;
+import com.crm.backend.organization.Organization;
 import com.crm.backend.user.User;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -20,6 +21,10 @@ public class Attachment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "organization_id", nullable = false, updatable = false)
+    private Organization organization;
 
     @Column(name = "original_file_name", nullable = false, length = 255)
     private String originalFileName;

@@ -13,14 +13,18 @@ public interface AttachmentRepository
         extends JpaRepository<Attachment, Long> {
 
     @EntityGraph(attributePaths = {"customer", "uploadedByUser"})
-    Page<Attachment> findByCustomerIdAndStatusOrderByCreatedAtDesc(
+    Page<Attachment>
+    findByOrganizationIdAndCustomerIdAndStatusOrderByCreatedAtDesc(
+            Long organizationId,
             Long customerId,
             AttachmentStatus status,
             Pageable pageable
     );
 
     @EntityGraph(attributePaths = {"lead", "uploadedByUser"})
-    Page<Attachment> findByLeadIdAndStatusOrderByCreatedAtDesc(
+    Page<Attachment>
+    findByOrganizationIdAndLeadIdAndStatusOrderByCreatedAtDesc(
+            Long organizationId,
             Long leadId,
             AttachmentStatus status,
             Pageable pageable
@@ -44,6 +48,7 @@ public interface AttachmentRepository
             LEFT JOIN lead.assignedToUser leadOwner
             LEFT JOIN leadOwner.team leadOwnerTeam
             WHERE a.id = :id
+            AND a.organization.id = :organizationId
             AND a.status = :status
             AND (
                 :allAccess = true
@@ -59,8 +64,9 @@ public interface AttachmentRepository
                 )
             )
             """)
-    Optional<Attachment> findAccessibleByIdAndStatus(
+    Optional<Attachment> findAccessibleByIdAndStatusInOrganization(
             @Param("id") Long id,
+            @Param("organizationId") Long organizationId,
             @Param("status") AttachmentStatus status,
             @Param("allAccess") boolean allAccess,
             @Param("teamAccess") boolean teamAccess,

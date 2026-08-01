@@ -1,5 +1,6 @@
 package com.crm.backend.notification;
 
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import org.springframework.data.domain.Page;
@@ -16,15 +17,18 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final NotificationPreferenceService preferenceService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            NotificationPreferenceService preferenceService
+            NotificationPreferenceService preferenceService,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.preferenceService = preferenceService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
     @Transactional
@@ -49,6 +53,9 @@ public class NotificationService {
                 );
 
         Notification notification = new Notification();
+        currentOrganizationProvider
+                .getOptionalOrganizationReference()
+                .ifPresent(notification::setOrganization);
         notification.setRecipientUser(recipientUser);
         notification.setTitle(title);
         notification.setMessage(message);
@@ -59,22 +66,30 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public Page<Notification> getNotifications(User recipientUser, Pageable pageable) {
-        return notificationRepository.findByRecipientUserOrderByCreatedAtDesc(recipientUser, pageable);
+        return notificationRepository.findVisibleForRecipient(
+                recipientUser,
+                currentOrganizationProvider.getOrganizationId(),
+                pageable
+        );
     }
 
     @Transactional(readOnly = true)
     public long countUnread(User recipientUser) {
-        return notificationRepository.countByRecipientUserAndReadStatusFalse(recipientUser);
+        return notificationRepository.countUnreadVisibleForRecipient(
+                recipientUser,
+                currentOrganizationProvider.getOrganizationId()
+        );
     }
 
     @Transactional
     public void markAsRead(Long notificationId, User recipientUser) {
-        Notification notification = notificationRepository.findById(notificationId)
+        Notification notification = notificationRepository
+                .findVisibleByIdAndRecipient(
+                        notificationId,
+                        recipientUser,
+                        currentOrganizationProvider.getOrganizationId()
+                )
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
-
-        if (!notification.getRecipientUser().getId().equals(recipientUser.getId())) {
-            throw new IllegalArgumentException("Notification not found");
-        }
 
         if (!notification.isReadStatus()) {
             notification.setReadStatus(true);

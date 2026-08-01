@@ -8,6 +8,7 @@ import com.crm.backend.lead.LeadStatus;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.TaskRepository;
 import com.crm.backend.task.TaskStatus;
 import com.crm.backend.team.Team;
@@ -37,6 +38,7 @@ class DashboardServiceTest {
     private AuditLogRepository auditLogRepository;
     private TeamRepository teamRepository;
     private DataScopeService dataScopeService;
+    private CurrentOrganizationProvider currentOrganizationProvider;
     private DashboardService dashboardService;
 
     @BeforeEach
@@ -48,6 +50,8 @@ class DashboardServiceTest {
         auditLogRepository = mock(AuditLogRepository.class);
         teamRepository = mock(TeamRepository.class);
         dataScopeService = mock(DataScopeService.class);
+        currentOrganizationProvider = mock(CurrentOrganizationProvider.class);
+        when(currentOrganizationProvider.getOrganizationId()).thenReturn(1L);
 
         dashboardService = new DashboardService(
                 userRepository,
@@ -57,6 +61,7 @@ class DashboardServiceTest {
                 auditLogRepository,
                 teamRepository,
                 dataScopeService,
+                currentOrganizationProvider,
                 "Africa/Mogadishu"
         );
     }
@@ -67,30 +72,33 @@ class DashboardServiceTest {
                 new DataScopeContext(3L, 7L, DataScope.TEAM);
         when(dataScopeService.currentContext()).thenReturn(context);
 
-        when(userRepository.countAccessibleUsers(false, true, 3L, 7L))
+        when(userRepository.countAccessibleUsersInOrganization(
+                1L, false, true, 3L, 7L
+        ))
                 .thenReturn(4L);
-        when(customerRepository.countAccessibleByStatus(
-                CustomerStatus.ACTIVE, false, true, 3L, 7L
+        when(customerRepository.countAccessibleByStatusInOrganization(
+                1L, CustomerStatus.ACTIVE, false, true, 3L, 7L
         )).thenReturn(5L);
-        when(customerRepository.countAccessibleByStatus(
-                CustomerStatus.ARCHIVED, false, true, 3L, 7L
+        when(customerRepository.countAccessibleByStatusInOrganization(
+                1L, CustomerStatus.ARCHIVED, false, true, 3L, 7L
         )).thenReturn(1L);
-        when(leadRepository.countAccessibleByStatus(
-                LeadStatus.NEW, false, true, 3L, 7L
+        when(leadRepository.countAccessibleByStatusInOrganization(
+                1L, LeadStatus.NEW, false, true, 3L, 7L
         )).thenReturn(2L);
-        when(leadRepository.countAccessibleByStatus(
-                LeadStatus.CONTACTED, false, true, 3L, 7L
+        when(leadRepository.countAccessibleByStatusInOrganization(
+                1L, LeadStatus.CONTACTED, false, true, 3L, 7L
         )).thenReturn(1L);
-        when(leadRepository.countAccessibleByStatus(
-                LeadStatus.QUALIFIED, false, true, 3L, 7L
+        when(leadRepository.countAccessibleByStatusInOrganization(
+                1L, LeadStatus.QUALIFIED, false, true, 3L, 7L
         )).thenReturn(1L);
-        when(taskRepository.countAccessibleByStatus(
-                TaskStatus.OPEN, false, true, 3L, 7L
+        when(taskRepository.countAccessibleByStatusInOrganization(
+                1L, TaskStatus.OPEN, false, true, 3L, 7L
         )).thenReturn(3L);
-        when(taskRepository.countAccessibleByStatus(
-                TaskStatus.COMPLETED, false, true, 3L, 7L
+        when(taskRepository.countAccessibleByStatusInOrganization(
+                1L, TaskStatus.COMPLETED, false, true, 3L, 7L
         )).thenReturn(9L);
-        when(taskRepository.countAccessibleOverdue(
+        when(taskRepository.countAccessibleOverdueInOrganization(
+                eq(1L),
                 any(LocalDateTime.class),
                 eq(false),
                 eq(true),
@@ -107,18 +115,19 @@ class DashboardServiceTest {
         when(member.getOpenTasks()).thenReturn(3L);
         when(member.getCompletedTasks()).thenReturn(9L);
         when(member.getRecentActivities()).thenReturn(12L);
-        when(userRepository.findDashboardMemberWorkloads(
-                false, true, 3L, 7L, PageRequest.of(0, 8)
+        when(userRepository.findDashboardMemberWorkloadsInOrganization(
+                1L, false, true, 3L, 7L, PageRequest.of(0, 8)
         )).thenReturn(List.of(member));
 
-        when(auditLogRepository.findAccessibleRecentActivity(
-                false, true, 3L, 7L, PageRequest.of(0, 6)
+        when(auditLogRepository.findAccessibleRecentActivityInOrganization(
+                1L, false, true, 3L, 7L, PageRequest.of(0, 6)
         )).thenReturn(new PageImpl<>(List.of()));
 
         Team team = new Team();
         team.setId(7L);
         team.setName("Enterprise Sales");
-        when(teamRepository.findById(7L)).thenReturn(Optional.of(team));
+        when(teamRepository.findByIdAndOrganizationId(7L, 1L))
+                .thenReturn(Optional.of(team));
 
         TeamDashboardResponse result = dashboardService.getTeamDashboard();
 

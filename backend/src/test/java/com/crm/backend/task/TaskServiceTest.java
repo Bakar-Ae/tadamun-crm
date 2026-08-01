@@ -3,9 +3,11 @@ package com.crm.backend.task;
 import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.LeadRepository;
+import com.crm.backend.organization.Organization;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.dto.CalendarTaskResponse;
 import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.user.User;
@@ -32,6 +34,8 @@ class TaskServiceTest {
     private TaskMapper taskMapper;
     private UserRepository userRepository;
     private DataScopeService dataScopeService;
+    private CurrentOrganizationProvider currentOrganizationProvider;
+    private Organization organization;
     private TaskService taskService;
 
     private final DataScopeContext allAccessContext =
@@ -43,8 +47,16 @@ class TaskServiceTest {
         taskMapper = mock(TaskMapper.class);
         userRepository = mock(UserRepository.class);
         dataScopeService = mock(DataScopeService.class);
+        currentOrganizationProvider =
+                mock(CurrentOrganizationProvider.class);
+        organization = new Organization();
+        organization.setId(1L);
 
         when(dataScopeService.currentContext()).thenReturn(allAccessContext);
+        when(currentOrganizationProvider.getOrganizationId())
+                .thenReturn(1L);
+        when(currentOrganizationProvider.getOrganizationReference())
+                .thenReturn(organization);
 
         taskService = new TaskService(
                 taskRepository,
@@ -54,6 +66,7 @@ class TaskServiceTest {
                 taskMapper,
                 mock(AuditLogService.class),
                 dataScopeService,
+                currentOrganizationProvider,
                 "Africa/Mogadishu"
         );
     }
@@ -110,7 +123,8 @@ class TaskServiceTest {
                 null
         );
 
-        when(taskRepository.findAccessibleCalendarTasks(
+        when(taskRepository.findAccessibleCalendarTasksInOrganization(
+                1L,
                 localFrom,
                 localTo,
                 2L,
@@ -133,7 +147,8 @@ class TaskServiceTest {
         assertEquals(1, result.getTotalElements());
         assertSame(mapped, result.getContent().get(0));
 
-        verify(taskRepository).findAccessibleCalendarTasks(
+        verify(taskRepository).findAccessibleCalendarTasksInOrganization(
+                1L,
                 localFrom,
                 localTo,
                 2L,
@@ -172,6 +187,7 @@ class TaskServiceTest {
 
         verify(taskRepository).save(argThat(task ->
                 task.getAssignedToUser() == currentUser
+                        && task.getOrganization() == organization
                         && task.getStatus() == TaskStatus.OPEN
         ));
         verify(dataScopeService).requireAccess(
@@ -186,8 +202,9 @@ class TaskServiceTest {
         DataScopeContext ownContext =
                 new DataScopeContext(7L, 3L, DataScope.OWN);
         when(dataScopeService.currentContext()).thenReturn(ownContext);
-        when(taskRepository.findAccessibleById(
+        when(taskRepository.findAccessibleByIdInOrganization(
                 99L,
+                1L,
                 false,
                 false,
                 7L,

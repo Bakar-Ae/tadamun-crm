@@ -1,6 +1,7 @@
 package com.crm.backend.task;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.common.ResourceNotFoundException;
 import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.lead.Lead;
@@ -8,6 +9,7 @@ import com.crm.backend.lead.LeadRepository;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.dto.CalendarTaskResponse;
 import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.task.dto.TaskResponse;
@@ -39,6 +41,7 @@ public class TaskService {
     private final TaskMapper taskMapper;
     private final AuditLogService auditLogService;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
     private final ZoneId appTimeZone;
 
     public TaskService(
@@ -49,6 +52,7 @@ public class TaskService {
             TaskMapper taskMapper,
             AuditLogService auditLogService,
             DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider,
             @Value("${app.time-zone:Africa/Mogadishu}") String appTimeZone
     ) {
         this.taskRepository = taskRepository;
@@ -58,6 +62,7 @@ public class TaskService {
         this.taskMapper = taskMapper;
         this.auditLogService = auditLogService;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
         this.appTimeZone = ZoneId.of(appTimeZone);
     }
 
@@ -65,6 +70,9 @@ public class TaskService {
     public TaskResponse createTask(CreateTaskRequest request) {
         DataScopeContext context = dataScopeService.currentContext();
         CrmTask task = new CrmTask();
+        task.setOrganization(
+                currentOrganizationProvider.getOrganizationReference()
+        );
         task.setTitle(request.title());
         task.setDescription(request.description());
         task.setPriority(request.priority());
@@ -101,7 +109,8 @@ public class TaskService {
     ) {
         DataScopeContext context = dataScopeService.currentContext();
 
-        return taskRepository.searchAccessibleTasks(
+        return taskRepository.searchAccessibleTasksInOrganization(
+                        currentOrganizationProvider.getOrganizationId(),
                         keyword,
                         status,
                         priority,
@@ -144,7 +153,8 @@ public class TaskService {
                 to.atZoneSameInstant(appTimeZone).toLocalDateTime();
 
         return taskRepository
-                .findAccessibleCalendarTasks(
+                .findAccessibleCalendarTasksInOrganization(
+                        currentOrganizationProvider.getOrganizationId(),
                         localFrom,
                         localTo,
                         assignedToUserId,
@@ -197,14 +207,15 @@ public class TaskService {
     }
 
     private CrmTask findAccessibleTaskOrThrow(Long id, DataScopeContext context) {
-        return taskRepository.findAccessibleById(
+        return taskRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
     }
 
     private User resolveAssignee(Long requestedUserId, DataScopeContext context) {
@@ -214,6 +225,10 @@ public class TaskService {
 
         User assignee = userRepository.findById(assigneeId)
                 .orElseThrow(() -> new IllegalArgumentException("Assigned user not found"));
+
+        currentOrganizationProvider.requireActiveUserMembership(
+                assignee.getId()
+        );
 
         if (assignee.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalArgumentException("Assigned user must be active");
@@ -236,14 +251,15 @@ public class TaskService {
             return null;
         }
 
-        return customerRepository.findAccessibleById(
+        return customerRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
     }
 
     private Lead findAccessibleLeadOrNull(Long id, DataScopeContext context) {
@@ -251,14 +267,15 @@ public class TaskService {
             return null;
         }
 
-        return leadRepository.findAccessibleById(
+        return leadRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         isAllAccess(context),
                         isTeamAccess(context),
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Lead not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Lead not found"));
     }
 
     private boolean isAllAccess(DataScopeContext context) {

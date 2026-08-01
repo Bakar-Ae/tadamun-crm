@@ -7,6 +7,7 @@ import com.crm.backend.lead.LeadStatus;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.task.TaskRepository;
 import com.crm.backend.task.TaskPriority;
 import com.crm.backend.task.TaskStatus;
@@ -34,6 +35,7 @@ public class ReportService {
     private final TaskRepository taskRepository;
     private final ReportAnalyticsRepository reportAnalyticsRepository;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
     private final ZoneId appTimeZone;
 
     public ReportService(
@@ -42,6 +44,7 @@ public class ReportService {
             TaskRepository taskRepository,
             ReportAnalyticsRepository reportAnalyticsRepository,
             DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider,
             @Value("${app.time-zone:Africa/Mogadishu}") String appTimeZone
     ) {
         this.customerRepository = customerRepository;
@@ -49,24 +52,26 @@ public class ReportService {
         this.taskRepository = taskRepository;
         this.reportAnalyticsRepository = reportAnalyticsRepository;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
         this.appTimeZone = ZoneId.of(appTimeZone);
     }
 
     @Transactional(readOnly = true)
     public ReportSummaryResponse getSummaryReport() {
         DataScopeContext context = dataScopeService.currentContext();
-        long activeCustomers = countCustomers(CustomerStatus.ACTIVE, context);
-        long archivedCustomers = countCustomers(CustomerStatus.ARCHIVED, context);
-        long newLeads = countLeads(LeadStatus.NEW, context);
-        long contactedLeads = countLeads(LeadStatus.CONTACTED, context);
-        long qualifiedLeads = countLeads(LeadStatus.QUALIFIED, context);
-        long convertedLeads = countLeads(LeadStatus.CONVERTED, context);
-        long lostLeads = countLeads(LeadStatus.LOST, context);
-        long archivedLeads = countLeads(LeadStatus.ARCHIVED, context);
-        long openTasks = countTasks(TaskStatus.OPEN, context);
-        long inProgressTasks = countTasks(TaskStatus.IN_PROGRESS, context);
-        long completedTasks = countTasks(TaskStatus.COMPLETED, context);
-        long cancelledTasks = countTasks(TaskStatus.CANCELLED, context);
+        Long organizationId = currentOrganizationProvider.getOrganizationId();
+        long activeCustomers = countCustomers(CustomerStatus.ACTIVE, context, organizationId);
+        long archivedCustomers = countCustomers(CustomerStatus.ARCHIVED, context, organizationId);
+        long newLeads = countLeads(LeadStatus.NEW, context, organizationId);
+        long contactedLeads = countLeads(LeadStatus.CONTACTED, context, organizationId);
+        long qualifiedLeads = countLeads(LeadStatus.QUALIFIED, context, organizationId);
+        long convertedLeads = countLeads(LeadStatus.CONVERTED, context, organizationId);
+        long lostLeads = countLeads(LeadStatus.LOST, context, organizationId);
+        long archivedLeads = countLeads(LeadStatus.ARCHIVED, context, organizationId);
+        long openTasks = countTasks(TaskStatus.OPEN, context, organizationId);
+        long inProgressTasks = countTasks(TaskStatus.IN_PROGRESS, context, organizationId);
+        long completedTasks = countTasks(TaskStatus.COMPLETED, context, organizationId);
+        long cancelledTasks = countTasks(TaskStatus.CANCELLED, context, organizationId);
 
         return new ReportSummaryResponse(
                 activeCustomers + archivedCustomers,
@@ -93,6 +98,7 @@ public class ReportService {
     ) {
         validateRange(from, to);
         DataScopeContext context = dataScopeService.currentContext();
+        Long organizationId = currentOrganizationProvider.getOrganizationId();
 
         LocalDateTime localFrom = from.atZoneSameInstant(appTimeZone).toLocalDateTime();
         LocalDateTime localTo = to.atZoneSameInstant(appTimeZone).toLocalDateTime();
@@ -100,21 +106,21 @@ public class ReportService {
         List<ReportBreakdownItem> leadStatuses = includeZeroCounts(
                 LeadStatus.values(),
                 reportAnalyticsRepository.countLeadsByStatus(
-                        localFrom, localTo, context
+                        localFrom, localTo, context, organizationId
                 )
         );
 
         List<ReportBreakdownItem> taskStatuses = includeZeroCounts(
                 TaskStatus.values(),
                 reportAnalyticsRepository.countTasksByStatus(
-                        localFrom, localTo, context
+                        localFrom, localTo, context, organizationId
                 )
         );
 
         List<ReportBreakdownItem> taskPriorities = includeZeroCounts(
                 TaskPriority.values(),
                 reportAnalyticsRepository.countTasksByPriority(
-                        localFrom, localTo, context
+                        localFrom, localTo, context, organizationId
                 )
         );
 
@@ -122,7 +128,7 @@ public class ReportService {
                 localFrom.toLocalDate(),
                 localTo.minusNanos(1).toLocalDate(),
                 reportAnalyticsRepository.countDailyActivity(
-                        localFrom, localTo, context
+                        localFrom, localTo, context, organizationId
                 )
         );
 
@@ -136,19 +142,19 @@ public class ReportService {
                 from,
                 to,
                 reportAnalyticsRepository.countCustomersCreated(
-                        localFrom, localTo, context
+                        localFrom, localTo, context, organizationId
                 ),
                 leadsCreated,
                 reportAnalyticsRepository.countAuditEventsByAction(
-                        "LEAD_CONVERTED", localFrom, localTo, context
+                        "LEAD_CONVERTED", localFrom, localTo, context, organizationId
                 ),
                 tasksCreated,
                 reportAnalyticsRepository.countAuditEventsByAction(
-                        "TASK_COMPLETED", localFrom, localTo, context
+                        "TASK_COMPLETED", localFrom, localTo, context, organizationId
                 ),
                 activitiesRecorded,
                 reportAnalyticsRepository.countAuditEventsByEntityType(
-                        "CUSTOMER", localFrom, localTo, context
+                        "CUSTOMER", localFrom, localTo, context, organizationId
                 ),
                 leadStatuses,
                 taskStatuses,
@@ -159,9 +165,11 @@ public class ReportService {
 
     private long countCustomers(
             CustomerStatus status,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
-        return customerRepository.countAccessibleByStatus(
+        return customerRepository.countAccessibleByStatusInOrganization(
+                organizationId,
                 status,
                 isAllAccess(context),
                 isTeamAccess(context),
@@ -172,9 +180,11 @@ public class ReportService {
 
     private long countLeads(
             LeadStatus status,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
-        return leadRepository.countAccessibleByStatus(
+        return leadRepository.countAccessibleByStatusInOrganization(
+                organizationId,
                 status,
                 isAllAccess(context),
                 isTeamAccess(context),
@@ -185,9 +195,11 @@ public class ReportService {
 
     private long countTasks(
             TaskStatus status,
-            DataScopeContext context
+            DataScopeContext context,
+            Long organizationId
     ) {
-        return taskRepository.countAccessibleByStatus(
+        return taskRepository.countAccessibleByStatusInOrganization(
+                organizationId,
                 status,
                 isAllAccess(context),
                 isTeamAccess(context),

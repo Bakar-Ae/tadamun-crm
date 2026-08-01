@@ -1,6 +1,7 @@
 package com.crm.backend.lead;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.common.ResourceNotFoundException;
 import com.crm.backend.customer.Customer;
 import com.crm.backend.customer.CustomerRepository;
 import com.crm.backend.customer.CustomerStatus;
@@ -11,6 +12,7 @@ import com.crm.backend.lead.dto.UpdateLeadRequest;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -31,6 +33,7 @@ public class LeadService {
     private final LeadMapper leadMapper;
     private final AuditLogService auditLogService;
     private final DataScopeService dataScopeService;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public LeadService(
             LeadRepository leadRepository,
@@ -38,7 +41,8 @@ public class LeadService {
             UserRepository userRepository,
             LeadMapper leadMapper,
             AuditLogService auditLogService,
-            DataScopeService dataScopeService
+            DataScopeService dataScopeService,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.leadRepository = leadRepository;
         this.customerRepository = customerRepository;
@@ -46,6 +50,7 @@ public class LeadService {
         this.leadMapper = leadMapper;
         this.auditLogService = auditLogService;
         this.dataScopeService = dataScopeService;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
     @Transactional
@@ -54,6 +59,9 @@ public class LeadService {
         User assignee = resolveAssignee(request.assignedToUserId(), context);
 
         Lead lead = new Lead();
+        lead.setOrganization(
+                currentOrganizationProvider.getOrganizationReference()
+        );
         lead.setFullName(request.fullName());
         lead.setEmail(request.email());
         lead.setPhone(request.phone());
@@ -90,7 +98,8 @@ public class LeadService {
     ) {
         DataScopeContext context = dataScopeService.currentContext();
 
-        return leadRepository.searchAccessibleLeads(
+        return leadRepository.searchAccessibleLeadsInOrganization(
+                currentOrganizationProvider.getOrganizationId(),
                 keyword,
                 status,
                 context.scope() == DataScope.ALL,
@@ -171,7 +180,10 @@ public class LeadService {
             throw new IllegalArgumentException("Archived leads cannot be converted");
         }
 
-        if (hasText(lead.getEmail()) && customerRepository.existsByEmail(lead.getEmail())) {
+        if (hasText(lead.getEmail()) && customerRepository.existsByOrganizationIdAndEmail(
+                currentOrganizationProvider.getOrganizationId(),
+                lead.getEmail()
+        )) {
             throw new IllegalArgumentException("Customer email already exists");
         }
 
@@ -192,6 +204,9 @@ public class LeadService {
                 : CustomerType.INDIVIDUAL);
         customer.setStatus(CustomerStatus.ACTIVE);
         customer.setOwnerUser(customerOwner);
+        customer.setOrganization(
+                currentOrganizationProvider.getOrganizationReference()
+        );
 
         Customer savedCustomer = customerRepository.save(customer);
 
@@ -216,15 +231,21 @@ public class LeadService {
         return leadMapper.toResponse(lead);
     }
 
-    private Lead findAccessibleLeadOrThrow(Long id, DataScopeContext context) {
-        return leadRepository.findAccessibleById(
+    private Lead findAccessibleLeadOrThrow(
+            Long id,
+            DataScopeContext context
+    ) {
+        return leadRepository.findAccessibleByIdInOrganization(
                         id,
+                        currentOrganizationProvider.getOrganizationId(),
                         context.scope() == DataScope.ALL,
                         context.scope() == DataScope.TEAM,
                         context.userId(),
                         context.teamId()
                 )
-                .orElseThrow(() -> new IllegalArgumentException("Lead not found"));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Lead not found")
+                );
     }
 
     private User resolveAssignee(
@@ -237,6 +258,10 @@ public class LeadService {
 
         User assignee = userRepository.findById(assigneeId)
                 .orElseThrow(() -> new IllegalArgumentException("Assigned user not found"));
+
+        currentOrganizationProvider.requireActiveUserMembership(
+                assignee.getId()
+        );
 
         if (assignee.getStatus() != UserStatus.ACTIVE) {
             throw new IllegalArgumentException("Assigned user must be active");

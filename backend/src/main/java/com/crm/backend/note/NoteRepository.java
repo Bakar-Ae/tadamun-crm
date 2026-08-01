@@ -12,10 +12,18 @@ import java.util.Optional;
 public interface NoteRepository extends JpaRepository<Note, Long> {
 
     @EntityGraph(attributePaths = {"createdByUser"})
-    Page<Note> findByCustomerId(Long customerId, Pageable pageable);
+    Page<Note> findByOrganizationIdAndCustomerId(
+            Long organizationId,
+            Long customerId,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = {"createdByUser"})
-    Page<Note> findByLeadId(Long leadId, Pageable pageable);
+    Page<Note> findByOrganizationIdAndLeadId(
+            Long organizationId,
+            Long leadId,
+            Pageable pageable
+    );
 
     @EntityGraph(attributePaths = {
             "customer",
@@ -34,7 +42,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             LEFT JOIN n.lead lead
             LEFT JOIN lead.assignedToUser leadOwner
             LEFT JOIN leadOwner.team leadOwnerTeam
-            WHERE (
+            WHERE n.organization.id = :organizationId
+            AND (
                 :keyword IS NULL
                 OR :keyword = ''
                 OR LOWER(n.content) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -56,7 +65,8 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
                 )
             )
             """)
-    Page<Note> searchAccessibleNotes(
+    Page<Note> searchAccessibleNotesInOrganization(
+            @Param("organizationId") Long organizationId,
             @Param("keyword") String keyword,
             @Param("allAccess") boolean allAccess,
             @Param("teamAccess") boolean teamAccess,
@@ -83,6 +93,7 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
             LEFT JOIN lead.assignedToUser leadOwner
             LEFT JOIN leadOwner.team leadOwnerTeam
             WHERE n.id = :id
+            AND n.organization.id = :organizationId
             AND (
                 :allAccess = true
                 OR customerOwner.id = :currentUserId
@@ -97,8 +108,9 @@ public interface NoteRepository extends JpaRepository<Note, Long> {
                 )
             )
             """)
-    Optional<Note> findAccessibleById(
+    Optional<Note> findAccessibleByIdInOrganization(
             @Param("id") Long id,
+            @Param("organizationId") Long organizationId,
             @Param("allAccess") boolean allAccess,
             @Param("teamAccess") boolean teamAccess,
             @Param("currentUserId") Long currentUserId,
