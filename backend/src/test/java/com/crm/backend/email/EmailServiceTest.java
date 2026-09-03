@@ -1,11 +1,15 @@
 package com.crm.backend.email;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import jakarta.mail.Session;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessagePreparator;
@@ -15,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,11 +33,13 @@ class EmailServiceTest {
 
     private JavaMailSender mailSender;
     private PasswordResetEmailTemplate template;
+    private OrganizationInvitationEmailTemplate invitationTemplate;
 
     @BeforeEach
     void setUp() {
         mailSender = mock(JavaMailSender.class);
         template = mock(PasswordResetEmailTemplate.class);
+        invitationTemplate = mock(OrganizationInvitationEmailTemplate.class);
     }
 
     @Test
@@ -46,6 +53,38 @@ class EmailServiceTest {
 
         verify(mailSender, never())
                 .send(any(MimeMessagePreparator.class));
+    }
+
+    @Test
+    void disabledEmailShouldNotSendInvitation() {
+        EmailService emailService = createEmailService(false);
+        Logger logger = (Logger) LoggerFactory.getLogger(EmailService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            emailService.sendOrganizationInvitationEmail(
+                    "user@example.com",
+                    "Tadamun",
+                    "System Administrator",
+                    "Sales Rep",
+                    "https://example.com/accept-invitation?token=secret",
+                    java.time.LocalDateTime.now().plusHours(72)
+            );
+        } finally {
+            logger.detachAppender(appender);
+            appender.stop();
+        }
+
+        verify(mailSender, never())
+                .send(any(MimeMessagePreparator.class));
+        assertTrue(appender.list.stream().anyMatch(event ->
+                event.getFormattedMessage().contains("u***@example.com")
+        ));
+        assertFalse(appender.list.stream().anyMatch(event ->
+                event.getFormattedMessage().contains("secret")
+        ));
     }
 
     @Test
@@ -120,6 +159,7 @@ class EmailServiceTest {
         return new EmailService(
                 mailSender,
                 template,
+                invitationTemplate,
                 enabled,
                 "no-reply@test.local",
                 "Tadamun Test",

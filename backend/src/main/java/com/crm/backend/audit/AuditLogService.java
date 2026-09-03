@@ -38,24 +38,50 @@ public class AuditLogService {
     }
 
     @Transactional
-    public void log(Long actorUserId, String action, String entityType, Long entityId, String details) {
-        AuditLog auditLog = new AuditLog();
+    public void log(
+            Long actorUserId,
+            String action,
+            String entityType,
+            Long entityId,
+            String details
+    ) {
         Organization organization = currentOrganizationProvider
                 .getOptionalOrganizationReference()
                 .orElse(null);
-        auditLog.setOrganization(organization);
-        auditLog.setScope(
-                organization == null
-                        ? AuditLogScope.PLATFORM
-                        : AuditLogScope.ORGANIZATION
-        );
-        auditLog.setActorUser(findUserOrNull(actorUserId));
-        auditLog.setAction(action);
-        auditLog.setEntityType(entityType);
-        auditLog.setEntityId(entityId);
-        auditLog.setDetails(details);
 
-        auditLogRepository.save(auditLog);
+        saveLog(
+                organization,
+                actorUserId,
+                action,
+                entityType,
+                entityId,
+                details
+        );
+    }
+
+    @Transactional
+    public void logForOrganization(
+            Organization organization,
+            Long actorUserId,
+            String action,
+            String entityType,
+            Long entityId,
+            String details
+    ) {
+        if (organization == null) {
+            throw new IllegalArgumentException(
+                    "Organization is required for this audit event"
+            );
+        }
+
+        saveLog(
+                organization,
+                actorUserId,
+                action,
+                entityType,
+                entityId,
+                details
+        );
     }
 
     @Transactional(readOnly = true)
@@ -118,5 +144,28 @@ public class AuditLogService {
         }
 
         return userRepository.findById(actorUserId).orElse(null);
+    }
+    private void saveLog(
+            Organization organization,
+            Long actorUserId,
+            String action,
+            String entityType,
+            Long entityId,
+            String details
+    ) {
+        AuditLog auditLog = new AuditLog();
+        auditLog.setOrganization(organization);
+        auditLog.setScope(
+                organization == null
+                        ? AuditLogScope.PLATFORM
+                        : AuditLogScope.ORGANIZATION
+        );
+        auditLog.setActorUser(findUserOrNull(actorUserId));
+        auditLog.setAction(action);
+        auditLog.setEntityType(entityType);
+        auditLog.setEntityId(entityId);
+        auditLog.setDetails(details);
+
+        auditLogRepository.save(auditLog);
     }
 }

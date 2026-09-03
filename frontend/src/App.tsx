@@ -78,6 +78,11 @@ const CalendarPage = lazy(() =>
     default: module.CalendarPage,
   })),
 )
+const AcceptInvitationPage = lazy(() =>
+  import('./pages/AcceptInvitationPage').then((module) => ({
+    default: module.AcceptInvitationPage,
+  })),
+)
 
 function PageLoader() {
   return (
@@ -267,6 +272,10 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+         path="/accept-invitation"
+         element={<AcceptInvitationPage />}
+       />
         <Route
           path="/change-password"
           element={

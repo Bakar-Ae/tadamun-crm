@@ -9,6 +9,7 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 
 @Service
 public class EmailService {
@@ -17,6 +18,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final PasswordResetEmailTemplate passwordResetTemplate;
+    private final OrganizationInvitationEmailTemplate invitationTemplate;
     private final String fromName;
     private final boolean emailEnabled;
     private final String fromAddress;
@@ -25,6 +27,7 @@ public class EmailService {
     public EmailService(
             JavaMailSender mailSender,
             PasswordResetEmailTemplate passwordResetTemplate,
+            OrganizationInvitationEmailTemplate invitationTemplate,
             @Value("${app.email.enabled:false}") boolean emailEnabled,
             @Value("${app.email.from-address}") String fromAddress,
             @Value("${app.email.from-name:Tadamun}") String fromName,
@@ -32,6 +35,7 @@ public class EmailService {
     ) {
         this.mailSender = mailSender;
         this.passwordResetTemplate = passwordResetTemplate;
+        this.invitationTemplate = invitationTemplate;
         this.emailEnabled = emailEnabled;
         this.fromAddress = fromAddress;
         this.fromName = fromName;
@@ -75,6 +79,69 @@ public class EmailService {
 
             throw new IllegalStateException(
                     "Could not send password reset email"
+            );
+        }
+    }
+
+    public void sendOrganizationInvitationEmail(
+            String toEmail,
+            String organizationName,
+            String inviterName,
+            String roleName,
+            String invitationLink,
+            LocalDateTime expiresAt
+    ) {
+        if (!emailEnabled) {
+            log.info(
+                    "Email delivery is disabled; organization invitation was not sent to {}",
+                    maskEmail(toEmail)
+            );
+            return;
+        }
+
+        try {
+            mailSender.send(mimeMessage -> {
+                MimeMessageHelper helper = new MimeMessageHelper(
+                        mimeMessage,
+                        true,
+                        StandardCharsets.UTF_8.name()
+                );
+
+                helper.setFrom(fromAddress, fromName);
+                helper.setReplyTo(replyTo);
+                helper.setTo(toEmail);
+                helper.setSubject(invitationTemplate.subject());
+                helper.setText(
+                        invitationTemplate.plainText(
+                                organizationName,
+                                inviterName,
+                                roleName,
+                                invitationLink,
+                                expiresAt
+                        ),
+                        invitationTemplate.html(
+                                organizationName,
+                                inviterName,
+                                roleName,
+                                invitationLink,
+                                expiresAt
+                        )
+                );
+            });
+
+            log.info(
+                    "Organization invitation email sent to {}",
+                    maskEmail(toEmail)
+            );
+        } catch (MailException exception) {
+            log.error(
+                    "Organization invitation email delivery failed for {}",
+                    maskEmail(toEmail),
+                    exception
+            );
+
+            throw new IllegalStateException(
+                    "Could not send organization invitation email"
             );
         }
     }
