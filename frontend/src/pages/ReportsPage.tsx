@@ -48,6 +48,7 @@ import {
 } from '../services/reportService'
 import { formatStatus, priorityVariant, statusVariant } from '../lib/formatters'
 import { getLoadErrorMessage } from '../lib/errors'
+import { useWorkspace } from '../workspace/useWorkspace'
 
 type RangePreset = '30' | '90' | '365' | 'custom'
 
@@ -171,22 +172,6 @@ function downloadReportCsv(report: AdvancedReport) {
 function breakdownHasData(items: ReportBreakdownItem[]) {
   return items.some((item) => item.count > 0)
 }
-function hasReportExportPermission() {
-  const storedUser = localStorage.getItem('user')
-
-  if (!storedUser) return false
-
-  try {
-    const user = JSON.parse(storedUser) as {
-      permissions?: string[]
-    }
-
-    return user.permissions?.includes('REPORT_EXPORT') === true
-  } catch {
-    return false
-  }
-}
-
 function saveBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -202,6 +187,7 @@ function saveBlob(blob: Blob, fileName: string) {
 }
 
 export function ReportsPage() {
+  const { activeWorkspace } = useWorkspace()
   const [preset, setPreset] = useState<RangePreset>('30')
   const [fromDate, setFromDate] = useState(initialRange.fromDate)
   const [toDate, setToDate] = useState(initialRange.toDate)
@@ -214,7 +200,8 @@ export function ReportsPage() {
   const [exportingFormat, setExportingFormat] =
     useState<ReportExportFormat | null>(null)
 
-  const canExportReports = hasReportExportPermission()
+  const canExportReports =
+    activeWorkspace?.permissions.includes('REPORT_EXPORT') === true
 
   useEffect(() => {
     let ignore = false

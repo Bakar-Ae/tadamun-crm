@@ -7,6 +7,8 @@ import {
   useLocation,
 } from "react-router";
 import { RouteErrorBoundary } from './components/RouteErrorBoundary'
+import { WorkspaceAccessGate } from './components/WorkspaceAccessGate'
+import { useWorkspace } from './workspace/useWorkspace'
 
 const LoginPage = lazy(() =>
   import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })),
@@ -125,14 +127,17 @@ function PublicOnly({ children }: { children: ReactNode }) {
 function ProtectedRoute({
   children,
   requiredPermission,
+  requiresWorkspace = true,
 }: {
   children: ReactNode;
   requiredPermission?: PermissionName;
+  requiresWorkspace?: boolean;
 }) {
   const location = useLocation();
   const token = localStorage.getItem("token");
   const user = getStoredUser();
   const passwordChangeRequired = user?.passwordChangeRequired === true;
+  const { activeWorkspace, status } = useWorkspace()
 
   if (!token) {
     return <Navigate to="/" replace state={{ from: location.pathname }} />;
@@ -142,9 +147,18 @@ function ProtectedRoute({
     return <Navigate to="/change-password" replace />;
   }
 
+  if (requiresWorkspace && status === 'loading') {
+    return <PageLoader />
+  }
+
+  if (requiresWorkspace && (status === 'error' || !activeWorkspace)) {
+    return <WorkspaceAccessGate />
+  }
+
   if (
     requiredPermission &&
-    !user?.permissions?.includes(requiredPermission)
+    requiresWorkspace &&
+    !activeWorkspace?.permissions.includes(requiredPermission)
   ) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -179,7 +193,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="DASHBOARD_VIEW">
               <DashboardPage />
             </ProtectedRoute>
           }
@@ -187,7 +201,7 @@ function App() {
         <Route
           path="/users"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="USER_VIEW">
               <UsersPage />
             </ProtectedRoute>
           }
@@ -203,7 +217,7 @@ function App() {
         <Route
           path="/customers"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="CUSTOMER_VIEW">
               <CustomersPage />
             </ProtectedRoute>
           }
@@ -211,7 +225,7 @@ function App() {
         <Route
           path="/leads"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="LEAD_VIEW">
               <LeadsPage />
             </ProtectedRoute>
           }
@@ -219,7 +233,7 @@ function App() {
         <Route
           path="/contacts"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="CONTACT_VIEW">
               <ContactsPage />
             </ProtectedRoute>
           }
@@ -227,7 +241,7 @@ function App() {
         <Route
           path="/tasks"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="TASK_VIEW">
               <TasksPage />
             </ProtectedRoute>
           }
@@ -243,7 +257,7 @@ function App() {
         <Route
           path="/notes"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="NOTE_VIEW">
               <NotesPage />
             </ProtectedRoute>
           }
@@ -251,7 +265,7 @@ function App() {
         <Route
           path="/reports"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="REPORT_VIEW">
               <ReportsPage />
             </ProtectedRoute>
           }
@@ -259,7 +273,7 @@ function App() {
         <Route
           path="/audit-logs"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="AUDIT_LOG_VIEW">
               <AuditLogsPage />
             </ProtectedRoute>
           }
@@ -279,7 +293,7 @@ function App() {
         <Route
           path="/change-password"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiresWorkspace={false}>
               <ChangePasswordPage />
             </ProtectedRoute>
           }

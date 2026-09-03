@@ -1,4 +1,8 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import {
+  clearStoredWorkspaceId,
+  getStoredWorkspaceId,
+} from '../lib/workspaceStorage'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8081/api/v1'
 
@@ -23,14 +27,20 @@ function clearSession() {
   localStorage.removeItem('token')
   localStorage.removeItem('refreshToken')
   localStorage.removeItem('user')
+  clearStoredWorkspaceId()
 }
 
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
+  const workspaceId = getStoredWorkspaceId()
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+  }
+
+  if (workspaceId) {
+    config.headers['X-Organization-Id'] = String(workspaceId)
   }
 
   return config

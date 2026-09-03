@@ -4,6 +4,10 @@ import { MemoryRouter, useLocation } from 'react-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CommandMenu } from './CommandMenu'
 import { searchWorkspace } from '../services/globalSearchService'
+import {
+  WorkspaceContext,
+  type WorkspaceContextValue,
+} from '../workspace/WorkspaceContextValue'
 
 vi.mock('../services/globalSearchService', () => ({
   searchWorkspace: vi.fn(),
@@ -17,10 +21,36 @@ function LocationDisplay() {
 }
 
 function renderCommandMenu() {
+  const workspaceContext: WorkspaceContextValue = {
+    workspaces: [],
+    activeWorkspace: {
+      organizationId: 1,
+      membershipId: 1,
+      name: 'Tadamun',
+      slug: 'tadamun',
+      timeZone: 'Africa/Mogadishu',
+      role: 'ADMIN',
+      dataScope: 'ALL',
+      permissions: [
+        'DASHBOARD_VIEW',
+        'CUSTOMER_VIEW',
+        'LEAD_VIEW',
+        'CONTACT_VIEW',
+        'TASK_VIEW',
+        'NOTE_VIEW',
+      ],
+    },
+    status: 'ready',
+    selectWorkspace: vi.fn(),
+    reloadWorkspaces: vi.fn(),
+  }
+
   return render(
     <MemoryRouter initialEntries={['/dashboard']}>
-      <CommandMenu />
-      <LocationDisplay />
+      <WorkspaceContext.Provider value={workspaceContext}>
+        <CommandMenu />
+        <LocationDisplay />
+      </WorkspaceContext.Provider>
     </MemoryRouter>,
   )
 }

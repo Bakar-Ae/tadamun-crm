@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router'
 import { Toaster } from 'react-hot-toast'
 import './index.css'
 import App from './App.tsx'
+import { WorkspaceProvider } from './workspace/WorkspaceContext'
 
 const savedTheme = localStorage.getItem('crm-theme')
 const initialTheme =
@@ -30,7 +31,9 @@ if (savedDashboardPreferences) {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
+      <WorkspaceProvider>
+        <App />
+      </WorkspaceProvider>
     </BrowserRouter>
     <Toaster
       position="top-right"

@@ -89,6 +89,20 @@ export const permissionGroups: PermissionGroup[] = [
     permissions: ['DASHBOARD_VIEW', 'REPORT_VIEW', 'REPORT_EXPORT'],
   },
   {
+    id: 'organization',
+    label: 'Organization',
+    description: 'Manage workspace settings, members, and teams.',
+    permissions: [
+      'ORGANIZATION_VIEW',
+      'ORGANIZATION_UPDATE',
+      'MEMBERSHIP_VIEW',
+      'MEMBERSHIP_INVITE',
+      'MEMBERSHIP_UPDATE',
+      'MEMBERSHIP_DEACTIVATE',
+      'TEAM_MANAGE',
+    ],
+  },
+  {
     id: 'administration',
     label: 'Administration',
     description: 'Access audit history and security configuration.',

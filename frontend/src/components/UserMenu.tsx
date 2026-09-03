@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { KeyRound, LogOut, UserRound } from "lucide-react";
 import { useNavigate } from "react-router";
+import { useWorkspace } from '../workspace/useWorkspace'
 
 type StoredUser = {
   fullName?: string;
@@ -40,7 +41,8 @@ export function UserMenu({ onLogout }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const user = getStoredUser();
   const navigate = useNavigate();
-  const roleLabel = formatRole(user?.role);
+  const { activeWorkspace } = useWorkspace()
+  const roleLabel = formatRole(activeWorkspace?.role ?? user?.role);
 
   return (
     <div className="relative">

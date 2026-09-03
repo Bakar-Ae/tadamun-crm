@@ -24,18 +24,42 @@ import {
   type GlobalSearchResult,
   type SearchModule,
 } from '../services/globalSearchService'
+import type { PermissionName } from '../services/permissionService'
+import { useWorkspace } from '../workspace/useWorkspace'
 
-const commandItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+type CommandItem = {
+  label: string
+  path: string
+  icon: typeof LayoutDashboard
+  requiredPermission?: PermissionName
+}
+
+const commandItems: CommandItem[] = [
+  {
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: LayoutDashboard,
+    requiredPermission: 'DASHBOARD_VIEW',
+  },
   { label: 'Notifications', path: '/notifications', icon: Bell },
-  { label: 'Users', path: '/users', icon: Users },
-  { label: 'Customers', path: '/customers', icon: BriefcaseBusiness },
-  { label: 'Leads', path: '/leads', icon: ClipboardList },
-  { label: 'Contacts', path: '/contacts', icon: Contact },
-  { label: 'Tasks', path: '/tasks', icon: NotebookText },
-  { label: 'Notes', path: '/notes', icon: FileText },
-  { label: 'Reports', path: '/reports', icon: LayoutDashboard },
-  { label: 'Audit Logs', path: '/audit-logs', icon: ShieldCheck },
+  { label: 'Users', path: '/users', icon: Users, requiredPermission: 'USER_VIEW' },
+  {
+    label: 'Customers',
+    path: '/customers',
+    icon: BriefcaseBusiness,
+    requiredPermission: 'CUSTOMER_VIEW',
+  },
+  { label: 'Leads', path: '/leads', icon: ClipboardList, requiredPermission: 'LEAD_VIEW' },
+  { label: 'Contacts', path: '/contacts', icon: Contact, requiredPermission: 'CONTACT_VIEW' },
+  { label: 'Tasks', path: '/tasks', icon: NotebookText, requiredPermission: 'TASK_VIEW' },
+  { label: 'Notes', path: '/notes', icon: FileText, requiredPermission: 'NOTE_VIEW' },
+  { label: 'Reports', path: '/reports', icon: LayoutDashboard, requiredPermission: 'REPORT_VIEW' },
+  {
+    label: 'Audit Logs',
+    path: '/audit-logs',
+    icon: ShieldCheck,
+    requiredPermission: 'AUDIT_LOG_VIEW',
+  },
   { label: 'Account Security', path: '/change-password', icon: KeyRound },
 ]
 
@@ -43,12 +67,13 @@ const searchModules: Array<{
   value: SearchModule
   label: string
   icon: typeof BriefcaseBusiness
+  requiredPermission: PermissionName
 }> = [
-  { value: 'CUSTOMER', label: 'Customers', icon: BriefcaseBusiness },
-  { value: 'LEAD', label: 'Leads', icon: ClipboardList },
-  { value: 'CONTACT', label: 'Contacts', icon: Contact },
-  { value: 'TASK', label: 'Tasks', icon: NotebookText },
-  { value: 'NOTE', label: 'Notes', icon: FileText },
+  { value: 'CUSTOMER', label: 'Customers', icon: BriefcaseBusiness, requiredPermission: 'CUSTOMER_VIEW' },
+  { value: 'LEAD', label: 'Leads', icon: ClipboardList, requiredPermission: 'LEAD_VIEW' },
+  { value: 'CONTACT', label: 'Contacts', icon: Contact, requiredPermission: 'CONTACT_VIEW' },
+  { value: 'TASK', label: 'Tasks', icon: NotebookText, requiredPermission: 'TASK_VIEW' },
+  { value: 'NOTE', label: 'Notes', icon: FileText, requiredPermission: 'NOTE_VIEW' },
 ]
 
 export function CommandMenu() {
@@ -59,6 +84,14 @@ export function CommandMenu() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
+  const { activeWorkspace } = useWorkspace()
+  const permissions = new Set(activeWorkspace?.permissions ?? [])
+  const availableCommandItems = commandItems.filter(
+    (item) => !item.requiredPermission || permissions.has(item.requiredPermission),
+  )
+  const availableSearchModules = searchModules.filter((module) =>
+    permissions.has(module.requiredPermission),
+  )
   const normalizedQuery = query.trim()
   const hasSearchQuery = normalizedQuery.length >= 2
 
@@ -142,7 +175,7 @@ export function CommandMenu() {
     setResults([])
   }
 
-  const matchingCommands = commandItems.filter((item) =>
+  const matchingCommands = availableCommandItems.filter((item) =>
     item.label.toLowerCase().includes(normalizedQuery.toLowerCase()),
   )
 
@@ -230,7 +263,7 @@ export function CommandMenu() {
                     >
                       All records
                     </button>
-                    {searchModules.map((module) => (
+                    {availableSearchModules.map((module) => (
                       <button
                         key={module.value}
                         type="button"
@@ -278,7 +311,7 @@ export function CommandMenu() {
 
                   {!loading &&
                     !error &&
-                    searchModules.map((module) => {
+                    availableSearchModules.map((module) => {
                       const moduleResults = results.filter(
                         (result) => result.module === module.value,
                       )

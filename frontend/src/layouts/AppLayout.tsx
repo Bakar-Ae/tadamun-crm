@@ -21,7 +21,10 @@ import { NotificationPanel } from '../components/NotificationPanel'
 import { QuickCreateMenu } from '../components/QuickCreateMenu'
 import { SettingsPanel } from '../components/SettingsPanel'
 import { UserMenu } from '../components/UserMenu'
+import { WorkspaceSelector } from '../components/WorkspaceSelector'
+import { clearStoredWorkspaceId } from '../lib/workspaceStorage'
 import { logout as logoutRequest } from '../services/authService'
+import { useWorkspace } from '../workspace/useWorkspace'
 import tadamunLogo from '../assets/tadamun-logo.svg'
 
 type AppLayoutProps = {
@@ -50,6 +53,7 @@ const navGroups: NavGroup[] = [
         path: '/dashboard',
         icon: LayoutDashboard,
         description: "Today's CRM overview",
+        requiredPermission: 'DASHBOARD_VIEW',
       },
     ],
   },
@@ -140,28 +144,13 @@ const navGroups: NavGroup[] = [
   },
 ]
 
-function getStoredPermissions(): Set<PermissionName> | null {
-  const storedUser = localStorage.getItem('user')
-
-  if (!storedUser) return null
-
-  try {
-    const user = JSON.parse(storedUser) as {
-      permissions?: PermissionName[]
-    }
-
-    return Array.isArray(user.permissions)
-      ? new Set(user.permissions)
-      : null
-  } catch {
-    return null
-  }
-}
-
 export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const navigate = useNavigate()
-  const storedPermissions = getStoredPermissions()
+  const { activeWorkspace } = useWorkspace()
+  const workspacePermissions = new Set(
+    activeWorkspace?.permissions ?? [],
+  )
 
   const visibleNavGroups = navGroups
     .map((group) => ({
@@ -169,8 +158,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       items: group.items.filter(
         (item) =>
           !item.requiredPermission ||
-          storedPermissions === null ||
-          storedPermissions.has(item.requiredPermission),
+          workspacePermissions.has(item.requiredPermission),
       ),
     }))
     .filter((group) => group.items.length > 0)
@@ -185,6 +173,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('user')
+    clearStoredWorkspaceId()
     navigate('/', { replace: true })
   }
 
@@ -231,6 +220,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           >
             <X size={18} />
           </button>
+        </div>
+
+        <div className="border-b border-[var(--crm-border)] p-3">
+          <WorkspaceSelector />
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-5">

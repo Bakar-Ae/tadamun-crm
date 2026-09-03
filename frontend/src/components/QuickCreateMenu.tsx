@@ -24,6 +24,8 @@ import { createTask, type TaskPriority } from "../services/taskService";
 import { createUser, getUsers, type RoleName, type UserResponse } from "../services/userService";
 import { Modal, SelectField, TextAreaField, TextField } from "./ui";
 import { quickCreateEventName } from "../lib/quickCreate";
+import type { PermissionName } from '../services/permissionService'
+import { useWorkspace } from '../workspace/useWorkspace'
 
 export type QuickCreateKind =
   | "customer"
@@ -36,13 +38,18 @@ export type QuickCreateKind =
 type FormValues = Record<string, string>;
 
 const quickActions = [
-  { kind: "customer", label: "Customer", icon: BriefcaseBusiness },
-  { kind: "lead", label: "Lead", icon: ClipboardList },
-  { kind: "contact", label: "Contact", icon: Contact },
-  { kind: "task", label: "Task", icon: NotebookText },
-  { kind: "note", label: "Note", icon: FileText },
-  { kind: "user", label: "User", icon: UserPlus },
-] satisfies Array<{ kind: QuickCreateKind; label: string; icon: typeof Plus }>;
+  { kind: "customer", label: "Customer", icon: BriefcaseBusiness, requiredPermission: 'CUSTOMER_CREATE' },
+  { kind: "lead", label: "Lead", icon: ClipboardList, requiredPermission: 'LEAD_CREATE' },
+  { kind: "contact", label: "Contact", icon: Contact, requiredPermission: 'CONTACT_CREATE' },
+  { kind: "task", label: "Task", icon: NotebookText, requiredPermission: 'TASK_CREATE' },
+  { kind: "note", label: "Note", icon: FileText, requiredPermission: 'NOTE_CREATE' },
+  { kind: "user", label: "User", icon: UserPlus, requiredPermission: 'USER_CREATE' },
+] satisfies Array<{
+  kind: QuickCreateKind
+  label: string
+  icon: typeof Plus
+  requiredPermission: PermissionName
+}>;
 
 const optionalEmail = z
   .string()
@@ -239,10 +246,17 @@ export function QuickCreateMenu() {
   const [optionsLoading, setOptionsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { activeWorkspace } = useWorkspace()
+  const availableQuickActions = useMemo(
+    () => quickActions.filter((action) =>
+      activeWorkspace?.permissions.includes(action.requiredPermission),
+    ),
+    [activeWorkspace],
+  )
 
   const activeAction = useMemo(
-    () => quickActions.find((action) => action.kind === activeKind),
-    [activeKind],
+    () => availableQuickActions.find((action) => action.kind === activeKind),
+    [activeKind, availableQuickActions],
   );
 
   async function loadRecordOptions(kind: QuickCreateKind) {
@@ -313,7 +327,7 @@ export function QuickCreateMenu() {
       const customEvent = event as CustomEvent<{ kind?: QuickCreateKind }>;
       const kind = customEvent.detail?.kind;
 
-      if (kind && quickActions.some((action) => action.kind === kind)) {
+      if (kind && availableQuickActions.some((action) => action.kind === kind)) {
         setActiveKind(kind);
         setFormValues(initialValues[kind]);
         setErrors({});
@@ -324,7 +338,7 @@ export function QuickCreateMenu() {
 
     window.addEventListener(quickCreateEventName, onOpenQuickCreate);
     return () => window.removeEventListener(quickCreateEventName, onOpenQuickCreate);
-  }, []);
+  }, [availableQuickActions]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -423,6 +437,8 @@ export function QuickCreateMenu() {
     }
   }
 
+  if (availableQuickActions.length === 0) return null
+
   return (
     <div className="relative">
       <button
@@ -446,7 +462,7 @@ export function QuickCreateMenu() {
             <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--crm-text-muted)]">
               Quick create
             </p>
-            {quickActions.map((action) => {
+            {availableQuickActions.map((action) => {
               const Icon = action.icon;
 
               return (
