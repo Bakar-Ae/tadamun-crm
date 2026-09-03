@@ -667,14 +667,17 @@ export function DashboardPage() {
 
   const kpis = [
     {
-      label: "Users",
+      label: "Members",
       value: loading ? "-" : totalUsers,
       caption:
         teamDashboard?.scope === "OWN"
           ? "Your account"
           : teamDashboard?.teamName ?? "Team accounts",
       icon: Users,
-      path: teamDashboard?.scope === "OWN" ? "/dashboard" : "/users",
+      path:
+        teamDashboard?.scope === "OWN"
+          ? "/dashboard"
+          : "/organization?tab=members",
       sparkline: buildSparkline(totalUsers),
     },
     {
@@ -738,10 +741,10 @@ export function DashboardPage() {
     },
     {
       name: "Team",
-      metric: "Users",
+      metric: "Members",
       value: totalUsers,
-      status: totalUsers > 0 ? "Configured" : "No users",
-      path: "/users",
+      status: totalUsers > 0 ? "Configured" : "No members",
+      path: "/organization?tab=members",
     },
   ];
 
@@ -752,7 +755,7 @@ export function DashboardPage() {
 
     const rows = [
       ["Metric", "Value"],
-      ["Total Users", summary.totalUsers],
+      ["Total Members", summary.totalUsers],
       ["Active Customers", summary.activeCustomers],
       ["Archived Customers", summary.archivedCustomers],
       ["Active Leads", summary.activeLeads],

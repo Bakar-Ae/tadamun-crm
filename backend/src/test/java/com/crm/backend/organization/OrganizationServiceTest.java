@@ -3,17 +3,27 @@ package com.crm.backend.organization;
 import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.organization.dto.CreateOrganizationRequest;
 import com.crm.backend.organization.dto.OrganizationResponse;
+import com.crm.backend.organization.dto.UpdateOrganizationRequest;
+import com.crm.backend.role.DataScope;
+import com.crm.backend.role.RoleName;
+import com.crm.backend.security.tenant.TenantContext;
+import com.crm.backend.security.tenant.TenantContextHolder;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.Set;
+import tools.jackson.databind.ObjectMapper;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,8 +46,14 @@ class OrganizationServiceTest {
                 organizationRepository,
                 userRepository,
                 new OrganizationMapper(),
-                auditLogService
+                auditLogService,
+                new ObjectMapper()
         );
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -178,6 +194,50 @@ class OrganizationServiceTest {
         );
     }
 
+    @Test
+    void updateCurrentOrganizationShouldUseTenantContext() {
+        User creator = activeUser(1L);
+        Organization organization = organization(
+                10L,
+                creator,
+                2L
+        );
+
+        TenantContextHolder.set(new TenantContext(
+                10L,
+                100L,
+                1L,
+                RoleName.OWNER,
+                DataScope.ALL,
+                null,
+                Set.of()
+        ));
+
+        when(organizationRepository.findById(10L))
+                .thenReturn(Optional.of(organization));
+        when(organizationRepository.saveAndFlush(organization))
+                .thenReturn(organization);
+
+        OrganizationResponse response = organizationService
+                .updateCurrentOrganization(
+                        new UpdateOrganizationRequest(
+                                "Tadamun Group",
+                                "UTC",
+                                2L
+                        )
+                );
+
+        assertEquals("Tadamun Group", response.name());
+        assertEquals("UTC", response.timeZone());
+        verify(auditLogService).log(
+                eq(1L),
+                eq("ORGANIZATION_UPDATED"),
+                eq("ORGANIZATION"),
+                eq(10L),
+                anyString()
+        );
+    }
+
     private User activeUser(Long id) {
         User user = new User();
         user.setId(id);
@@ -185,5 +245,21 @@ class OrganizationServiceTest {
         user.setEmail("admin@crm.com");
         user.setStatus(UserStatus.ACTIVE);
         return user;
+    }
+
+    private Organization organization(
+            Long id,
+            User creator,
+            Long version
+    ) {
+        Organization organization = new Organization();
+        organization.setId(id);
+        organization.setName("Tadamun Business");
+        organization.setSlug("tadamun-business");
+        organization.setStatus(OrganizationStatus.ACTIVE);
+        organization.setTimeZone("Africa/Mogadishu");
+        organization.setCreatedByUser(creator);
+        organization.setVersion(version);
+        return organization;
     }
 }

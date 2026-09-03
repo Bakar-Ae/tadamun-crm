@@ -61,4 +61,33 @@ class OrganizationRolePolicyTest {
                 )
         );
     }
+
+    @Test
+    void ownerShouldManageAdministrator() {
+        assertDoesNotThrow(() ->
+                policy.requireCanManage(RoleName.OWNER, RoleName.ADMIN)
+        );
+    }
+
+    @Test
+    void administratorShouldNotManageAnotherAdministrator() {
+        assertThrows(
+                AccessDeniedException.class,
+                () -> policy.requireCanManage(
+                        RoleName.ADMIN,
+                        RoleName.ADMIN
+                )
+        );
+    }
+
+    @Test
+    void ownerMembershipShouldNotBeManaged() {
+        assertThrows(
+                AccessDeniedException.class,
+                () -> policy.requireCanManage(
+                        RoleName.OWNER,
+                        RoleName.OWNER
+                )
+        );
+    }
 }

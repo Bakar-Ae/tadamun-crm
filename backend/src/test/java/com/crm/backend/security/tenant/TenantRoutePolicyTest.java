@@ -16,6 +16,8 @@ class TenantRoutePolicyTest {
         assertTrue(requiresTenant("GET", "/api/v1/customers"));
         assertTrue(requiresTenant("POST", "/api/v1/leads"));
         assertTrue(requiresTenant("GET", "/api/v1/reports/summary"));
+        assertTrue(requiresTenant("GET", "/api/v1/organization"));
+        assertTrue(requiresTenant("GET", "/api/v1/organization/members"));
     }
 
     @Test

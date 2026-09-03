@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import {
   BarChart3,
+  Building2,
   BriefcaseBusiness,
   ClipboardList,
   Contact,
@@ -9,7 +10,6 @@ import {
   Menu,
   NotebookText,
   ShieldCheck,
-  Users,
   KeyRound,
   CalendarDays,
   X,
@@ -117,14 +117,14 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    title: 'Admin',
+    title: 'Workspace',
     items: [
       {
-        label: 'Users',
-        path: '/users',
-        icon: Users,
-        description: 'Team accounts and access',
-        requiredPermission: 'USER_VIEW',
+        label: 'Organization',
+        path: '/organization',
+        icon: Building2,
+        description: 'Workspace details and members',
+        requiredPermission: 'ORGANIZATION_VIEW',
       },
       {
         label: 'Roles & Permissions',

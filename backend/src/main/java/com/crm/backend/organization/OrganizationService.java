@@ -3,6 +3,9 @@ package com.crm.backend.organization;
 import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.organization.dto.CreateOrganizationRequest;
 import com.crm.backend.organization.dto.OrganizationResponse;
+import com.crm.backend.organization.dto.UpdateOrganizationRequest;
+import com.crm.backend.security.tenant.TenantContext;
+import com.crm.backend.security.tenant.TenantContextHolder;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -15,7 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class OrganizationService {
@@ -30,17 +38,20 @@ public class OrganizationService {
     private final UserRepository userRepository;
     private final OrganizationMapper organizationMapper;
     private final AuditLogService auditLogService;
+    private final ObjectMapper objectMapper;
 
     public OrganizationService(
             OrganizationRepository organizationRepository,
             UserRepository userRepository,
             OrganizationMapper organizationMapper,
-            AuditLogService auditLogService
+            AuditLogService auditLogService,
+            ObjectMapper objectMapper
     ) {
         this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
         this.organizationMapper = organizationMapper;
         this.auditLogService = auditLogService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -118,6 +129,56 @@ public class OrganizationService {
         return organizationMapper.toResponse(organization);
     }
 
+    @Transactional(readOnly = true)
+    public OrganizationResponse getCurrentOrganization() {
+        Long organizationId = TenantContextHolder.getRequired()
+                .organizationId();
+
+        return organizationMapper.toResponse(
+                findOrganizationOrThrow(organizationId)
+        );
+    }
+
+    @Transactional
+    public OrganizationResponse updateCurrentOrganization(
+            UpdateOrganizationRequest request
+    ) {
+        TenantContext context = TenantContextHolder.getRequired();
+        Organization organization = findOrganizationOrThrow(
+                context.organizationId()
+        );
+
+        if (organization.getStatus() != OrganizationStatus.ACTIVE) {
+            throw new IllegalArgumentException(
+                    "Only active organizations can be updated"
+            );
+        }
+
+        if (!Objects.equals(organization.getVersion(), request.version())) {
+            throw new IllegalArgumentException(
+                    "Organization was updated by someone else. Refresh and try again"
+            );
+        }
+
+        organization.setName(requireText(
+                request.name(),
+                "Organization name is required"
+        ));
+        organization.setTimeZone(normalizeTimeZone(request.timeZone()));
+
+        Organization saved = organizationRepository.saveAndFlush(organization);
+
+        auditLogService.log(
+                context.userId(),
+                "ORGANIZATION_UPDATED",
+                "ORGANIZATION",
+                saved.getId(),
+                auditDetails(saved)
+        );
+
+        return organizationMapper.toResponse(saved);
+    }
+
     private Organization findOrganizationOrThrow(Long id) {
         return organizationRepository.findById(id)
                 .orElseThrow(() ->
@@ -180,5 +241,16 @@ public class OrganizationService {
         }
 
         return value.trim();
+    }
+
+    private String auditDetails(Organization organization) {
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                    "name", organization.getName(),
+                    "timeZone", organization.getTimeZone()
+            ));
+        } catch (JacksonException exception) {
+            return "{}";
+        }
     }
 }

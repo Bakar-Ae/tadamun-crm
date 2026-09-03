@@ -5,22 +5,31 @@ import com.crm.backend.organization.Organization;
 import com.crm.backend.organization.OrganizationRepository;
 import com.crm.backend.organization.OrganizationStatus;
 import com.crm.backend.organization.membership.dto.CreateOrganizationMembershipRequest;
+import com.crm.backend.organization.membership.dto.DeactivateOrganizationMembershipRequest;
 import com.crm.backend.organization.membership.dto.OrganizationMembershipResponse;
+import com.crm.backend.organization.membership.dto.UpdateOrganizationMembershipRequest;
+import com.crm.backend.role.DataScope;
 import com.crm.backend.role.Role;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.role.RoleRepository;
+import com.crm.backend.security.tenant.TenantContext;
+import com.crm.backend.security.tenant.TenantContextHolder;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,8 +60,14 @@ class OrganizationMembershipServiceTest {
                 userRepository,
                 roleRepository,
                 new OrganizationMembershipMapper(),
-                auditLogService
+                auditLogService,
+                new OrganizationRolePolicy()
         );
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContextHolder.clear();
     }
 
     @Test
@@ -286,6 +301,73 @@ class OrganizationMembershipServiceTest {
         assertEquals(10L, responses.getFirst().organizationId());
     }
 
+    @Test
+    void ownerShouldUpdateAnotherMembersRole() {
+        User targetUser = activeUser(1L, "Sales User");
+        OrganizationMembership target = membership(
+                100L,
+                organization(10L, OrganizationStatus.ACTIVE),
+                targetUser,
+                role(3L, RoleName.SALES_REP)
+        );
+        Role managerRole = role(4L, RoleName.MANAGER);
+        setTenantContext(999L, 2L, RoleName.OWNER);
+
+        when(membershipRepository.findByIdAndOrganizationId(100L, 10L))
+                .thenReturn(Optional.of(target));
+        when(roleRepository.findByName(RoleName.MANAGER))
+                .thenReturn(Optional.of(managerRole));
+        when(membershipRepository.saveAndFlush(target))
+                .thenReturn(target);
+
+        OrganizationMembershipResponse response = membershipService
+                .updateMembershipRole(
+                        100L,
+                        new UpdateOrganizationMembershipRequest(
+                                RoleName.MANAGER,
+                                0L
+                        )
+                );
+
+        assertEquals(RoleName.MANAGER, response.role());
+        verify(auditLogService).log(
+                eq(2L),
+                eq("ORGANIZATION_MEMBERSHIP_ROLE_UPDATED"),
+                eq("ORGANIZATION_MEMBERSHIP"),
+                eq(100L),
+                anyString()
+        );
+    }
+
+    @Test
+    void memberShouldNotDeactivateOwnMembership() {
+        OrganizationMembership membership = membership(
+                100L,
+                organization(10L, OrganizationStatus.ACTIVE),
+                activeUser(1L, "Owner"),
+                role(1L, RoleName.OWNER)
+        );
+        setTenantContext(100L, 1L, RoleName.OWNER);
+
+        when(membershipRepository.findByIdAndOrganizationId(100L, 10L))
+                .thenReturn(Optional.of(membership));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> membershipService.deactivateMembership(
+                        100L,
+                        new DeactivateOrganizationMembershipRequest(0L)
+                )
+        );
+
+        assertEquals(
+                "You cannot change your own workspace access",
+                exception.getMessage()
+        );
+        verify(membershipRepository, never())
+                .saveAndFlush(any(OrganizationMembership.class));
+    }
+
     private void prepareValidMembershipDependencies() {
         when(organizationRepository.findById(10L))
                 .thenReturn(Optional.of(
@@ -351,5 +433,21 @@ class OrganizationMembershipServiceTest {
         membership.setVersion(0L);
 
         return membership;
+    }
+
+    private void setTenantContext(
+            Long membershipId,
+            Long userId,
+            RoleName roleName
+    ) {
+        TenantContextHolder.set(new TenantContext(
+                10L,
+                membershipId,
+                userId,
+                roleName,
+                DataScope.ALL,
+                null,
+                Set.of()
+        ));
     }
 }

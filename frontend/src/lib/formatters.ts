@@ -3,6 +3,8 @@ import type { AuditLogResponse } from '../services/auditLogService'
 export type BadgeVariant = 'success' | 'warning' | 'danger' | 'info' | 'neutral'
 
 const roleLabels: Record<string, string> = {
+  OWNER: 'Owner',
+  ROLE_OWNER: 'Owner',
   ADMIN: 'Administrator',
   ROLE_ADMIN: 'Administrator',
   MANAGER: 'Manager',
@@ -32,6 +34,11 @@ const statusLabels: Record<string, string> = {
   URGENT: 'Urgent',
   COMPANY: 'Company',
   INDIVIDUAL: 'Individual',
+  SUSPENDED: 'Suspended',
+  PENDING: 'Pending',
+  ACCEPTED: 'Accepted',
+  REVOKED: 'Revoked',
+  EXPIRED: 'Expired',
 }
 
 const auditActionLabels: Record<string, string> = {
@@ -58,6 +65,14 @@ const auditActionLabels: Record<string, string> = {
   PASSWORD_CHANGED: 'Password changed',
   PASSWORD_RESET_REQUESTED: 'Password reset requested',
   PASSWORD_RESET_COMPLETED: 'Password reset completed',
+  ORGANIZATION_CREATED: 'Organization created',
+  ORGANIZATION_UPDATED: 'Organization settings updated',
+  ORGANIZATION_MEMBERSHIP_CREATED: 'Member added',
+  ORGANIZATION_MEMBERSHIP_ROLE_UPDATED: 'Member role changed',
+  ORGANIZATION_MEMBERSHIP_DEACTIVATED: 'Member access removed',
+  ORGANIZATION_INVITATION_CREATED: 'Invitation sent',
+  ORGANIZATION_INVITATION_REVOKED: 'Invitation revoked',
+  ORGANIZATION_INVITATION_ACCEPTED: 'Invitation accepted',
 }
 
 export function humanizeEnum(value: string | null | undefined) {
@@ -123,19 +138,19 @@ export function statusVariant(value: string | null | undefined): BadgeVariant {
     return 'neutral'
   }
 
-  if (['ACTIVE', 'QUALIFIED', 'CONVERTED', 'COMPLETED'].includes(value)) {
+  if (['ACTIVE', 'ACCEPTED', 'QUALIFIED', 'CONVERTED', 'COMPLETED'].includes(value)) {
     return 'success'
   }
 
-  if (['NEW', 'CONTACTED', 'OPEN', 'IN_PROGRESS', 'COMPANY', 'MEDIUM'].includes(value)) {
+  if (['NEW', 'PENDING', 'CONTACTED', 'OPEN', 'IN_PROGRESS', 'COMPANY', 'MEDIUM'].includes(value)) {
     return 'info'
   }
 
-  if (['URGENT', 'LOST', 'CANCELLED'].includes(value)) {
+  if (['URGENT', 'LOST', 'CANCELLED', 'SUSPENDED'].includes(value)) {
     return 'danger'
   }
 
-  if (['ARCHIVED', 'INACTIVE', 'LOW', 'INDIVIDUAL'].includes(value)) {
+  if (['ARCHIVED', 'INACTIVE', 'REVOKED', 'EXPIRED', 'LOW', 'INDIVIDUAL'].includes(value)) {
     return 'neutral'
   }
 

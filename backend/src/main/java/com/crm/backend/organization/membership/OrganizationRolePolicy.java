@@ -49,4 +49,28 @@ public class OrganizationRolePolicy {
             );
         }
     }
+
+    public void requireCanManage(
+            RoleName actorRole,
+            RoleName targetRole
+    ) {
+        if (!isAdministrator(actorRole)) {
+            throw new AccessDeniedException(
+                    "Organization administrator access is required"
+            );
+        }
+
+        if (targetRole == RoleName.OWNER) {
+            throw new AccessDeniedException(
+                    "The organization owner cannot be managed"
+            );
+        }
+
+        if (targetRole == RoleName.ADMIN
+                && actorRole != RoleName.OWNER) {
+            throw new AccessDeniedException(
+                    "Only the organization owner can manage administrators"
+            );
+        }
+    }
 }

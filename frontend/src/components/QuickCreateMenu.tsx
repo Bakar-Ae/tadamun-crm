@@ -20,8 +20,9 @@ import {
 } from "../services/customerService";
 import { createLead, getLeads, type LeadResponse } from "../services/leadService";
 import { createNote } from "../services/noteService";
+import { createOrganizationInvitation } from "../services/organizationInvitationService";
 import { createTask, type TaskPriority } from "../services/taskService";
-import { createUser, getUsers, type RoleName, type UserResponse } from "../services/userService";
+import { getUsers, type RoleName, type UserResponse } from "../services/userService";
 import { Modal, SelectField, TextAreaField, TextField } from "./ui";
 import { quickCreateEventName } from "../lib/quickCreate";
 import type { PermissionName } from '../services/permissionService'
@@ -33,7 +34,7 @@ export type QuickCreateKind =
   | "contact"
   | "task"
   | "note"
-  | "user";
+  | "member";
 
 type FormValues = Record<string, string>;
 
@@ -43,7 +44,7 @@ const quickActions = [
   { kind: "contact", label: "Contact", icon: Contact, requiredPermission: 'CONTACT_CREATE' },
   { kind: "task", label: "Task", icon: NotebookText, requiredPermission: 'TASK_CREATE' },
   { kind: "note", label: "Note", icon: FileText, requiredPermission: 'NOTE_CREATE' },
-  { kind: "user", label: "User", icon: UserPlus, requiredPermission: 'USER_CREATE' },
+  { kind: "member", label: "Member", icon: UserPlus, requiredPermission: 'MEMBERSHIP_INVITE' },
 ] satisfies Array<{
   kind: QuickCreateKind
   label: string
@@ -116,10 +117,8 @@ const schemas = {
       message: "Choose a customer or lead",
       path: ["customerId"],
     }),
-  user: z.object({
-    fullName: z.string().trim().min(2, "Full name is required"),
+  member: z.object({
     email: z.email("Valid email is required"),
-    password: z.string().min(8, "Use at least 8 characters"),
     role: z.enum(["ADMIN", "MANAGER", "SALES_REP", "SUPPORT_STAFF"]),
   }),
 } satisfies Record<QuickCreateKind, z.ZodType>;
@@ -162,10 +161,8 @@ const initialValues: Record<QuickCreateKind, FormValues> = {
     customerId: "",
     leadId: "",
   },
-  user: {
-    fullName: "",
+  member: {
     email: "",
-    password: "",
     role: "SALES_REP",
   },
 };
@@ -176,7 +173,7 @@ const successPath: Record<QuickCreateKind, string> = {
   contact: "/contacts",
   task: "/tasks",
   note: "/notes",
-  user: "/users",
+  member: "/organization?tab=members",
 };
 
 function emptyToNull(value: string) {
@@ -414,16 +411,18 @@ export function QuickCreateMenu() {
         });
       }
 
-      if (activeKind === "user") {
-        await createUser({
-          fullName: formValues.fullName.trim(),
+      if (activeKind === "member") {
+        await createOrganizationInvitation({
           email: formValues.email.trim(),
-          password: formValues.password,
-          role: formValues.role as RoleName,
+          role: formValues.role as Exclude<RoleName, 'OWNER'>,
         });
       }
 
-      toast.success(`${activeAction?.label ?? "Record"} created`);
+      toast.success(
+        activeKind === 'member'
+          ? 'Invitation sent'
+          : `${activeAction?.label ?? "Record"} created`,
+      );
       window.dispatchEvent(new Event("crm-data-changed"));
       if (location.pathname === successPath[activeKind]) {
         closeForm(true);
@@ -475,7 +474,7 @@ export function QuickCreateMenu() {
                   <span className="grid h-9 w-9 place-items-center rounded-xl bg-violet-500/10 text-[var(--crm-primary)]">
                     <Icon size={17} />
                   </span>
-                  Add {action.label}
+                  {action.kind === 'member' ? 'Invite member' : `Add ${action.label}`}
                 </button>
               );
             })}
@@ -485,7 +484,13 @@ export function QuickCreateMenu() {
 
       <Modal
         open={activeKind !== null}
-        title={activeAction ? `Add ${activeAction.label}` : "Create item"}
+        title={
+          activeAction
+            ? activeKind === 'member'
+              ? 'Invite member'
+              : `Add ${activeAction.label}`
+            : "Create item"
+        }
         description= "Fill in the required fields."
         onClose={closeForm}
       >
@@ -676,39 +681,21 @@ export function QuickCreateMenu() {
             </>
           )}
 
-          {activeKind === "user" && (
+          {activeKind === "member" && (
             <>
-              <TextField
-                label="Full name"
-                required
-                helperText="Use the team member’s real full name."
-                value={formValues.fullName ?? ""}
-                onChange={(event) => updateField("fullName", event.target.value)}
-                error={errors.fullName}
-              />
               <TextField
                 label="Email"
                 type="email"
                 required
-                helperText="This email will be used for login."
+                helperText="We will send this person a secure invitation link."
                 value={formValues.email ?? ""}
                 onChange={(event) => updateField("email", event.target.value)}
                 error={errors.email}
-
-              />
-              <TextField
-                label="Temporary password"
-                type="password"
-                required
-                helperText="The user should change this after first login."
-                value={formValues.password ?? ""}
-                onChange={(event) => updateField("password", event.target.value)}
-                error={errors.password}
               />
                <SelectField
                 label="Role"
                 required
-                helperText="This controls what the user can access."
+                helperText="This controls what the member can access in this workspace."
                 value={formValues.role ?? "SALES_REP"}
                 onChange={(event) => updateField("role", event.target.value)}
                 error={errors.role}
@@ -734,7 +721,11 @@ export function QuickCreateMenu() {
               disabled={saving}
               className="crm-primary-action h-10 rounded-2xl px-4 text-sm font-semibold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:hover:translate-y-0"
             >
-              {saving ? "Saving..." : `Create ${activeAction?.label.toLowerCase() ?? "item"}`}
+              {saving
+                ? "Saving..."
+                : activeKind === 'member'
+                  ? 'Send invitation'
+                  : `Create ${activeAction?.label.toLowerCase() ?? "item"}`}
             </button>
           </div>
         </form>

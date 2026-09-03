@@ -152,7 +152,7 @@ export function UsersPage() {
         title="Team & access"
         description="Manage the people who can use Tadamun and the access level each person has."
         action={
-          <PageActionButton icon={UserPlus} onClick={() => openQuickCreate('user')}>
+          <PageActionButton icon={UserPlus} onClick={() => openQuickCreate('member')}>
             Invite user
           </PageActionButton>
         }
@@ -267,7 +267,7 @@ export function UsersPage() {
                     colSpan={5}
                     action={
                       !hasSearch && (
-                        <PageActionButton icon={UserPlus} onClick={() => openQuickCreate('user')}>
+                        <PageActionButton icon={UserPlus} onClick={() => openQuickCreate('member')}>
                           Invite user
                         </PageActionButton>
                       )

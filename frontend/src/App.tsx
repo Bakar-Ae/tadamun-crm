@@ -18,8 +18,10 @@ const DashboardPage = lazy(() =>
     default: module.DashboardPage,
   })),
 );
-const UsersPage = lazy(() =>
-  import("./pages/UsersPage").then((module) => ({ default: module.UsersPage })),
+const OrganizationPage = lazy(() =>
+  import("./pages/OrganizationPage").then((module) => ({
+    default: module.OrganizationPage,
+  })),
 );
 const CustomersPage = lazy(() =>
   import("./pages/CustomersPage").then((module) => ({
@@ -199,13 +201,14 @@ function App() {
           }
         />
         <Route
-          path="/users"
+          path="/organization"
           element={
-            <ProtectedRoute requiredPermission="USER_VIEW">
-              <UsersPage />
+            <ProtectedRoute requiredPermission="ORGANIZATION_VIEW">
+              <OrganizationPage />
             </ProtectedRoute>
           }
         />
+        <Route path="/users" element={<Navigate to="/organization?tab=members" replace />} />
         <Route
           path="/roles-permissions"
           element={

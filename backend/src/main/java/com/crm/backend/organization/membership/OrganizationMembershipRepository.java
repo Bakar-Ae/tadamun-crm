@@ -16,6 +16,12 @@ public interface OrganizationMembershipRepository
     Optional<OrganizationMembership> findById(Long id);
 
     @EntityGraph(attributePaths = {"organization", "user", "role"})
+    Optional<OrganizationMembership> findByIdAndOrganizationId(
+            Long id,
+            Long organizationId
+    );
+
+    @EntityGraph(attributePaths = {"organization", "user", "role"})
     Optional<OrganizationMembership> findByOrganizationIdAndUserId(
             Long organizationId,
             Long userId

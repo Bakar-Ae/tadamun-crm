@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import {
   Bell,
   BriefcaseBusiness,
+  Building2,
   ClipboardList,
   Contact,
   FileText,
@@ -13,7 +14,6 @@ import {
   NotebookText,
   Search,
   ShieldCheck,
-  Users,
   X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router'
@@ -42,7 +42,12 @@ const commandItems: CommandItem[] = [
     requiredPermission: 'DASHBOARD_VIEW',
   },
   { label: 'Notifications', path: '/notifications', icon: Bell },
-  { label: 'Users', path: '/users', icon: Users, requiredPermission: 'USER_VIEW' },
+  {
+    label: 'Organization',
+    path: '/organization',
+    icon: Building2,
+    requiredPermission: 'ORGANIZATION_VIEW',
+  },
   {
     label: 'Customers',
     path: '/customers',
