@@ -74,6 +74,8 @@ public class SecurityConfig {
                                 "/api/v1/public/organization-invitations/**"
                         ).permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/api/v1/platform/**")
+                        .hasAuthority(PlatformAuthorities.ADMIN)
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

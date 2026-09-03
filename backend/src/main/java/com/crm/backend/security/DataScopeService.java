@@ -1,6 +1,8 @@
 package com.crm.backend.security;
 
 import com.crm.backend.role.DataScope;
+import com.crm.backend.security.tenant.TenantContext;
+import com.crm.backend.security.tenant.TenantContextHolder;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,6 +22,24 @@ public class DataScopeService {
                 instanceof CustomUserDetails userDetails)) {
             throw new AccessDeniedException(
                     "Authenticated user details are unavailable"
+            );
+        }
+
+        var tenantContext = TenantContextHolder.getOptional();
+
+        if (tenantContext.isPresent()) {
+            TenantContext context = tenantContext.get();
+
+            if (!userDetails.getId().equals(context.userId())) {
+                throw new AccessDeniedException(
+                        "Tenant context does not belong to the authenticated user"
+                );
+            }
+
+            return new DataScopeContext(
+                    context.userId(),
+                    context.teamId(),
+                    context.dataScope()
             );
         }
 

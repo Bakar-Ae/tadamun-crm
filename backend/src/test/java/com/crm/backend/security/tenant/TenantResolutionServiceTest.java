@@ -21,7 +21,9 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TenantResolutionServiceTest {
@@ -34,7 +36,10 @@ class TenantResolutionServiceTest {
         membershipRepository =
                 mock(OrganizationMembershipRepository.class);
         resolutionService =
-                new TenantResolutionService(membershipRepository);
+                new TenantResolutionService(
+                        membershipRepository,
+                        new TenantPermissionPolicy()
+                );
     }
 
     @Test
@@ -154,10 +159,10 @@ class TenantResolutionServiceTest {
     }
 
     @Test
-    void missingActiveMembershipShouldBeRejected() {
+    void requestedOrganizationOutsideMembershipShouldBeRejectedWithoutFallback() {
         when(membershipRepository
                 .findByOrganizationIdAndUserIdAndStatus(
-                        10L,
+                        99L,
                         20L,
                         OrganizationMembershipStatus.ACTIVE
                 ))
@@ -165,7 +170,7 @@ class TenantResolutionServiceTest {
 
         TenantAccessException exception = assertThrows(
                 TenantAccessException.class,
-                () -> resolutionService.resolve(20L, 10L)
+                () -> resolutionService.resolve(20L, 99L)
         );
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatus());
@@ -173,6 +178,11 @@ class TenantResolutionServiceTest {
                 "ORGANIZATION_ACCESS_DENIED",
                 exception.getErrorCode()
         );
+        verify(membershipRepository, never())
+                .findByUserIdAndStatusOrderByOrganizationNameAsc(
+                        20L,
+                        OrganizationMembershipStatus.ACTIVE
+                );
     }
 
     @Test
@@ -223,10 +233,18 @@ class TenantResolutionServiceTest {
         Permission permission = new Permission();
         permission.setName(PermissionName.CUSTOMER_VIEW);
 
+        Permission platformPermission = new Permission();
+        platformPermission.setName(PermissionName.PERMISSION_MANAGE);
+
         Role role = new Role();
         role.setName(RoleName.MANAGER);
         role.setDataScope(DataScope.TEAM);
-        role.setPermissions(Set.of(permission));
+        role.setPermissions(Set.of(permission, platformPermission));
+
+        Role globalRole = new Role();
+        globalRole.setName(RoleName.ADMIN);
+        globalRole.setDataScope(DataScope.ALL);
+        user.setRole(globalRole);
 
         OrganizationMembership membership =
                 new OrganizationMembership();

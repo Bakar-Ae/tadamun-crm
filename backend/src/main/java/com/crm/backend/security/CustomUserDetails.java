@@ -16,13 +16,22 @@ public class CustomUserDetails implements UserDetails {
     private final User user;
     private final Long teamId;
     private final DataScope dataScope;
+    private final boolean platformAdministrator;
 
     public CustomUserDetails(User user) {
+        this(user, false);
+    }
+
+    public CustomUserDetails(
+            User user,
+            boolean platformAdministrator
+    ) {
         this.user = user;
         this.teamId = user.getTeam() == null
                 ? null
                 : user.getTeam().getId();
         this.dataScope = user.getRole().getDataScope();
+        this.platformAdministrator = platformAdministrator;
     }
 
     public Long getTeamId() {
@@ -45,6 +54,10 @@ public class CustomUserDetails implements UserDetails {
         return user.getFullName();
     }
 
+    public boolean isPlatformAdministrator() {
+        return platformAdministrator;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<GrantedAuthority> authorities = new ArrayList<>();
@@ -60,6 +73,12 @@ public class CustomUserDetails implements UserDetails {
                         new SimpleGrantedAuthority(permission.getName().name())
                 )
         );
+
+        if (platformAdministrator) {
+            authorities.add(new SimpleGrantedAuthority(
+                    PlatformAuthorities.ADMIN
+            ));
+        }
 
         return authorities;
     }

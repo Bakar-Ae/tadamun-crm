@@ -4,24 +4,25 @@ import com.crm.backend.organization.OrganizationStatus;
 import com.crm.backend.organization.membership.OrganizationMembership;
 import com.crm.backend.organization.membership.OrganizationMembershipRepository;
 import com.crm.backend.organization.membership.OrganizationMembershipStatus;
-import com.crm.backend.permission.Permission;
 import com.crm.backend.user.UserStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class TenantResolutionService {
 
     private final OrganizationMembershipRepository membershipRepository;
+    private final TenantPermissionPolicy tenantPermissionPolicy;
 
     public TenantResolutionService(
-            OrganizationMembershipRepository membershipRepository
+            OrganizationMembershipRepository membershipRepository,
+            TenantPermissionPolicy tenantPermissionPolicy
     ) {
         this.membershipRepository = membershipRepository;
+        this.tenantPermissionPolicy = tenantPermissionPolicy;
     }
 
     @Transactional(readOnly = true)
@@ -103,9 +104,9 @@ public class TenantResolutionService {
         }
 
         Set<com.crm.backend.permission.PermissionName> permissions =
-                membership.getRole().getPermissions().stream()
-                        .map(Permission::getName)
-                        .collect(Collectors.toUnmodifiableSet());
+                tenantPermissionPolicy.resolvePermissions(
+                        membership.getRole()
+                );
 
         Long teamId = membership.getUser().getTeam() == null
                 ? null

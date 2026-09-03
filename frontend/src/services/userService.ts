@@ -1,7 +1,7 @@
 import { api } from './api'
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE'
-export type RoleName = 'ADMIN' | 'MANAGER' | 'SALES_REP' | 'SUPPORT_STAFF'
+export type RoleName = 'OWNER' | 'ADMIN' | 'MANAGER' | 'SALES_REP' | 'SUPPORT_STAFF'
 
 export type UserResponse = {
   id: number

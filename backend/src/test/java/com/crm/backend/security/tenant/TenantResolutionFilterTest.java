@@ -4,6 +4,7 @@ import com.crm.backend.permission.PermissionName;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.security.CustomUserDetails;
+import com.crm.backend.security.PlatformAuthorities;
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -114,6 +115,71 @@ class TenantResolutionFilterTest {
                 originalAuthentication,
                 SecurityContextHolder.getContext()
                         .getAuthentication()
+        );
+    }
+
+    @Test
+    void tenantRequestShouldReplacePlatformAndGlobalAuthorities()
+            throws Exception {
+        originalAuthentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        List.of(
+                                new SimpleGrantedAuthority(
+                                        PlatformAuthorities.ADMIN
+                                ),
+                                new SimpleGrantedAuthority("ROLE_ADMIN"),
+                                new SimpleGrantedAuthority("USER_VIEW")
+                        )
+                );
+        SecurityContextHolder.getContext()
+                .setAuthentication(originalAuthentication);
+
+        MockHttpServletRequest request =
+                new MockHttpServletRequest(
+                        "GET",
+                        "/api/v1/customers"
+                );
+        request.addHeader(
+                TenantResolutionFilter.ORGANIZATION_HEADER,
+                "10"
+        );
+        MockHttpServletResponse response =
+                new MockHttpServletResponse();
+
+        when(routePolicy.requiresTenantContext(request))
+                .thenReturn(true);
+        when(resolutionService.resolve(20L, 10L))
+                .thenReturn(context());
+
+        AtomicReference<Authentication> observedAuthentication =
+                new AtomicReference<>();
+
+        filter.doFilter(
+                request,
+                response,
+                (servletRequest, servletResponse) ->
+                        observedAuthentication.set(
+                                SecurityContextHolder.getContext()
+                                        .getAuthentication()
+                        )
+        );
+
+        Set<String> tenantAuthorities = observedAuthentication.get()
+                .getAuthorities()
+                .stream()
+                .map(authority -> authority.getAuthority())
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertEquals(
+                Set.of("ROLE_MANAGER", "CUSTOMER_VIEW"),
+                tenantAuthorities
+        );
+        assertFalse(tenantAuthorities.contains(PlatformAuthorities.ADMIN));
+        assertSame(
+                originalAuthentication,
+                SecurityContextHolder.getContext().getAuthentication()
         );
     }
 

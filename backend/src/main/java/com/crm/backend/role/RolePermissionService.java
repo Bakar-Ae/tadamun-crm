@@ -52,7 +52,7 @@ public class RolePermissionService {
             UpdateRolePermissionsRequest request,
             Long actorUserId
     ) {
-        if (roleName == RoleName.ADMIN) {
+        if (roleName == RoleName.OWNER || roleName == RoleName.ADMIN) {
             throw new IllegalArgumentException(
                     "Administrator permissions cannot be changed"
             );
@@ -119,7 +119,8 @@ public class RolePermissionService {
         return new RolePermissionResponse(
                 role.getName(),
                 role.getDescription(),
-                role.getName() != RoleName.ADMIN,
+                role.getName() != RoleName.OWNER
+                        && role.getName() != RoleName.ADMIN,
                 permissionNames
         );
     }

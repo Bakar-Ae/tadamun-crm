@@ -1,5 +1,7 @@
 package com.crm.backend.security;
 
+import com.crm.backend.platform.PlatformAdministratorRepository;
+import com.crm.backend.platform.PlatformAdministratorStatus;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,9 +14,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final PlatformAdministratorRepository platformAdministratorRepository;
 
-    public CustomUserDetailsService(UserRepository userRepository) {
+    public CustomUserDetailsService(
+            UserRepository userRepository,
+            PlatformAdministratorRepository platformAdministratorRepository
+    ) {
         this.userRepository = userRepository;
+        this.platformAdministratorRepository = platformAdministratorRepository;
     }
 
     @Override
@@ -23,6 +30,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("Invalid email or password"));
 
-        return new CustomUserDetails(user);
+        boolean platformAdministrator = platformAdministratorRepository
+                .existsByUserIdAndStatus(
+                        user.getId(),
+                        PlatformAdministratorStatus.ACTIVE
+                );
+
+        return new CustomUserDetails(user, platformAdministrator);
     }
 }

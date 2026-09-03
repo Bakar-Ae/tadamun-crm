@@ -227,6 +227,40 @@ class SecurityEndpointTest {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void platformEndpointShouldRejectUnauthenticatedRequest()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/platform/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "owner@crm.com",
+            authorities = {"ROLE_OWNER", "MEMBERSHIP_UPDATE"}
+    )
+    void platformEndpointShouldRejectOrganizationOwner()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/platform/me"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "platform.admin@crm.com",
+            authorities = {PlatformAuthorities.ADMIN}
+    )
+    void platformEndpointShouldAllowExplicitPlatformAdministrator()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/platform/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email")
+                        .value("platform.admin@crm.com"))
+                .andExpect(jsonPath("$.platformAdministrator")
+                        .value(true));
+    }
+
     @Test
     @WithMockUser(
             username = "manager@crm.com",
@@ -270,9 +304,9 @@ class SecurityEndpointTest {
     @Test
     @WithMockUser(
             username = "admin@crm.com",
-            authorities = {"USER_CREATE"}
+            authorities = {"MEMBERSHIP_INVITE"}
     )
-    void invitationCreationShouldAllowUserWithCreatePermission()
+    void invitationCreationShouldAllowUserWithMembershipInvitePermission()
             throws Exception {
         mockMvc.perform(
                         post("/api/v1/organization-invitations")

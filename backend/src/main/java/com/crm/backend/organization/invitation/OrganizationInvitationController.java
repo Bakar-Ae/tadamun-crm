@@ -23,7 +23,7 @@ public class OrganizationInvitationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('USER_CREATE')")
+    @PreAuthorize("hasAuthority('MEMBERSHIP_INVITE')")
     public ResponseEntity<OrganizationInvitationResponse> createInvitation(
             @Valid @RequestBody CreateOrganizationInvitationRequest request
     ) {
@@ -32,7 +32,7 @@ public class OrganizationInvitationController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAuthority('USER_VIEW')")
+    @PreAuthorize("hasAuthority('MEMBERSHIP_VIEW')")
     public ResponseEntity<Page<OrganizationInvitationResponse>> getInvitations(
             Pageable pageable
     ) {
@@ -42,7 +42,7 @@ public class OrganizationInvitationController {
     }
 
     @PatchMapping("/{id}/revoke")
-    @PreAuthorize("hasAuthority('USER_CREATE')")
+    @PreAuthorize("hasAuthority('MEMBERSHIP_UPDATE')")
     public ResponseEntity<OrganizationInvitationResponse> revokeInvitation(
             @PathVariable Long id
     ) {

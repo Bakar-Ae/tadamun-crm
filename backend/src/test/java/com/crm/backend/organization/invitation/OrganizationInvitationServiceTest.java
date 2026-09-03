@@ -10,6 +10,7 @@ import com.crm.backend.organization.invitation.dto.AcceptOrganizationInvitationR
 import com.crm.backend.organization.invitation.dto.CreateOrganizationInvitationRequest;
 import com.crm.backend.organization.membership.OrganizationMembership;
 import com.crm.backend.organization.membership.OrganizationMembershipRepository;
+import com.crm.backend.organization.membership.OrganizationRolePolicy;
 import com.crm.backend.permission.PermissionName;
 import com.crm.backend.role.DataScope;
 import com.crm.backend.role.Role;
@@ -48,6 +49,7 @@ class OrganizationInvitationServiceTest {
     private AuditLogService auditLogService;
     private EmailService emailService;
     private PasswordEncoder passwordEncoder;
+    private OrganizationRolePolicy organizationRolePolicy;
     private OrganizationInvitationService invitationService;
 
     @BeforeEach
@@ -61,6 +63,7 @@ class OrganizationInvitationServiceTest {
         auditLogService = mock(AuditLogService.class);
         emailService = mock(EmailService.class);
         passwordEncoder = mock(PasswordEncoder.class);
+        organizationRolePolicy = new OrganizationRolePolicy();
 
         invitationService = new OrganizationInvitationService(
                 invitationRepository,
@@ -73,6 +76,7 @@ class OrganizationInvitationServiceTest {
                 auditLogService,
                 emailService,
                 passwordEncoder,
+                organizationRolePolicy,
                 "http://localhost:5173/"
         );
 
@@ -179,6 +183,50 @@ class OrganizationInvitationServiceTest {
 
         verify(invitationRepository, never())
                 .saveAndFlush(any(OrganizationInvitation.class));
+    }
+
+    @Test
+    void organizationAdminShouldNotBeAllowedToInviteAnotherAdmin() {
+        assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> invitationService.createInvitation(
+                        new CreateOrganizationInvitationRequest(
+                                "admin@example.com",
+                                RoleName.ADMIN
+                        )
+                )
+        );
+
+        verifyNoInteractions(organizationRepository);
+    }
+
+    @Test
+    void ownerRoleShouldNotBeAssignableByInvitation() {
+        TenantContextHolder.set(new TenantContext(
+                10L,
+                20L,
+                1L,
+                RoleName.OWNER,
+                DataScope.ALL,
+                null,
+                Set.of(PermissionName.MEMBERSHIP_INVITE)
+        ));
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> invitationService.createInvitation(
+                        new CreateOrganizationInvitationRequest(
+                                "owner@example.com",
+                                RoleName.OWNER
+                        )
+                )
+        );
+
+        assertEquals(
+                "This organization role cannot be assigned",
+                exception.getMessage()
+        );
+        verifyNoInteractions(organizationRepository);
     }
 
     @Test

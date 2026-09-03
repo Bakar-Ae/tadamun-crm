@@ -10,6 +10,7 @@ import com.crm.backend.organization.invitation.dto.*;
 import com.crm.backend.organization.membership.OrganizationMembership;
 import com.crm.backend.organization.membership.OrganizationMembershipRepository;
 import com.crm.backend.organization.membership.OrganizationMembershipStatus;
+import com.crm.backend.organization.membership.OrganizationRolePolicy;
 import com.crm.backend.role.Role;
 import com.crm.backend.role.RoleRepository;
 import com.crm.backend.security.tenant.TenantContext;
@@ -46,6 +47,7 @@ public class OrganizationInvitationService {
     private final EmailService emailService;
     private final String frontendBaseUrl;
     private final PasswordEncoder passwordEncoder;
+    private final OrganizationRolePolicy organizationRolePolicy;
 
     public OrganizationInvitationService(
             OrganizationInvitationRepository invitationRepository,
@@ -58,6 +60,7 @@ public class OrganizationInvitationService {
             AuditLogService auditLogService,
             EmailService emailService,
             PasswordEncoder passwordEncoder,
+            OrganizationRolePolicy organizationRolePolicy,
             @Value("${app.frontend.base-url}") String frontendBaseUrl
     ) {
         this.invitationRepository = invitationRepository;
@@ -71,6 +74,7 @@ public class OrganizationInvitationService {
         this.emailService = emailService;
         this.frontendBaseUrl = frontendBaseUrl;
         this.passwordEncoder = passwordEncoder;
+        this.organizationRolePolicy = organizationRolePolicy;
     }
 
     @Transactional
@@ -78,6 +82,12 @@ public class OrganizationInvitationService {
             CreateOrganizationInvitationRequest request
     ) {
         TenantContext context = TenantContextHolder.getRequired();
+
+        organizationRolePolicy.requireCanAssign(
+                context.roleName(),
+                request.role()
+        );
+
         Organization organization = findActiveOrganization(
                 context.organizationId()
         );
