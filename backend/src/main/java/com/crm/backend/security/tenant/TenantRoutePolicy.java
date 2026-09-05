@@ -25,6 +25,7 @@ public class TenantRoutePolicy {
             "/api/v1/reports",
             "/api/v1/roles",
             "/api/v1/search",
+            "/api/v1/subscription",
             "/api/v1/tasks",
             "/api/v1/users"
     );

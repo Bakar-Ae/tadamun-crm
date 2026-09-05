@@ -8,6 +8,7 @@ import com.crm.backend.role.DataScope;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.security.tenant.TenantContext;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.SubscriptionService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -34,6 +35,7 @@ class OrganizationServiceTest {
     private OrganizationRepository organizationRepository;
     private UserRepository userRepository;
     private AuditLogService auditLogService;
+    private SubscriptionService subscriptionService;
     private OrganizationService organizationService;
 
     @BeforeEach
@@ -41,13 +43,15 @@ class OrganizationServiceTest {
         organizationRepository = mock(OrganizationRepository.class);
         userRepository = mock(UserRepository.class);
         auditLogService = mock(AuditLogService.class);
+        subscriptionService = mock(SubscriptionService.class);
 
         organizationService = new OrganizationService(
                 organizationRepository,
                 userRepository,
                 new OrganizationMapper(),
                 auditLogService,
-                new ObjectMapper()
+                new ObjectMapper(),
+                subscriptionService
         );
     }
 
@@ -101,6 +105,10 @@ class OrganizationServiceTest {
                 10L,
                 "{\"name\":\"Tadamun Business\","
                         + "\"slug\":\"tadamun-business\"}"
+        );
+        verify(subscriptionService).startTrialForOrganization(
+                any(Organization.class),
+                eq(1L)
         );
     }
 

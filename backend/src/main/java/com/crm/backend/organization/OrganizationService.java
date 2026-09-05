@@ -6,6 +6,7 @@ import com.crm.backend.organization.dto.OrganizationResponse;
 import com.crm.backend.organization.dto.UpdateOrganizationRequest;
 import com.crm.backend.security.tenant.TenantContext;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.SubscriptionService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -39,19 +40,22 @@ public class OrganizationService {
     private final OrganizationMapper organizationMapper;
     private final AuditLogService auditLogService;
     private final ObjectMapper objectMapper;
+    private final SubscriptionService subscriptionService;
 
     public OrganizationService(
             OrganizationRepository organizationRepository,
             UserRepository userRepository,
             OrganizationMapper organizationMapper,
             AuditLogService auditLogService,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            SubscriptionService subscriptionService
     ) {
         this.organizationRepository = organizationRepository;
         this.userRepository = userRepository;
         this.organizationMapper = organizationMapper;
         this.auditLogService = auditLogService;
         this.objectMapper = objectMapper;
+        this.subscriptionService = subscriptionService;
     }
 
     @Transactional
@@ -100,6 +104,11 @@ public class OrganizationService {
                 savedOrganization.getId(),
                 "{\"name\":\"" + savedOrganization.getName()
                         + "\",\"slug\":\"" + savedOrganization.getSlug() + "\"}"
+        );
+
+        subscriptionService.startTrialForOrganization(
+                savedOrganization,
+                creatorUserId
         );
 
         log.info(
