@@ -313,6 +313,6 @@ Potential Version 4 features:
 - AI customer insights
 - Predictive sales analytics
 - CRM assistant and chatbot
-- Native mobile applications
+- Installable Progressive Web App (PWA), followed by native mobile applications only when justified
 - Advanced no-code workflow builder
 - Large integration marketplace
