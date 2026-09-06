@@ -4,11 +4,12 @@ import com.crm.backend.auth.TooManyLoginAttemptsException;
 import com.crm.backend.subscription.billing.BillingProviderException;
 import com.crm.backend.subscription.billing.BillingUnavailableException;
 import com.crm.backend.subscription.billing.InvalidBillingWebhookException;
+import com.crm.backend.subscription.usage.SubscriptionLimitExceededException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -41,6 +42,22 @@ public class GlobalExceptionHandler {
                 "status", 503,
                 "error", "Service Unavailable",
                 "message", exception.getMessage()
+        ));
+    }
+    @ExceptionHandler(SubscriptionLimitExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleSubscriptionLimitExceeded(
+            SubscriptionLimitExceededException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", 402,
+                "error", "Payment Required",
+                "code", "SUBSCRIPTION_LIMIT_REACHED",
+                "message", exception.getMessage(),
+                "feature", exception.getFeature().name(),
+                "used", exception.getUsed(),
+                "limit", exception.getLimit(),
+                "upgradeRequired", true
         ));
     }
 

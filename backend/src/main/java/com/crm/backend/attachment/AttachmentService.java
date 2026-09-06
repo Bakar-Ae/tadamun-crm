@@ -10,6 +10,8 @@ import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
+import com.crm.backend.subscription.SubscriptionFeature;
+import com.crm.backend.subscription.usage.SubscriptionUsageService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import tools.jackson.core.JacksonException;
@@ -35,6 +37,7 @@ public class AttachmentService {
     private final ObjectMapper objectMapper;
     private final DataScopeService dataScopeService;
     private final CurrentOrganizationProvider currentOrganizationProvider;
+    private final SubscriptionUsageService subscriptionUsageService;
 
     public AttachmentService(
             AttachmentRepository attachmentRepository,
@@ -45,7 +48,8 @@ public class AttachmentService {
             AuditLogService auditLogService,
             ObjectMapper objectMapper,
             DataScopeService dataScopeService,
-            CurrentOrganizationProvider currentOrganizationProvider
+            CurrentOrganizationProvider currentOrganizationProvider,
+            SubscriptionUsageService subscriptionUsageService
     ) {
         this.attachmentRepository = attachmentRepository;
         this.storageService = storageService;
@@ -56,6 +60,7 @@ public class AttachmentService {
         this.objectMapper = objectMapper;
         this.dataScopeService = dataScopeService;
         this.currentOrganizationProvider = currentOrganizationProvider;
+        this.subscriptionUsageService = subscriptionUsageService;
     }
 
     @Transactional
@@ -184,6 +189,17 @@ public class AttachmentService {
             Lead lead,
             User actor
     ) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Attachment file is required"
+            );
+        }
+
+        subscriptionUsageService.requireCapacity(
+                SubscriptionFeature.STORAGE_BYTES,
+                file.getSize()
+        );
+
         String originalFileName = cleanOriginalFileName(
                 file.getOriginalFilename()
         );

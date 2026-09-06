@@ -98,7 +98,8 @@ public class NotificationPreferenceService {
 
     private boolean isMandatory(NotificationType type) {
         return type == NotificationType.SYSTEM
-                || type == NotificationType.PASSWORD_CHANGED;
+                || type == NotificationType.PASSWORD_CHANGED
+                || type == NotificationType.SUBSCRIPTION_USAGE_WARNING;
     }
 
     private boolean isCategoryEnabled(
@@ -114,7 +115,7 @@ public class NotificationPreferenceService {
                     preference.isLeadNotificationsEnabled();
             case REPORT_READY ->
                     preference.isReportNotificationsEnabled();
-            case SYSTEM, PASSWORD_CHANGED -> true;
+            case SYSTEM, PASSWORD_CHANGED, SUBSCRIPTION_USAGE_WARNING -> true;
         };
     }
 }

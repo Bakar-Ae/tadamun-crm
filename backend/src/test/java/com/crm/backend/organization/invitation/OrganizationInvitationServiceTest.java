@@ -18,6 +18,7 @@ import com.crm.backend.role.RoleName;
 import com.crm.backend.role.RoleRepository;
 import com.crm.backend.security.tenant.TenantContext;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.usage.SubscriptionUsageService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -50,6 +51,7 @@ class OrganizationInvitationServiceTest {
     private EmailService emailService;
     private PasswordEncoder passwordEncoder;
     private OrganizationRolePolicy organizationRolePolicy;
+    private SubscriptionUsageService subscriptionUsageService;
     private OrganizationInvitationService invitationService;
 
     @BeforeEach
@@ -64,6 +66,7 @@ class OrganizationInvitationServiceTest {
         emailService = mock(EmailService.class);
         passwordEncoder = mock(PasswordEncoder.class);
         organizationRolePolicy = new OrganizationRolePolicy();
+        subscriptionUsageService = mock(SubscriptionUsageService.class);
 
         invitationService = new OrganizationInvitationService(
                 invitationRepository,
@@ -77,6 +80,7 @@ class OrganizationInvitationServiceTest {
                 emailService,
                 passwordEncoder,
                 organizationRolePolicy,
+                subscriptionUsageService,
                 "http://localhost:5173/"
         );
 

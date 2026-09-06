@@ -203,6 +203,10 @@ Outputs:
 - Limit warning notifications
 - Upgrade-required responses
 
+Implementation and acceptance details:
+
+- `docs/phase-84-usage-metering-and-limits.md`
+
 ## Phase 85 - Public API Foundation
 
 Goal:

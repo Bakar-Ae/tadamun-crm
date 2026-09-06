@@ -13,6 +13,8 @@ import com.crm.backend.role.RoleName;
 import com.crm.backend.role.RoleRepository;
 import com.crm.backend.security.tenant.TenantContext;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.SubscriptionFeature;
+import com.crm.backend.subscription.usage.SubscriptionUsageService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -40,6 +42,7 @@ public class OrganizationMembershipService {
     private final OrganizationMembershipMapper membershipMapper;
     private final AuditLogService auditLogService;
     private final OrganizationRolePolicy organizationRolePolicy;
+    private final SubscriptionUsageService subscriptionUsageService;
 
     public OrganizationMembershipService(
             OrganizationMembershipRepository membershipRepository,
@@ -48,7 +51,8 @@ public class OrganizationMembershipService {
             RoleRepository roleRepository,
             OrganizationMembershipMapper membershipMapper,
             AuditLogService auditLogService,
-            OrganizationRolePolicy organizationRolePolicy
+            OrganizationRolePolicy organizationRolePolicy,
+            SubscriptionUsageService subscriptionUsageService
     ) {
         this.membershipRepository = membershipRepository;
         this.organizationRepository = organizationRepository;
@@ -57,6 +61,7 @@ public class OrganizationMembershipService {
         this.membershipMapper = membershipMapper;
         this.auditLogService = auditLogService;
         this.organizationRolePolicy = organizationRolePolicy;
+        this.subscriptionUsageService = subscriptionUsageService;
     }
 
     @Transactional
@@ -83,6 +88,12 @@ public class OrganizationMembershipService {
                     "User already belongs to this organization"
             );
         }
+
+        subscriptionUsageService.requireCapacity(
+                organizationId,
+                SubscriptionFeature.MEMBERS,
+                1L
+        );
 
         Role role = roleRepository.findByName(request.role())
                 .orElseThrow(() ->

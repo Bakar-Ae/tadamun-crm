@@ -73,4 +73,14 @@ public interface AttachmentRepository
             @Param("currentUserId") Long currentUserId,
             @Param("currentTeamId") Long currentTeamId
     );
+    @Query("""
+        SELECT COALESCE(SUM(a.sizeBytes), 0)
+        FROM Attachment a
+        WHERE a.organization.id = :organizationId
+        AND a.status = :status
+        """)
+    long sumSizeBytesByOrganizationIdAndStatus(
+            @Param("organizationId") Long organizationId,
+            @Param("status") AttachmentStatus status
+    );
 }

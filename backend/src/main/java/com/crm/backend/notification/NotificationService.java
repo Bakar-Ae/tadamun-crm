@@ -1,5 +1,6 @@
 package com.crm.backend.notification;
 
+import com.crm.backend.organization.Organization;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
@@ -62,6 +63,49 @@ public class NotificationService {
         notification.setType(type);
 
         return Optional.of(notificationRepository.save(notification));
+    }
+
+    @Transactional
+    public boolean createNotificationOnce(
+            Organization organization,
+            Long recipientUserId,
+            String title,
+            String message,
+            NotificationType type,
+            String deduplicationKey
+    ) {
+        if (organization == null || organization.getId() == null) {
+            throw new IllegalArgumentException("Organization is required");
+        }
+
+        if (deduplicationKey == null || deduplicationKey.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Notification deduplication key is required"
+            );
+        }
+
+        boolean allowed = preferenceService.allowsInAppNotification(
+                recipientUserId,
+                type
+        );
+
+        if (!allowed) {
+            return false;
+        }
+
+        userRepository.findById(recipientUserId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Recipient user not found")
+                );
+
+        return notificationRepository.insertOnce(
+                organization.getId(),
+                recipientUserId,
+                title,
+                message,
+                type.name(),
+                deduplicationKey
+        ) == 1;
     }
 
     @Transactional(readOnly = true)

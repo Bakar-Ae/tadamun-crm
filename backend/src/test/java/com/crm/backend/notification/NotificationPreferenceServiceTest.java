@@ -72,4 +72,15 @@ class NotificationPreferenceServiceTest {
         assertTrue(allowed);
         verifyNoInteractions(preferenceRepository, userRepository);
     }
+
+    @Test
+    void subscriptionUsageWarningShouldAlwaysBeAllowed() {
+        boolean allowed = preferenceService.allowsInAppNotification(
+                1L,
+                NotificationType.SUBSCRIPTION_USAGE_WARNING
+        );
+
+        assertTrue(allowed);
+        verifyNoInteractions(preferenceRepository, userRepository);
+    }
 }

@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -74,6 +75,46 @@ class NotificationServiceTest {
                 .orElseThrow();
 
         assertSame(organization, notification.getOrganization());
+    }
+
+    @Test
+    void createNotificationOnceShouldUseAtomicDeduplicationInsert() {
+        User recipient = new User();
+        recipient.setId(3L);
+
+        when(preferenceService.allowsInAppNotification(
+                3L,
+                NotificationType.SUBSCRIPTION_USAGE_WARNING
+        )).thenReturn(true);
+        when(userRepository.findById(3L))
+                .thenReturn(Optional.of(recipient));
+        when(notificationRepository.insertOnce(
+                7L,
+                3L,
+                "Member usage warning",
+                "Member usage has reached 80%.",
+                NotificationType.SUBSCRIPTION_USAGE_WARNING.name(),
+                "subscription-usage-warning:MEMBERS:2026-09-01"
+        )).thenReturn(1);
+
+        boolean created = notificationService.createNotificationOnce(
+                organization,
+                3L,
+                "Member usage warning",
+                "Member usage has reached 80%.",
+                NotificationType.SUBSCRIPTION_USAGE_WARNING,
+                "subscription-usage-warning:MEMBERS:2026-09-01"
+        );
+
+        assertTrue(created);
+        verify(notificationRepository).insertOnce(
+                7L,
+                3L,
+                "Member usage warning",
+                "Member usage has reached 80%.",
+                NotificationType.SUBSCRIPTION_USAGE_WARNING.name(),
+                "subscription-usage-warning:MEMBERS:2026-09-01"
+        );
     }
 
     @Test

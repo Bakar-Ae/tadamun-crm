@@ -14,6 +14,7 @@ import com.crm.backend.role.RoleName;
 import com.crm.backend.role.RoleRepository;
 import com.crm.backend.security.tenant.TenantContext;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.usage.SubscriptionUsageService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -42,6 +43,7 @@ class OrganizationMembershipServiceTest {
     private UserRepository userRepository;
     private RoleRepository roleRepository;
     private AuditLogService auditLogService;
+    private SubscriptionUsageService subscriptionUsageService;
     private OrganizationMembershipService membershipService;
 
     @BeforeEach
@@ -53,6 +55,7 @@ class OrganizationMembershipServiceTest {
         userRepository = mock(UserRepository.class);
         roleRepository = mock(RoleRepository.class);
         auditLogService = mock(AuditLogService.class);
+        subscriptionUsageService = mock(SubscriptionUsageService.class);
 
         membershipService = new OrganizationMembershipService(
                 membershipRepository,
@@ -61,7 +64,8 @@ class OrganizationMembershipServiceTest {
                 roleRepository,
                 new OrganizationMembershipMapper(),
                 auditLogService,
-                new OrganizationRolePolicy()
+                new OrganizationRolePolicy(),
+                subscriptionUsageService
         );
     }
 

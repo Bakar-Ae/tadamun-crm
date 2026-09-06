@@ -6,6 +6,8 @@ import com.crm.backend.subscription.billing.dto.BillingSessionResponse;
 import com.crm.backend.subscription.billing.dto.CreateBillingCheckoutRequest;
 import com.crm.backend.subscription.dto.OrganizationSubscriptionResponse;
 import com.crm.backend.subscription.dto.SubscriptionPlanResponse;
+import com.crm.backend.subscription.usage.SubscriptionUsageService;
+import com.crm.backend.subscription.usage.dto.SubscriptionUsageResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,13 +27,16 @@ public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
     private final SubscriptionBillingService billingService;
+    private final SubscriptionUsageService usageService;
 
     public SubscriptionController(
             SubscriptionService subscriptionService,
-            SubscriptionBillingService billingService
+            SubscriptionBillingService billingService,
+            SubscriptionUsageService usageService
     ) {
         this.subscriptionService = subscriptionService;
         this.billingService = billingService;
+        this.usageService = usageService;
     }
 
     @GetMapping
@@ -47,6 +52,12 @@ public class SubscriptionController {
     @PreAuthorize("hasAuthority('SUBSCRIPTION_VIEW')")
     public ResponseEntity<List<SubscriptionPlanResponse>> getPlans() {
         return ResponseEntity.ok(subscriptionService.getAvailablePlans());
+    }
+
+    @GetMapping("/usage")
+    @PreAuthorize("hasAuthority('SUBSCRIPTION_VIEW')")
+    public ResponseEntity<SubscriptionUsageResponse> getUsage() {
+        return ResponseEntity.ok(usageService.getCurrentUsage());
     }
 
     @PostMapping("/checkout")

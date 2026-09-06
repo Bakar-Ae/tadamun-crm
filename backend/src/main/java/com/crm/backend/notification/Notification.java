@@ -32,6 +32,9 @@ public class Notification {
     @Column(nullable = false, length = 50)
     private NotificationType type;
 
+    @Column(name = "deduplication_key", length = 150)
+    private String deduplicationKey;
+
     @Column(name = "read_status", nullable = false)
     private boolean readStatus = false;
 
@@ -88,6 +91,14 @@ public class Notification {
 
     public void setType(NotificationType type) {
         this.type = type;
+    }
+
+    public String getDeduplicationKey() {
+        return deduplicationKey;
+    }
+
+    public void setDeduplicationKey(String deduplicationKey) {
+        this.deduplicationKey = deduplicationKey;
     }
 
     public boolean isReadStatus() {

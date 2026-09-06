@@ -8,6 +8,7 @@ import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
+import com.crm.backend.subscription.usage.SubscriptionUsageService;
 import com.crm.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ class AttachmentServiceTest {
     private LocalAttachmentStorageService storageService;
     private DataScopeService dataScopeService;
     private CurrentOrganizationProvider currentOrganizationProvider;
+    private SubscriptionUsageService subscriptionUsageService;
     private AttachmentService attachmentService;
 
     @BeforeEach
@@ -36,6 +38,7 @@ class AttachmentServiceTest {
         dataScopeService = mock(DataScopeService.class);
         currentOrganizationProvider =
                 mock(CurrentOrganizationProvider.class);
+        subscriptionUsageService = mock(SubscriptionUsageService.class);
         Organization organization = new Organization();
         organization.setId(1L);
         when(currentOrganizationProvider.getOrganizationId())
@@ -52,7 +55,8 @@ class AttachmentServiceTest {
                 mock(AuditLogService.class),
                 mock(ObjectMapper.class),
                 dataScopeService,
-                currentOrganizationProvider
+                currentOrganizationProvider,
+                subscriptionUsageService
         );
     }
 

@@ -15,6 +15,8 @@ import com.crm.backend.role.Role;
 import com.crm.backend.role.RoleRepository;
 import com.crm.backend.security.tenant.TenantContext;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.SubscriptionFeature;
+import com.crm.backend.subscription.usage.SubscriptionUsageService;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
@@ -48,6 +50,7 @@ public class OrganizationInvitationService {
     private final String frontendBaseUrl;
     private final PasswordEncoder passwordEncoder;
     private final OrganizationRolePolicy organizationRolePolicy;
+    private final SubscriptionUsageService subscriptionUsageService;
 
     public OrganizationInvitationService(
             OrganizationInvitationRepository invitationRepository,
@@ -61,6 +64,7 @@ public class OrganizationInvitationService {
             EmailService emailService,
             PasswordEncoder passwordEncoder,
             OrganizationRolePolicy organizationRolePolicy,
+            SubscriptionUsageService subscriptionUsageService,
             @Value("${app.frontend.base-url}") String frontendBaseUrl
     ) {
         this.invitationRepository = invitationRepository;
@@ -75,6 +79,7 @@ public class OrganizationInvitationService {
         this.frontendBaseUrl = frontendBaseUrl;
         this.passwordEncoder = passwordEncoder;
         this.organizationRolePolicy = organizationRolePolicy;
+        this.subscriptionUsageService = subscriptionUsageService;
     }
 
     @Transactional
@@ -189,6 +194,12 @@ public class OrganizationInvitationService {
                     "User already belongs to this organization"
             );
         }
+
+        subscriptionUsageService.requireCapacity(
+                invitation.getOrganization().getId(),
+                SubscriptionFeature.MEMBERS,
+                1L
+        );
 
         OrganizationMembership membership = new OrganizationMembership();
         membership.setOrganization(invitation.getOrganization());
