@@ -165,6 +165,13 @@ class SecurityEndpointTest {
     }
 
     @Test
+    void publicApiShouldRejectRequestWithoutApiKey() throws Exception {
+        mockMvc.perform(get("/api/public/v1/customers"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_API_KEY"));
+    }
+
+    @Test
     @WithMockUser(
             username = "viewer@crm.com",
             authorities = {"CUSTOMER_VIEW"}

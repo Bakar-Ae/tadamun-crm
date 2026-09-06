@@ -1,0 +1,10 @@
+package com.crm.backend.publicapi;
+
+public enum PublicApiAuditAction {
+    PUBLIC_API_KEY_CREATED,
+    PUBLIC_API_KEY_ROTATED,
+    PUBLIC_API_KEY_REVOKED,
+    PUBLIC_API_AUTHENTICATION_FAILED,
+    PUBLIC_API_SCOPE_DENIED,
+    PUBLIC_API_RATE_LIMIT_EXCEEDED
+}

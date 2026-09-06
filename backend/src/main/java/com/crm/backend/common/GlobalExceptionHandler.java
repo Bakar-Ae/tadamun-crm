@@ -4,6 +4,7 @@ import com.crm.backend.auth.TooManyLoginAttemptsException;
 import com.crm.backend.subscription.billing.BillingProviderException;
 import com.crm.backend.subscription.billing.BillingUnavailableException;
 import com.crm.backend.subscription.billing.InvalidBillingWebhookException;
+import com.crm.backend.subscription.SubscriptionFeatureUnavailableException;
 import com.crm.backend.subscription.usage.SubscriptionLimitExceededException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,21 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(SubscriptionFeatureUnavailableException.class)
+    public ResponseEntity<Map<String, Object>> handleUnavailableFeature(
+            SubscriptionFeatureUnavailableException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", 402,
+                "error", "Payment Required",
+                "code", "SUBSCRIPTION_FEATURE_REQUIRED",
+                "message", exception.getMessage(),
+                "feature", exception.getFeature().name(),
+                "upgradeRequired", true
+        ));
+    }
+
     @ExceptionHandler(InvalidBillingWebhookException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidBillingWebhook(
             InvalidBillingWebhookException exception

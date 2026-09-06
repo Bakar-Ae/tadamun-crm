@@ -1,5 +1,6 @@
 package com.crm.backend.security;
 
+import com.crm.backend.publicapi.security.PublicApiAuthenticationFilter;
 import com.crm.backend.security.tenant.TenantResolutionFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,15 +29,18 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final PublicApiAuthenticationFilter publicApiAuthenticationFilter;
     private final TenantResolutionFilter tenantResolutionFilter;
     private final String allowedOrigins;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
+            PublicApiAuthenticationFilter publicApiAuthenticationFilter,
             TenantResolutionFilter tenantResolutionFilter,
             @Value("${app.cors.allowed-origins}") String allowedOrigins
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.publicApiAuthenticationFilter = publicApiAuthenticationFilter;
         this.tenantResolutionFilter = tenantResolutionFilter;
         this.allowedOrigins = allowedOrigins;
     }
@@ -80,6 +84,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(
+                        publicApiAuthenticationFilter,
+                        JwtAuthenticationFilter.class
+                )
                 .addFilterAfter(
                         tenantResolutionFilter,
                         JwtAuthenticationFilter.class
@@ -106,7 +114,8 @@ public class SecurityConfig {
                 TenantResolutionFilter.ORGANIZATION_HEADER
         ));
         configuration.setExposedHeaders(List.of(
-                TenantResolutionFilter.ORGANIZATION_HEADER
+                TenantResolutionFilter.ORGANIZATION_HEADER,
+                "Retry-After"
         ));
         configuration.setAllowCredentials(true);
 
@@ -126,6 +135,16 @@ public class SecurityConfig {
     jwtAuthenticationFilterRegistration() {
         FilterRegistrationBean<JwtAuthenticationFilter> registration =
                 new FilterRegistrationBean<>(jwtAuthenticationFilter);
+
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<PublicApiAuthenticationFilter>
+    publicApiAuthenticationFilterRegistration() {
+        FilterRegistrationBean<PublicApiAuthenticationFilter> registration =
+                new FilterRegistrationBean<>(publicApiAuthenticationFilter);
 
         registration.setEnabled(false);
         return registration;
