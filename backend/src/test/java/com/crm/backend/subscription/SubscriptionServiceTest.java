@@ -6,6 +6,7 @@ import com.crm.backend.role.DataScope;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.security.tenant.TenantContext;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.billing.BillingProviderName;
 import com.crm.backend.subscription.dto.OrganizationSubscriptionResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -241,6 +242,98 @@ class SubscriptionServiceTest {
         assertEquals(
                 "Only an active subscription with a future period end can be canceled later",
                 exception.getMessage()
+        );
+    }
+
+    @Test
+    void providerSynchronizationShouldUpdateSubscriptionState() {
+        SubscriptionPlan starter = plan(
+                SubscriptionPlanCode.STARTER,
+                14,
+                7
+        );
+        SubscriptionPlan business = plan(
+                SubscriptionPlanCode.BUSINESS,
+                14,
+                14
+        );
+        OrganizationSubscription subscription = subscription(
+                10L,
+                starter,
+                SubscriptionStatus.TRIALING
+        );
+        LocalDateTime periodEnd = now.plusMonths(1);
+
+        when(subscriptionRepository.findByOrganizationId(10L))
+                .thenReturn(Optional.of(subscription));
+        when(planRepository.findByCodeAndActiveTrue(
+                SubscriptionPlanCode.BUSINESS
+        )).thenReturn(Optional.of(business));
+        when(subscriptionRepository.saveAndFlush(subscription))
+                .thenReturn(subscription);
+
+        OrganizationSubscriptionResponse response = subscriptionService
+                .synchronizeProviderSubscription(
+                        10L,
+                        BillingProviderName.STRIPE,
+                        "sub_123",
+                        SubscriptionPlanCode.BUSINESS,
+                        SubscriptionStatus.ACTIVE,
+                        now,
+                        now.minusDays(1),
+                        periodEnd,
+                        true
+                );
+
+        assertEquals(SubscriptionStatus.ACTIVE, response.status());
+        assertEquals(SubscriptionPlanCode.BUSINESS, response.plan().code());
+        assertEquals(periodEnd, response.currentPeriodEndsAt());
+        assertTrue(response.cancelAtPeriodEnd());
+        assertEquals(BillingProviderName.STRIPE,
+                subscription.getBillingProvider());
+        assertEquals("sub_123", subscription.getProviderSubscriptionId());
+        verify(auditLogService).logForOrganization(
+                any(Organization.class),
+                eq(null),
+                eq("SUBSCRIPTION_PROVIDER_SYNCED"),
+                eq("ORGANIZATION_SUBSCRIPTION"),
+                eq(50L),
+                anyString()
+        );
+    }
+
+    @Test
+    void olderProviderEventShouldNotOverwriteCurrentState() {
+        OrganizationSubscription subscription = subscription(
+                10L,
+                plan(SubscriptionPlanCode.BUSINESS, 14, 14),
+                SubscriptionStatus.ACTIVE
+        );
+        subscription.setBillingProvider(BillingProviderName.STRIPE);
+        subscription.setProviderSubscriptionId("sub_123");
+        subscription.setProviderStatusUpdatedAt(now);
+
+        when(subscriptionRepository.findByOrganizationId(10L))
+                .thenReturn(Optional.of(subscription));
+
+        OrganizationSubscriptionResponse response = subscriptionService
+                .synchronizeProviderSubscription(
+                        10L,
+                        BillingProviderName.STRIPE,
+                        "sub_123",
+                        SubscriptionPlanCode.STARTER,
+                        SubscriptionStatus.CANCELED,
+                        now.minusMinutes(1),
+                        now.minusMonths(1),
+                        now.minusDays(1),
+                        false
+                );
+
+        assertEquals(SubscriptionStatus.ACTIVE, response.status());
+        assertEquals(SubscriptionPlanCode.BUSINESS, response.plan().code());
+        verify(subscriptionRepository, never()).saveAndFlush(any());
+        verify(auditLogService, never()).logForOrganization(
+                any(), any(), anyString(), anyString(), any(), anyString()
         );
     }
 

@@ -1,6 +1,7 @@
 package com.crm.backend.subscription;
 
 import com.crm.backend.organization.Organization;
+import com.crm.backend.subscription.billing.BillingProviderName;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -43,6 +44,16 @@ public class OrganizationSubscription {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "plan_id", nullable = false)
     private SubscriptionPlan plan;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_provider", length = 30)
+    private BillingProviderName billingProvider;
+
+    @Column(name = "provider_subscription_id", length = 255)
+    private String providerSubscriptionId;
+
+    @Column(name = "provider_status_updated_at")
+    private LocalDateTime providerStatusUpdatedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)

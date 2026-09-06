@@ -4,6 +4,7 @@ import com.crm.backend.audit.AuditLogService;
 import com.crm.backend.common.ResourceNotFoundException;
 import com.crm.backend.organization.Organization;
 import com.crm.backend.security.tenant.TenantContextHolder;
+import com.crm.backend.subscription.billing.BillingProviderName;
 import com.crm.backend.subscription.dto.OrganizationSubscriptionResponse;
 import com.crm.backend.subscription.dto.SubscriptionPlanResponse;
 import org.springframework.stereotype.Service;
@@ -287,6 +288,109 @@ public class SubscriptionService {
         return toCurrentResponse(saved);
     }
 
+    @Transactional
+    public OrganizationSubscriptionResponse linkProviderSubscription(
+            Long organizationId,
+            BillingProviderName provider,
+            String providerSubscriptionId
+    ) {
+        OrganizationSubscription subscription =
+                findSubscription(organizationId);
+        validateProviderReference(provider, providerSubscriptionId);
+
+        if (subscription.getProviderSubscriptionId() != null
+                && !subscription.getProviderSubscriptionId()
+                        .equals(providerSubscriptionId)) {
+            throw new IllegalArgumentException(
+                    "Organization is already linked to another provider subscription"
+            );
+        }
+
+        subscription.setBillingProvider(provider);
+        subscription.setProviderSubscriptionId(providerSubscriptionId);
+        return toCurrentResponse(
+                subscriptionRepository.saveAndFlush(subscription)
+        );
+    }
+
+    @Transactional
+    public OrganizationSubscriptionResponse synchronizeProviderSubscription(
+            Long organizationId,
+            BillingProviderName provider,
+            String providerSubscriptionId,
+            SubscriptionPlanCode planCode,
+            SubscriptionStatus status,
+            LocalDateTime providerEventAt,
+            LocalDateTime periodStartsAt,
+            LocalDateTime periodEndsAt,
+            boolean cancelAtPeriodEnd
+    ) {
+        OrganizationSubscription subscription =
+                findSubscription(organizationId);
+        validateProviderReference(provider, providerSubscriptionId);
+
+        if (status == null || providerEventAt == null) {
+            throw new IllegalArgumentException(
+                    "Provider subscription status and event time are required"
+            );
+        }
+
+        if (subscription.getProviderStatusUpdatedAt() != null
+                && providerEventAt.isBefore(
+                        subscription.getProviderStatusUpdatedAt()
+                )) {
+            return toCurrentResponse(subscription);
+        }
+
+        SubscriptionPlanCode previousPlan = subscription.getPlan().getCode();
+        SubscriptionStatus previousStatus = subscription.getStatus();
+
+        if (planCode != null) {
+            subscription.setPlan(findActivePlan(planCode));
+        }
+        subscription.setBillingProvider(provider);
+        subscription.setProviderSubscriptionId(providerSubscriptionId);
+        subscription.setStatus(status);
+        subscription.setProviderStatusUpdatedAt(providerEventAt);
+        subscription.setCurrentPeriodStartsAt(periodStartsAt);
+        subscription.setCurrentPeriodEndsAt(periodEndsAt);
+        subscription.setCancelAtPeriodEnd(cancelAtPeriodEnd);
+
+        if (status == SubscriptionStatus.ACTIVE) {
+            subscription.setGracePeriodEndsAt(null);
+            subscription.setCanceledAt(null);
+        } else if (status == SubscriptionStatus.GRACE_PERIOD) {
+            subscription.setGracePeriodEndsAt(
+                    lifecyclePolicy.calculateGracePeriodEnd(
+                            subscription.getPlan(),
+                            providerEventAt
+                    )
+            );
+        } else if (status == SubscriptionStatus.CANCELED
+                || status == SubscriptionStatus.EXPIRED) {
+            subscription.setCanceledAt(providerEventAt);
+            subscription.setCancelAtPeriodEnd(false);
+        }
+
+        OrganizationSubscription saved =
+                subscriptionRepository.saveAndFlush(subscription);
+        LinkedHashMap<String, Object> details = new LinkedHashMap<>();
+        details.put("provider", provider.name());
+        details.put("previousStatus", previousStatus.name());
+        details.put("status", status.name());
+        details.put("previousPlan", previousPlan.name());
+        details.put("plan", saved.getPlan().getCode().name());
+        details.put("providerEventAt", providerEventAt.toString());
+
+        logEvent(
+                saved,
+                null,
+                SubscriptionAuditAction.SUBSCRIPTION_PROVIDER_SYNCED,
+                details
+        );
+        return toCurrentResponse(saved);
+    }
+
     private OrganizationSubscriptionResponse createTrial(
             Organization organization,
             Long actorUserId
@@ -345,6 +449,19 @@ public class SubscriptionService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Subscription plan is unavailable"
                 ));
+    }
+
+    private void validateProviderReference(
+            BillingProviderName provider,
+            String providerSubscriptionId
+    ) {
+        if (provider == null
+                || providerSubscriptionId == null
+                || providerSubscriptionId.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Billing provider subscription reference is required"
+            );
+        }
     }
 
     private OrganizationSubscriptionResponse toCurrentResponse(

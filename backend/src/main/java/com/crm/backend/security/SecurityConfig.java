@@ -71,6 +71,7 @@ public class SecurityConfig {
                                 "/api/v1/auth/logout",
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
+                                "/api/v1/billing/webhooks/stripe",
                                 "/api/v1/public/organization-invitations/**"
                         ).permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
@@ -101,6 +102,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",
+                "Idempotency-Key",
                 TenantResolutionFilter.ORGANIZATION_HEADER
         ));
         configuration.setExposedHeaders(List.of(

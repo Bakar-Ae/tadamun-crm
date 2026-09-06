@@ -1,5 +1,7 @@
 package com.crm.backend.subscription;
 
+import com.crm.backend.subscription.billing.BillingProviderName;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,4 +16,11 @@ public interface OrganizationSubscriptionRepository
     );
 
     boolean existsByOrganizationId(Long organizationId);
+
+    @EntityGraph(attributePaths = {"plan", "plan.features"})
+    Optional<OrganizationSubscription>
+    findByBillingProviderAndProviderSubscriptionId(
+            BillingProviderName billingProvider,
+            String providerSubscriptionId
+    );
 }

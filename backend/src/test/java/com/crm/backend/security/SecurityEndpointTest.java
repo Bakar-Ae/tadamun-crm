@@ -12,6 +12,9 @@ import com.crm.backend.search.SearchModule;
 import com.crm.backend.search.SearchResultResponse;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.support.MySqlTestContainerConfiguration;
+import com.crm.backend.subscription.billing.BillingWebhookProcessingResult;
+import com.crm.backend.subscription.billing.BillingWebhookProcessingStatus;
+import com.crm.backend.subscription.billing.BillingWebhookService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +57,9 @@ class SecurityEndpointTest {
 
     @MockitoBean
     private OrganizationInvitationService organizationInvitationService;
+
+    @MockitoBean
+    private BillingWebhookService billingWebhookService;
 
     @BeforeEach
     void setUpRequestContext() {
@@ -226,6 +232,41 @@ class SecurityEndpointTest {
     void adminEndpointShouldAllowAdminUser() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void stripeWebhookShouldUseSignatureInsteadOfJwtAuthentication()
+            throws Exception {
+        when(billingWebhookService.processStripeWebhook(any(), any()))
+                .thenReturn(new BillingWebhookProcessingResult(
+                        true,
+                        false,
+                        BillingWebhookProcessingStatus.PROCESSED
+                ));
+
+        mockMvc.perform(
+                        post("/api/v1/billing/webhooks/stripe")
+                                .header("Stripe-Signature", "test-signature")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}")
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.received").value(true))
+                .andExpect(jsonPath("$.status").value("PROCESSED"));
+    }
+
+    @Test
+    void stripeWebhookShouldRejectMissingSignatureAsBadRequest()
+            throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/billing/webhooks/stripe")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}")
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        "Missing required request header: Stripe-Signature"
+                ));
     }
 
     @Test
