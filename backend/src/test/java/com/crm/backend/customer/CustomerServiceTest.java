@@ -11,6 +11,7 @@ import com.crm.backend.security.DataScopeService;
 import com.crm.backend.team.Team;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import com.crm.backend.user.UserStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +61,8 @@ class CustomerServiceTest {
                 auditLogService,
                 userRepository,
                 dataScopeService,
-                currentOrganizationProvider
+                currentOrganizationProvider,
+                mock(WebhookDomainEventPublisher.class)
         );
 
 

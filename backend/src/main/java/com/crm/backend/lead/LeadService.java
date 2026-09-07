@@ -16,12 +16,18 @@ import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class LeadService {
@@ -34,6 +40,7 @@ public class LeadService {
     private final AuditLogService auditLogService;
     private final DataScopeService dataScopeService;
     private final CurrentOrganizationProvider currentOrganizationProvider;
+    private final WebhookDomainEventPublisher webhookEventPublisher;
 
     public LeadService(
             LeadRepository leadRepository,
@@ -42,7 +49,8 @@ public class LeadService {
             LeadMapper leadMapper,
             AuditLogService auditLogService,
             DataScopeService dataScopeService,
-            CurrentOrganizationProvider currentOrganizationProvider
+            CurrentOrganizationProvider currentOrganizationProvider,
+            WebhookDomainEventPublisher webhookEventPublisher
     ) {
         this.leadRepository = leadRepository;
         this.customerRepository = customerRepository;
@@ -51,6 +59,7 @@ public class LeadService {
         this.auditLogService = auditLogService;
         this.dataScopeService = dataScopeService;
         this.currentOrganizationProvider = currentOrganizationProvider;
+        this.webhookEventPublisher = webhookEventPublisher;
     }
 
     @Transactional
@@ -86,6 +95,7 @@ public class LeadService {
                 savedLead.getId(),
                 assignee.getId()
         );
+        webhookEventPublisher.leadCreated(savedLead);
 
         return leadMapper.toResponse(savedLead);
     }
@@ -120,6 +130,7 @@ public class LeadService {
     public LeadResponse updateLead(Long id, UpdateLeadRequest request) {
         DataScopeContext context = dataScopeService.currentContext();
         Lead lead = findAccessibleLeadOrThrow(id, context);
+        Map<String, Object> previousValues = webhookState(lead);
 
         lead.setFullName(request.fullName());
         lead.setEmail(request.email());
@@ -146,6 +157,10 @@ public class LeadService {
         );
 
         log.info("Lead updated. leadId={}, status={}", lead.getId(), lead.getStatus());
+        webhookEventPublisher.leadUpdated(
+                lead,
+                changedFields(previousValues, webhookState(lead))
+        );
         return leadMapper.toResponse(lead);
     }
 
@@ -164,6 +179,7 @@ public class LeadService {
         );
 
         log.info("Lead archived. leadId={}", lead.getId());
+        webhookEventPublisher.leadArchived(lead);
         return leadMapper.toResponse(lead);
     }
 
@@ -227,6 +243,8 @@ public class LeadService {
                 lead.getId(),
                 savedCustomer.getId()
         );
+        webhookEventPublisher.customerCreated(savedCustomer);
+        webhookEventPublisher.leadConverted(lead, savedCustomer);
 
         return leadMapper.toResponse(lead);
     }
@@ -282,5 +300,27 @@ public class LeadService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private Map<String, Object> webhookState(Lead lead) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("fullName", lead.getFullName());
+        values.put("companyName", lead.getCompanyName());
+        values.put("source", lead.getSource());
+        values.put("estimatedValue", lead.getEstimatedValue());
+        values.put("status", lead.getStatus());
+        values.put("assignedToUserId", lead.getAssignedToUser() == null
+                ? null
+                : lead.getAssignedToUser().getId());
+        return values;
+    }
+
+    private List<String> changedFields(
+            Map<String, Object> before,
+            Map<String, Object> after
+    ) {
+        return before.keySet().stream()
+                .filter(key -> !Objects.equals(before.get(key), after.get(key)))
+                .toList();
     }
 }

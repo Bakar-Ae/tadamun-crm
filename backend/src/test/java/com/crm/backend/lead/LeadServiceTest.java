@@ -15,6 +15,7 @@ import com.crm.backend.team.Team;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
@@ -69,7 +70,8 @@ class LeadServiceTest {
                 leadMapper,
                 auditLogService,
                 dataScopeService,
-                currentOrganizationProvider
+                currentOrganizationProvider,
+                mock(WebhookDomainEventPublisher.class)
         );
     }
 

@@ -12,12 +12,18 @@ import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class CustomerService {
@@ -29,6 +35,7 @@ public class CustomerService {
     private final UserRepository userRepository;
     private final DataScopeService dataScopeService;
     private final CurrentOrganizationProvider currentOrganizationProvider;
+    private final WebhookDomainEventPublisher webhookEventPublisher;
 
     public CustomerService(
             CustomerRepository customerRepository,
@@ -36,7 +43,8 @@ public class CustomerService {
             AuditLogService auditLogService,
             UserRepository userRepository,
             DataScopeService dataScopeService,
-            CurrentOrganizationProvider currentOrganizationProvider
+            CurrentOrganizationProvider currentOrganizationProvider,
+            WebhookDomainEventPublisher webhookEventPublisher
     ) {
         this.customerRepository = customerRepository;
         this.customerMapper = customerMapper;
@@ -44,6 +52,7 @@ public class CustomerService {
         this.userRepository = userRepository;
         this.dataScopeService = dataScopeService;
         this.currentOrganizationProvider = currentOrganizationProvider;
+        this.webhookEventPublisher = webhookEventPublisher;
     }
 
     @Transactional
@@ -84,6 +93,7 @@ public class CustomerService {
         );
         log.info("Customer created. customerId={}, actorUserId={}",
                 savedCustomer.getId(), context.userId());
+        webhookEventPublisher.customerCreated(savedCustomer);
 
         return customerMapper.toResponse(savedCustomer);
     }
@@ -117,6 +127,7 @@ public class CustomerService {
         DataScopeContext context = dataScopeService.currentContext();
         Customer customer = findAccessibleCustomerOrThrow(id, context);
         CustomerStatus previousStatus = customer.getStatus();
+        Map<String, Object> previousValues = webhookState(customer);
 
         if (hasText(request.email())
                 && customerRepository.existsByOrganizationIdAndEmailAndIdNot(
@@ -155,7 +166,15 @@ public class CustomerService {
         );
         log.info("Customer updated. customerId={}, actorUserId={}, status={}",
                 savedCustomer.getId(), context.userId(), savedCustomer.getStatus());
-
+        if (previousStatus == CustomerStatus.ARCHIVED
+                && savedCustomer.getStatus() == CustomerStatus.ACTIVE) {
+            webhookEventPublisher.customerRestored(savedCustomer);
+        } else {
+            webhookEventPublisher.customerUpdated(
+                    savedCustomer,
+                    changedFields(previousValues, webhookState(savedCustomer))
+            );
+        }
 
         return customerMapper.toResponse(savedCustomer);
 
@@ -179,6 +198,7 @@ public class CustomerService {
         );
         log.info("Customer archived. customerId={}, actorUserId={}",
                 savedCustomer.getId(), context.userId());
+        webhookEventPublisher.customerArchived(savedCustomer);
 
         return customerMapper.toResponse(savedCustomer);
     }
@@ -222,5 +242,26 @@ public class CustomerService {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private Map<String, Object> webhookState(Customer customer) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("name", customer.getName());
+        values.put("companyName", customer.getCompanyName());
+        values.put("customerType", customer.getCustomerType());
+        values.put("status", customer.getStatus());
+        values.put("ownerUserId", customer.getOwnerUser() == null
+                ? null
+                : customer.getOwnerUser().getId());
+        return values;
+    }
+
+    private List<String> changedFields(
+            Map<String, Object> before,
+            Map<String, Object> after
+    ) {
+        return before.keySet().stream()
+                .filter(key -> !Objects.equals(before.get(key), after.get(key)))
+                .toList();
     }
 }

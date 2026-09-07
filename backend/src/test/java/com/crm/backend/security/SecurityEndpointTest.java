@@ -15,6 +15,8 @@ import com.crm.backend.support.MySqlTestContainerConfiguration;
 import com.crm.backend.subscription.billing.BillingWebhookProcessingResult;
 import com.crm.backend.subscription.billing.BillingWebhookProcessingStatus;
 import com.crm.backend.subscription.billing.BillingWebhookService;
+import com.crm.backend.webhook.WebhookSubscriptionService;
+import com.crm.backend.webhook.WebhookDeliveryHistoryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -60,6 +64,12 @@ class SecurityEndpointTest {
 
     @MockitoBean
     private BillingWebhookService billingWebhookService;
+
+    @MockitoBean
+    private WebhookSubscriptionService webhookSubscriptionService;
+
+    @MockitoBean
+    private WebhookDeliveryHistoryService webhookDeliveryHistoryService;
 
     @BeforeEach
     void setUpRequestContext() {
@@ -156,6 +166,91 @@ class SecurityEndpointTest {
     void protectedEndpointShouldRejectRequestWithoutToken() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void webhookSubscriptionsShouldRejectRequestWithoutAuthentication()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/webhook-subscriptions"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "manager@crm.com",
+            authorities = {"WEBHOOK_VIEW"}
+    )
+    void webhookSubscriptionsShouldAllowViewPermission() throws Exception {
+        when(webhookSubscriptionService.getSubscriptions(
+                any(Pageable.class)
+        )).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/webhook-subscriptions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "viewer@crm.com",
+            authorities = {"WEBHOOK_VIEW"}
+    )
+    void webhookCreationShouldRejectUserWithoutManagePermission()
+            throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/webhook-subscriptions")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "CRM events",
+                                          "endpointUrl": "https://hooks.example.com/events",
+                                          "eventTypes": ["customer.created"]
+                                        }
+                                        """)
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void webhookDeliveryHistoryShouldRequireAuthentication()
+            throws Exception {
+        mockMvc.perform(get(
+                        "/api/v1/webhook-subscriptions/1/deliveries"
+                ))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "manager@crm.com",
+            authorities = {"WEBHOOK_VIEW"}
+    )
+    void webhookDeliveryHistoryShouldAllowViewPermission()
+            throws Exception {
+        when(webhookDeliveryHistoryService.getDeliveries(
+                org.mockito.ArgumentMatchers.eq(1L),
+                any(Pageable.class)
+        )).thenReturn(Page.empty());
+
+        mockMvc.perform(get(
+                        "/api/v1/webhook-subscriptions/1/deliveries"
+                ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "viewer@crm.com",
+            authorities = {"WEBHOOK_VIEW"}
+    )
+    void webhookDeliveryReplayShouldRequireManagePermission()
+            throws Exception {
+        mockMvc.perform(post(
+                        "/api/v1/webhook-subscriptions/1/deliveries/"
+                                + "dlv_123/replay"
+                ))
+                .andExpect(status().isForbidden());
     }
 
     @Test

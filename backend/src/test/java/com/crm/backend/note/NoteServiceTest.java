@@ -8,6 +8,7 @@ import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import com.crm.backend.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,8 @@ class NoteServiceTest {
                 mock(UserRepository.class),
                 mock(NoteMapper.class),
                 dataScopeService,
-                currentOrganizationProvider
+                currentOrganizationProvider,
+                mock(WebhookDomainEventPublisher.class)
         );
     }
 

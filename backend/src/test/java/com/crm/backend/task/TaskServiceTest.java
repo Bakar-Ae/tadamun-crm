@@ -13,6 +13,7 @@ import com.crm.backend.task.dto.CreateTaskRequest;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -67,6 +68,7 @@ class TaskServiceTest {
                 mock(AuditLogService.class),
                 dataScopeService,
                 currentOrganizationProvider,
+                mock(WebhookDomainEventPublisher.class),
                 "Africa/Mogadishu"
         );
     }

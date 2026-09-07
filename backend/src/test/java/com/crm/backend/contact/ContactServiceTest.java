@@ -7,6 +7,7 @@ import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +41,8 @@ class ContactServiceTest {
                 mock(ContactMapper.class),
                 mock(AuditLogService.class),
                 dataScopeService,
-                currentOrganizationProvider
+                currentOrganizationProvider,
+                mock(WebhookDomainEventPublisher.class)
         );
     }
 

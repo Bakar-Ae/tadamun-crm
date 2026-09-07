@@ -17,6 +17,7 @@ import com.crm.backend.task.dto.UpdateTaskRequest;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
 import com.crm.backend.user.UserStatus;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,6 +30,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class TaskService {
@@ -42,6 +47,7 @@ public class TaskService {
     private final AuditLogService auditLogService;
     private final DataScopeService dataScopeService;
     private final CurrentOrganizationProvider currentOrganizationProvider;
+    private final WebhookDomainEventPublisher webhookEventPublisher;
     private final ZoneId appTimeZone;
 
     public TaskService(
@@ -53,6 +59,7 @@ public class TaskService {
             AuditLogService auditLogService,
             DataScopeService dataScopeService,
             CurrentOrganizationProvider currentOrganizationProvider,
+            WebhookDomainEventPublisher webhookEventPublisher,
             @Value("${app.time-zone:Africa/Mogadishu}") String appTimeZone
     ) {
         this.taskRepository = taskRepository;
@@ -63,6 +70,7 @@ public class TaskService {
         this.auditLogService = auditLogService;
         this.dataScopeService = dataScopeService;
         this.currentOrganizationProvider = currentOrganizationProvider;
+        this.webhookEventPublisher = webhookEventPublisher;
         this.appTimeZone = ZoneId.of(appTimeZone);
     }
 
@@ -93,6 +101,7 @@ public class TaskService {
 
         log.info("Task created. taskId={}, assignedToUserId={}, status={}",
                 savedTask.getId(), request.assignedToUserId(), savedTask.getStatus());
+        webhookEventPublisher.taskCreated(savedTask);
 
         return taskMapper.toResponse(savedTask);
     }
@@ -178,6 +187,7 @@ public class TaskService {
         DataScopeContext context = dataScopeService.currentContext();
         CrmTask task = findAccessibleTaskOrThrow(id, context);
         TaskStatus previousStatus = task.getStatus();
+        Map<String, Object> previousValues = webhookState(task);
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -202,6 +212,15 @@ public class TaskService {
 
         log.info("Task updated. taskId={}, assignedToUserId={}, status={}, priority={}",
                 task.getId(), request.assignedToUserId(), task.getStatus(), task.getPriority());
+        if (previousStatus != TaskStatus.COMPLETED
+                && task.getStatus() == TaskStatus.COMPLETED) {
+            webhookEventPublisher.taskCompleted(task);
+        } else {
+            webhookEventPublisher.taskUpdated(
+                    task,
+                    changedFields(previousValues, webhookState(task))
+            );
+        }
 
         return taskMapper.toResponse(task);
     }
@@ -284,6 +303,33 @@ public class TaskService {
 
     private boolean isTeamAccess(DataScopeContext context) {
         return context.scope() == DataScope.TEAM;
+    }
+
+    private Map<String, Object> webhookState(CrmTask task) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("title", task.getTitle());
+        values.put("status", task.getStatus());
+        values.put("priority", task.getPriority());
+        values.put("dueDate", task.getDueDate());
+        values.put("assignedToUserId", task.getAssignedToUser() == null
+                ? null
+                : task.getAssignedToUser().getId());
+        values.put("customerId", task.getCustomer() == null
+                ? null
+                : task.getCustomer().getId());
+        values.put("leadId", task.getLead() == null
+                ? null
+                : task.getLead().getId());
+        return values;
+    }
+
+    private List<String> changedFields(
+            Map<String, Object> before,
+            Map<String, Object> after
+    ) {
+        return before.keySet().stream()
+                .filter(key -> !Objects.equals(before.get(key), after.get(key)))
+                .toList();
     }
 
 }

@@ -11,10 +11,16 @@ import com.crm.backend.role.DataScope;
 import com.crm.backend.security.DataScopeContext;
 import com.crm.backend.security.DataScopeService;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class ContactService {
@@ -25,6 +31,7 @@ public class ContactService {
     private final AuditLogService auditLogService;
     private final DataScopeService dataScopeService;
     private final CurrentOrganizationProvider currentOrganizationProvider;
+    private final WebhookDomainEventPublisher webhookEventPublisher;
 
     public ContactService(
             ContactRepository contactRepository,
@@ -32,7 +39,8 @@ public class ContactService {
             ContactMapper contactMapper,
             AuditLogService auditLogService,
             DataScopeService dataScopeService,
-            CurrentOrganizationProvider currentOrganizationProvider
+            CurrentOrganizationProvider currentOrganizationProvider,
+            WebhookDomainEventPublisher webhookEventPublisher
     ) {
         this.contactRepository = contactRepository;
         this.customerRepository = customerRepository;
@@ -40,6 +48,7 @@ public class ContactService {
         this.auditLogService = auditLogService;
         this.dataScopeService = dataScopeService;
         this.currentOrganizationProvider = currentOrganizationProvider;
+        this.webhookEventPublisher = webhookEventPublisher;
     }
 
     @Transactional
@@ -67,6 +76,7 @@ public class ContactService {
                 savedContact.getId(),
                 "{\"name\":\"" + savedContact.getFullName() + "\",\"customerId\":" + savedContact.getCustomer().getId() + "}"
         );
+        webhookEventPublisher.contactCreated(savedContact);
 
         return contactMapper.toResponse(savedContact);
     }
@@ -98,6 +108,7 @@ public class ContactService {
         DataScopeContext context = dataScopeService.currentContext();
         Contact contact = findAccessibleContactOrThrow(id, context);
         ContactStatus previousStatus = contact.getStatus();
+        Map<String, Object> previousValues = webhookState(contact);
 
         contact.setFullName(request.fullName());
         contact.setEmail(request.email());
@@ -116,6 +127,10 @@ public class ContactService {
                 contact.getId(),
                 "{\"name\":\"" + contact.getFullName() + "\",\"status\":\"" + contact.getStatus() + "\"}"
         );
+        webhookEventPublisher.contactUpdated(
+                contact,
+                changedFields(previousValues, webhookState(contact))
+        );
 
         return contactMapper.toResponse(contact);
     }
@@ -133,6 +148,7 @@ public class ContactService {
                 contact.getId(),
                 "{\"name\":\"" + contact.getFullName() + "\"}"
         );
+        webhookEventPublisher.contactUpdated(contact, List.of("status"));
 
         return contactMapper.toResponse(contact);
     }
@@ -167,5 +183,22 @@ public class ContactService {
 
     private boolean isTeamAccess(DataScopeContext context) {
         return context.scope() == DataScope.TEAM;
+    }
+
+    private Map<String, Object> webhookState(Contact contact) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        values.put("fullName", contact.getFullName());
+        values.put("position", contact.getPosition());
+        values.put("status", contact.getStatus());
+        return values;
+    }
+
+    private List<String> changedFields(
+            Map<String, Object> before,
+            Map<String, Object> after
+    ) {
+        return before.keySet().stream()
+                .filter(key -> !Objects.equals(before.get(key), after.get(key)))
+                .toList();
     }
 }

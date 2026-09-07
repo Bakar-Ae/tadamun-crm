@@ -14,6 +14,7 @@ import com.crm.backend.security.DataScopeService;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.User;
 import com.crm.backend.user.UserRepository;
+import com.crm.backend.webhook.WebhookDomainEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ public class NoteService {
     private final NoteMapper noteMapper;
     private final DataScopeService dataScopeService;
     private final CurrentOrganizationProvider currentOrganizationProvider;
+    private final WebhookDomainEventPublisher webhookEventPublisher;
 
     public NoteService(
             NoteRepository noteRepository,
@@ -37,7 +39,8 @@ public class NoteService {
             UserRepository userRepository,
             NoteMapper noteMapper,
             DataScopeService dataScopeService,
-            CurrentOrganizationProvider currentOrganizationProvider
+            CurrentOrganizationProvider currentOrganizationProvider,
+            WebhookDomainEventPublisher webhookEventPublisher
     ) {
         this.noteRepository = noteRepository;
         this.customerRepository = customerRepository;
@@ -46,6 +49,7 @@ public class NoteService {
         this.noteMapper = noteMapper;
         this.dataScopeService = dataScopeService;
         this.currentOrganizationProvider = currentOrganizationProvider;
+        this.webhookEventPublisher = webhookEventPublisher;
     }
 
     @Transactional
@@ -62,7 +66,9 @@ public class NoteService {
         note.setLead(findAccessibleLeadOrNull(request.leadId(), context));
         note.setCreatedByUser(findUserOrThrow(context.userId()));
 
-        return noteMapper.toResponse(noteRepository.save(note));
+        Note savedNote = noteRepository.save(note);
+        webhookEventPublisher.noteCreated(savedNote);
+        return noteMapper.toResponse(savedNote);
     }
 
     @Transactional(readOnly = true)
