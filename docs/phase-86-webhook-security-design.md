@@ -294,7 +294,7 @@ Audit details may contain IDs, event names, HTTP status, and sanitized failure c
 
 ## Phase 86 Completion Record
 
-Status: complete on 2026-09-07. Phase 87 has not started.
+Status: complete on 2026-09-07. Phase 87 is complete through step 87.4.
 
 Implemented:
 

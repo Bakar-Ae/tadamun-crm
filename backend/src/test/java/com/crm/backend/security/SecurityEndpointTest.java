@@ -17,6 +17,7 @@ import com.crm.backend.subscription.billing.BillingWebhookProcessingStatus;
 import com.crm.backend.subscription.billing.BillingWebhookService;
 import com.crm.backend.webhook.WebhookSubscriptionService;
 import com.crm.backend.webhook.WebhookDeliveryHistoryService;
+import com.crm.backend.workflow.WorkflowService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,9 @@ class SecurityEndpointTest {
 
     @MockitoBean
     private WebhookDeliveryHistoryService webhookDeliveryHistoryService;
+
+    @MockitoBean
+    private WorkflowService workflowService;
 
     @BeforeEach
     void setUpRequestContext() {
@@ -250,6 +254,54 @@ class SecurityEndpointTest {
                         "/api/v1/webhook-subscriptions/1/deliveries/"
                                 + "dlv_123/replay"
                 ))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void workflowsShouldRequireAuthentication() throws Exception {
+        mockMvc.perform(get("/api/v1/workflows"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "manager@crm.com",
+            authorities = {"WORKFLOW_VIEW"}
+    )
+    void workflowsShouldAllowViewPermission() throws Exception {
+        when(workflowService.getWorkflows(any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/v1/workflows"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "viewer@crm.com",
+            authorities = {"WORKFLOW_VIEW"}
+    )
+    void workflowCreationShouldRequireManagePermission() throws Exception {
+        mockMvc.perform(
+                        post("/api/v1/workflows")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "name": "Unauthorized workflow",
+                                          "trigger": {
+                                            "eventType": "customer.created"
+                                          },
+                                          "actions": [
+                                            {
+                                              "name": "Notify owner",
+                                              "actionType": "SEND_IN_APP_NOTIFICATION",
+                                              "configuration": {}
+                                            }
+                                          ]
+                                        }
+                                        """)
+                )
                 .andExpect(status().isForbidden());
     }
 

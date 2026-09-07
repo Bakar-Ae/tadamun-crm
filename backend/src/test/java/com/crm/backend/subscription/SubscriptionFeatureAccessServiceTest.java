@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -51,6 +52,38 @@ class SubscriptionFeatureAccessServiceTest {
         assertThrows(
                 SubscriptionFeatureUnavailableException.class,
                 () -> accessService.requireFeature(
+                        10L,
+                        SubscriptionFeature.PUBLIC_API
+                )
+        );
+    }
+
+    @Test
+    void enabledFeatureShouldExposeItsPlanLimit() {
+        OrganizationSubscription subscription = subscription(true);
+        subscription.getPlan().getFeatures().getFirst().setLimitValue(10L);
+        when(subscriptionRepository.findByOrganizationId(10L))
+                .thenReturn(Optional.of(subscription));
+
+        assertEquals(
+                10L,
+                accessService.requireFeatureAndGetLimit(
+                        10L,
+                        SubscriptionFeature.PUBLIC_API
+                )
+        );
+    }
+
+    @Test
+    void capacityCheckShouldLockSubscriptionAndExposeLimit() {
+        OrganizationSubscription subscription = subscription(true);
+        subscription.getPlan().getFeatures().getFirst().setLimitValue(10L);
+        when(subscriptionRepository.findForUpdateByOrganizationId(10L))
+                .thenReturn(Optional.of(subscription));
+
+        assertEquals(
+                10L,
+                accessService.requireFeatureAndGetLimitForUpdate(
                         10L,
                         SubscriptionFeature.PUBLIC_API
                 )

@@ -52,6 +52,9 @@ public enum PermissionName {
     WEBHOOK_VIEW,
     WEBHOOK_MANAGE,
 
+    WORKFLOW_VIEW,
+    WORKFLOW_MANAGE,
+
     DASHBOARD_VIEW,
     REPORT_VIEW,
     REPORT_EXPORT,

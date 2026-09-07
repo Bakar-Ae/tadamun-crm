@@ -25,27 +25,56 @@ public class SubscriptionFeatureAccessService {
             Long organizationId,
             SubscriptionFeature feature
     ) {
+        requireFeatureAndGetLimit(organizationId, feature);
+    }
+
+    public Long requireFeatureAndGetLimit(
+            Long organizationId,
+            SubscriptionFeature feature
+    ) {
+        return requireFeatureAndGetLimit(organizationId, feature, false);
+    }
+
+    public Long requireFeatureAndGetLimitForUpdate(
+            Long organizationId,
+            SubscriptionFeature feature
+    ) {
+        return requireFeatureAndGetLimit(organizationId, feature, true);
+    }
+
+    private Long requireFeatureAndGetLimit(
+            Long organizationId,
+            SubscriptionFeature feature,
+            boolean lockForUpdate
+    ) {
         if (organizationId == null || feature == null) {
             throw new IllegalArgumentException(
                     "Organization and subscription feature are required"
             );
         }
 
-        OrganizationSubscription subscription = subscriptionRepository
-                .findByOrganizationId(organizationId)
+        OrganizationSubscription subscription = (lockForUpdate
+                ? subscriptionRepository.findForUpdateByOrganizationId(
+                        organizationId
+                )
+                : subscriptionRepository.findByOrganizationId(organizationId))
                 .orElseThrow(() ->
                         new SubscriptionFeatureUnavailableException(feature)
                 );
         SubscriptionStatus effectiveStatus = lifecyclePolicy
                 .resolveEffectiveStatus(subscription, timeProvider.now());
-        boolean enabled = subscription.getPlan().getFeatures().stream()
-                .anyMatch(planFeature ->
-                        planFeature.getFeature() == feature
-                                && planFeature.isEnabled()
-                );
+        SubscriptionPlanFeature planFeature = subscription.getPlan()
+                .getFeatures()
+                .stream()
+                .filter(item -> item.getFeature() == feature)
+                .findFirst()
+                .orElse(null);
 
-        if (!lifecyclePolicy.allowsAccess(effectiveStatus) || !enabled) {
+        if (!lifecyclePolicy.allowsAccess(effectiveStatus)
+                || planFeature == null
+                || !planFeature.isEnabled()) {
             throw new SubscriptionFeatureUnavailableException(feature);
         }
+        return planFeature.getLimitValue();
     }
 }
