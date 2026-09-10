@@ -82,6 +82,11 @@ const CalendarPage = lazy(() =>
     default: module.CalendarPage,
   })),
 )
+const WorkflowsPage = lazy(() =>
+  import('./pages/WorkflowsPage').then((module) => ({
+    default: module.WorkflowsPage,
+  })),
+)
 const AcceptInvitationPage = lazy(() =>
   import('./pages/AcceptInvitationPage').then((module) => ({
     default: module.AcceptInvitationPage,
@@ -262,6 +267,14 @@ function App() {
           element={
             <ProtectedRoute requiredPermission="NOTE_VIEW">
               <NotesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/workflows"
+          element={
+            <ProtectedRoute requiredPermission="WORKFLOW_VIEW">
+              <WorkflowsPage />
             </ProtectedRoute>
           }
         />

@@ -26,6 +26,8 @@ public interface WorkflowDefinitionRepository
             Long organizationId
     );
 
+    boolean existsByIdAndOrganizationId(Long id, Long organizationId);
+
     boolean existsByOrganizationIdAndNameIgnoreCase(
             Long organizationId,
             String name

@@ -6,6 +6,8 @@ import com.crm.backend.subscription.billing.BillingUnavailableException;
 import com.crm.backend.subscription.billing.InvalidBillingWebhookException;
 import com.crm.backend.subscription.SubscriptionFeatureUnavailableException;
 import com.crm.backend.subscription.usage.SubscriptionLimitExceededException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -22,6 +24,11 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(
+            GlobalExceptionHandler.class
+    );
+
     @ExceptionHandler(SubscriptionFeatureUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleUnavailableFeature(
             SubscriptionFeatureUnavailableException exception
@@ -199,6 +206,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleUnexpected(Exception exception) {
+        log.error("Unhandled API exception", exception);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "timestamp", LocalDateTime.now(),
                 "status", 500,

@@ -17,11 +17,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -58,6 +60,9 @@ class WorkflowPersistenceRepositoryTest {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private WorkflowEventDispatchService dispatchService;
 
     @Test
     void shouldPersistTenantBoundWorkflowGraphAndHistory() {
@@ -194,6 +199,99 @@ class WorkflowPersistenceRepositoryTest {
                 workflow.getId(),
                 organizationId + 1_000L
         ).isEmpty());
+    }
+
+    @Test
+    void shouldDispatchPersistedEventToOrderedActionQueueOnce() {
+        User actor = createActor();
+        Organization organization = createOrganization(actor);
+        LocalDateTime now = LocalDateTime.of(2026, 9, 8, 12, 0);
+
+        WorkflowDefinition workflow = new WorkflowDefinition();
+        workflow.setPublicWorkflowId("wf_phase87_dispatch_integration");
+        workflow.setOrganization(organization);
+        workflow.setName("Dispatch integration workflow");
+        workflow.setStatus(WorkflowStatus.ACTIVE);
+        workflow.setActivatedAt(now);
+        workflow.setCreatedByUser(actor);
+        workflow = definitionRepository.saveAndFlush(workflow);
+
+        WorkflowTrigger trigger = new WorkflowTrigger();
+        trigger.setOrganization(organization);
+        trigger.setWorkflow(workflow);
+        trigger.setEventType(WebhookEventType.CUSTOMER_CREATED);
+        triggerRepository.saveAndFlush(trigger);
+
+        WorkflowAction firstAction = createAction(
+                workflow,
+                1,
+                WorkflowActionType.CREATE_TASK,
+                "{\"titleTemplate\":\"Follow up {{customer.name}}\"}"
+        );
+        WorkflowAction secondAction = createAction(
+                workflow,
+                2,
+                WorkflowActionType.SEND_IN_APP_NOTIFICATION,
+                "{\"titleTemplate\":\"New customer\","
+                        + "\"messageTemplate\":\"Review {{customer.name}}\"}"
+        );
+        actionRepository.saveAllAndFlush(java.util.List.of(
+                firstAction,
+                secondAction
+        ));
+
+        WebhookEvent event = new WebhookEvent();
+        event.setPublicEventId("evt_phase87_dispatch_integration");
+        event.setOrganization(organization);
+        event.setEventType(WebhookEventType.CUSTOMER_CREATED);
+        event.setAggregateType("CUSTOMER");
+        event.setAggregateId(42L);
+        event.setPayload(
+                "{\"data\":{\"customer\":{\"id\":42,"
+                        + "\"name\":\"Acme\"}}}"
+        );
+        event.setNextPublicationAttemptAt(now);
+        event.setOccurredAt(now);
+        event = webhookEventRepository.saveAndFlush(event);
+
+        assertEquals(1, dispatchService.dispatch(event));
+        assertEquals(0, dispatchService.dispatch(event));
+
+        WorkflowExecution execution = executionRepository
+                .findByOrganizationIdAndWorkflowId(
+                        organization.getId(),
+                        workflow.getId(),
+                        PageRequest.of(0, 5)
+                )
+                .getContent()
+                .getFirst();
+        java.util.List<WorkflowActionExecution> queuedActions =
+                actionExecutionRepository
+                        .findByOrganizationIdAndExecutionIdOrderByActionOrderAsc(
+                                organization.getId(),
+                                execution.getId()
+                        );
+        assertEquals(2, queuedActions.size());
+        assertNotNull(queuedActions.getFirst().getNextAttemptAt());
+        assertEquals(null, queuedActions.get(1).getNextAttemptAt());
+    }
+
+    private WorkflowAction createAction(
+            WorkflowDefinition workflow,
+            int order,
+            WorkflowActionType type,
+            String configuration
+    ) {
+        WorkflowAction action = new WorkflowAction();
+        action.setPublicActionId("wfa_phase87_dispatch_" + order);
+        action.setOrganization(workflow.getOrganization());
+        action.setWorkflow(workflow);
+        action.setDefinitionVersion(workflow.getDefinitionVersion());
+        action.setActionOrder((short) order);
+        action.setName("Dispatch action " + order);
+        action.setActionType(type);
+        action.setConfiguration(configuration);
+        return action;
     }
 
     private User createActor() {

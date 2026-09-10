@@ -3,6 +3,7 @@ package com.crm.backend.workflow;
 import com.crm.backend.security.CustomUserDetails;
 import com.crm.backend.workflow.dto.CreateWorkflowRequest;
 import com.crm.backend.workflow.dto.UpdateWorkflowRequest;
+import com.crm.backend.workflow.dto.WorkflowExecutionResponse;
 import com.crm.backend.workflow.dto.WorkflowResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -27,9 +28,14 @@ import static org.springframework.data.domain.Sort.Direction.DESC;
 public class WorkflowController {
 
     private final WorkflowService workflowService;
+    private final WorkflowExecutionService executionService;
 
-    public WorkflowController(WorkflowService workflowService) {
+    public WorkflowController(
+            WorkflowService workflowService,
+            WorkflowExecutionService executionService
+    ) {
         this.workflowService = workflowService;
+        this.executionService = executionService;
     }
 
     @GetMapping
@@ -106,6 +112,62 @@ public class WorkflowController {
     ) {
         return ResponseEntity.ok(workflowService.archiveWorkflow(
                 id,
+                userDetails.getId()
+        ));
+    }
+
+    @GetMapping("/executions")
+    @PreAuthorize("hasAuthority('WORKFLOW_VIEW')")
+    public ResponseEntity<Page<WorkflowExecutionResponse>> getExecutions(
+            @PageableDefault(size = 20, sort = "createdAt", direction = DESC)
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(executionService.getExecutions(pageable));
+    }
+
+    @GetMapping("/{id}/executions")
+    @PreAuthorize("hasAuthority('WORKFLOW_VIEW')")
+    public ResponseEntity<Page<WorkflowExecutionResponse>>
+    getWorkflowExecutions(
+            @PathVariable Long id,
+            @PageableDefault(size = 20, sort = "createdAt", direction = DESC)
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(
+                executionService.getWorkflowExecutions(id, pageable)
+        );
+    }
+
+    @GetMapping("/executions/{publicExecutionId}")
+    @PreAuthorize("hasAuthority('WORKFLOW_VIEW')")
+    public ResponseEntity<WorkflowExecutionResponse> getExecution(
+            @PathVariable String publicExecutionId
+    ) {
+        return ResponseEntity.ok(
+                executionService.getExecution(publicExecutionId)
+        );
+    }
+
+    @PostMapping("/executions/{publicExecutionId}/retry")
+    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    public ResponseEntity<WorkflowExecutionResponse> retryExecution(
+            @PathVariable String publicExecutionId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok(executionService.retryExecution(
+                publicExecutionId,
+                userDetails.getId()
+        ));
+    }
+
+    @PostMapping("/executions/{publicExecutionId}/cancel")
+    @PreAuthorize("hasAuthority('WORKFLOW_MANAGE')")
+    public ResponseEntity<WorkflowExecutionResponse> cancelExecution(
+            @PathVariable String publicExecutionId,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        return ResponseEntity.ok(executionService.cancelExecution(
+                publicExecutionId,
                 userDetails.getId()
         ));
     }

@@ -43,6 +43,8 @@ export type PermissionName =
   | 'REPORT_EXPORT'
   | 'AUDIT_LOG_VIEW'
   | 'PERMISSION_MANAGE'
+  | 'WORKFLOW_VIEW'
+  | 'WORKFLOW_MANAGE'
 
 export type PermissionResponse = {
   name: PermissionName

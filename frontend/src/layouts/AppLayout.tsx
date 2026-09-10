@@ -13,6 +13,7 @@ import {
   KeyRound,
   CalendarDays,
   X,
+  Workflow,
 } from 'lucide-react'
 import type { PermissionName } from '../services/permissionService'
 import { NavLink, useNavigate } from 'react-router'
@@ -113,6 +114,18 @@ const navGroups: NavGroup[] = [
         icon: BarChart3,
         description: 'CRM totals and reports',
         requiredPermission: 'REPORT_VIEW',
+      },
+    ],
+  },
+  {
+    title: 'Automation',
+    items: [
+      {
+        label: 'Workflows',
+        path: '/workflows',
+        icon: Workflow,
+        description: 'Automated CRM actions and execution history',
+        requiredPermission: 'WORKFLOW_VIEW',
       },
     ],
   },

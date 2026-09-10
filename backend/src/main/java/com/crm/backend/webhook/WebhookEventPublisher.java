@@ -2,6 +2,9 @@ package com.crm.backend.webhook;
 
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.subscription.SubscriptionTimeProvider;
+import com.crm.backend.workflow.WorkflowEventDispatchService;
+import com.crm.backend.workflow.WorkflowStatus;
+import com.crm.backend.workflow.WorkflowTriggerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,10 +31,14 @@ class WebhookEventPublisher {
     private final SubscriptionTimeProvider timeProvider;
     private final WebhookPublicIdGenerator idGenerator;
     private final ObjectMapper objectMapper;
+    private final WorkflowTriggerRepository workflowTriggerRepository;
+    private final WorkflowEventDispatchService workflowEventDispatchService;
 
     WebhookEventPublisher(
             WebhookEventRepository eventRepository,
             WebhookSubscriptionEventRepository subscriptionEventRepository,
+            WorkflowTriggerRepository workflowTriggerRepository,
+            WorkflowEventDispatchService workflowEventDispatchService,
             CurrentOrganizationProvider organizationProvider,
             SubscriptionTimeProvider timeProvider,
             WebhookPublicIdGenerator idGenerator,
@@ -39,6 +46,8 @@ class WebhookEventPublisher {
     ) {
         this.eventRepository = eventRepository;
         this.subscriptionEventRepository = subscriptionEventRepository;
+        this.workflowTriggerRepository = workflowTriggerRepository;
+        this.workflowEventDispatchService = workflowEventDispatchService;
         this.organizationProvider = organizationProvider;
         this.timeProvider = timeProvider;
         this.idGenerator = idGenerator;
@@ -53,11 +62,20 @@ class WebhookEventPublisher {
             Map<String, ?> data
     ) {
         Long organizationId = organizationProvider.getOrganizationId();
-        if (!subscriptionEventRepository.existsMatchingActiveSubscription(
-                organizationId,
-                eventType,
-                WebhookSubscriptionStatus.ACTIVE
-        )) {
+        boolean webhookInterested =
+                subscriptionEventRepository.existsMatchingActiveSubscription(
+                        organizationId,
+                        eventType,
+                        WebhookSubscriptionStatus.ACTIVE
+                );
+        boolean workflowInterested =
+                workflowTriggerRepository.existsMatchingTrigger(
+                        organizationId,
+                        eventType,
+                        WorkflowStatus.ACTIVE
+                );
+
+        if (!webhookInterested && !workflowInterested) {
             return Optional.empty();
         }
 
@@ -92,7 +110,9 @@ class WebhookEventPublisher {
         event.setPublicationStatus(WebhookPublicationStatus.PENDING);
         event.setNextPublicationAttemptAt(occurredAt);
         event.setOccurredAt(occurredAt);
-        return Optional.of(eventRepository.save(event));
+        WebhookEvent savedEvent = eventRepository.save(event);
+        workflowEventDispatchService.dispatch(savedEvent);
+        return Optional.of(savedEvent);
     }
 
     private String generateUniqueEventId() {

@@ -3,6 +3,9 @@ package com.crm.backend.webhook;
 import com.crm.backend.organization.Organization;
 import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.subscription.SubscriptionTimeProvider;
+import com.crm.backend.workflow.WorkflowEventDispatchService;
+import com.crm.backend.workflow.WorkflowStatus;
+import com.crm.backend.workflow.WorkflowTriggerRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -25,6 +28,8 @@ class WebhookEventPublisherTest {
 
     private WebhookEventRepository eventRepository;
     private WebhookSubscriptionEventRepository subscriptionEventRepository;
+    private WorkflowTriggerRepository workflowTriggerRepository;
+    private WorkflowEventDispatchService workflowEventDispatchService;
     private WebhookEventPublisher publisher;
 
     @BeforeEach
@@ -32,6 +37,10 @@ class WebhookEventPublisherTest {
         eventRepository = mock(WebhookEventRepository.class);
         subscriptionEventRepository = mock(
                 WebhookSubscriptionEventRepository.class
+        );
+        workflowTriggerRepository = mock(WorkflowTriggerRepository.class);
+        workflowEventDispatchService = mock(
+                WorkflowEventDispatchService.class
         );
         CurrentOrganizationProvider organizationProvider = mock(
                 CurrentOrganizationProvider.class
@@ -58,6 +67,8 @@ class WebhookEventPublisherTest {
         publisher = new WebhookEventPublisher(
                 eventRepository,
                 subscriptionEventRepository,
+                workflowTriggerRepository,
+                workflowEventDispatchService,
                 organizationProvider,
                 timeProvider,
                 idGenerator,
@@ -95,6 +106,28 @@ class WebhookEventPublisherTest {
                 .get("customer").get("name").asText());
         assertEquals(WebhookPublicationStatus.PENDING,
                 stored.getPublicationStatus());
+        verify(workflowEventDispatchService).dispatch(stored);
+    }
+
+    @Test
+    void shouldPersistEventWhenOnlyActiveWorkflowMatches() {
+        when(workflowTriggerRepository.existsMatchingTrigger(
+                42L,
+                WebhookEventType.LEAD_CREATED,
+                WorkflowStatus.ACTIVE
+        )).thenReturn(true);
+
+        Optional<WebhookEvent> result = publisher.publish(
+                WebhookEventType.LEAD_CREATED,
+                "LEAD",
+                15L,
+                Map.of("lead", Map.of("id", 15L, "status", "NEW"))
+        );
+
+        assertTrue(result.isPresent());
+        verify(eventRepository).save(any(WebhookEvent.class));
+        verify(workflowEventDispatchService)
+                .dispatch(any(WebhookEvent.class));
     }
 
     @Test
@@ -108,5 +141,6 @@ class WebhookEventPublisherTest {
 
         assertTrue(result.isEmpty());
         verify(eventRepository, never()).save(any());
+        verify(workflowEventDispatchService, never()).dispatch(any());
     }
 }

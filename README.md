@@ -40,6 +40,8 @@ Current version includes:
 
 - Audit logs
 
+- Event-driven workflow automation with durable retries and execution history
+
 - Search, filtering, pagination
 
 - Quick create actions
@@ -299,8 +301,6 @@ Some features I'd like to add in future versions:
 - Calendar integration
 
 - Email support
-
-- Workflow automation
 
 - Team dashboards
 

@@ -27,7 +27,8 @@ public class TenantRoutePolicy {
             "/api/v1/search",
             "/api/v1/subscription",
             "/api/v1/tasks",
-            "/api/v1/users"
+            "/api/v1/users",
+            "/api/v1/workflows"
     );
 
     public boolean requiresTenantContext(HttpServletRequest request) {
