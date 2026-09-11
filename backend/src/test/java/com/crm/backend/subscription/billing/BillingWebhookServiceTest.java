@@ -13,8 +13,10 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -148,6 +150,66 @@ class BillingWebhookServiceTest {
                         any(), any(), any(), any(), any(), any(),
                         any(), any(), eq(false)
                 );
+    }
+
+    @Test
+    void failedEventShouldBeRetriedAndProcessedOnceDependenciesRecover() {
+        BillingWebhookNotification notification = activeNotification();
+        AtomicReference<BillingWebhookEvent> storedEvent =
+                new AtomicReference<>();
+        Organization organization = organization();
+
+        when(provider.verifyWebhook("payload", "signature"))
+                .thenReturn(notification);
+        when(eventRepository.findByProviderAndProviderEventId(
+                BillingProviderName.STRIPE,
+                "evt_123"
+        )).thenAnswer(invocation -> Optional.ofNullable(storedEvent.get()));
+        when(eventRepository.saveAndFlush(any(BillingWebhookEvent.class)))
+                .thenAnswer(invocation -> {
+                    BillingWebhookEvent event = invocation.getArgument(0);
+                    if (event.getId() == null) {
+                        event.setId(100L);
+                    }
+                    storedEvent.set(event);
+                    return event;
+                });
+        when(organizationRepository.findById(10L)).thenReturn(
+                Optional.empty(),
+                Optional.of(organization)
+        );
+        when(customerRepository.findByOrganizationIdAndProvider(
+                10L,
+                BillingProviderName.STRIPE
+        )).thenReturn(Optional.of(customer(organization)));
+        when(priceRepository.findByProviderAndProviderPriceId(
+                BillingProviderName.STRIPE,
+                "price_business"
+        )).thenReturn(Optional.of(price()));
+
+        BillingWebhookProcessingResult failed =
+                service.processStripeWebhook("payload", "signature");
+        BillingWebhookProcessingResult recovered =
+                service.processStripeWebhook("payload", "signature");
+
+        assertEquals(BillingWebhookProcessingStatus.FAILED, failed.status());
+        assertEquals(
+                BillingWebhookProcessingStatus.PROCESSED,
+                recovered.status()
+        );
+        assertEquals(2, storedEvent.get().getAttempts());
+        assertNull(storedEvent.get().getLastError());
+        verify(subscriptionService).synchronizeProviderSubscription(
+                10L,
+                BillingProviderName.STRIPE,
+                "sub_123",
+                SubscriptionPlanCode.BUSINESS,
+                SubscriptionStatus.ACTIVE,
+                eventTime,
+                eventTime.minusDays(1),
+                eventTime.plusMonths(1),
+                false
+        );
     }
 
     private BillingWebhookNotification activeNotification() {

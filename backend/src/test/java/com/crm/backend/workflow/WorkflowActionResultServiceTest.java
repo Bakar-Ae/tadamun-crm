@@ -19,6 +19,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -171,6 +172,31 @@ class WorkflowActionResultServiceTest {
                 current.getExecution().getStatus()
         );
         assertNull(current.getExecution().getCurrentActionOrder());
+    }
+
+    @Test
+    void shouldRecoverAbandonedActionClaimIntoRetryQueue() {
+        WorkflowActionExecution current = claimedAction(1, 1);
+        current.setClaimedAt(NOW.minusMinutes(5));
+        when(actionRepository.findForUpdate(10L))
+                .thenReturn(Optional.of(current));
+
+        assertTrue(service.recoverStaleAction(10L));
+
+        assertEquals(
+                WorkflowActionExecutionStatus.RETRY_SCHEDULED,
+                current.getStatus()
+        );
+        assertEquals(
+                WorkflowExecutionStatus.RETRY_SCHEDULED,
+                current.getExecution().getStatus()
+        );
+        assertEquals(NOW.plusMinutes(1), current.getNextAttemptAt());
+        assertNull(current.getClaimToken());
+        assertNull(current.getClaimedAt());
+        verify(attemptRepository).save(
+                org.mockito.ArgumentMatchers.any(WorkflowActionAttempt.class)
+        );
     }
 
     private WorkflowActionExecution claimedAction(int order, int attempts) {
