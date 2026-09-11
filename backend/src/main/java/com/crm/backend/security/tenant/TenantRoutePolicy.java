@@ -16,6 +16,7 @@ public class TenantRoutePolicy {
             "/api/v1/contacts",
             "/api/v1/customers",
             "/api/v1/dashboard",
+            "/api/v1/integrations",
             "/api/v1/leads",
             "/api/v1/notes",
             "/api/v1/notifications",

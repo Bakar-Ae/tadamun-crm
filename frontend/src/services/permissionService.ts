@@ -45,6 +45,8 @@ export type PermissionName =
   | 'PERMISSION_MANAGE'
   | 'WORKFLOW_VIEW'
   | 'WORKFLOW_MANAGE'
+  | 'INTEGRATION_VIEW'
+  | 'INTEGRATION_MANAGE'
 
 export type PermissionResponse = {
   name: PermissionName

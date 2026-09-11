@@ -87,6 +87,11 @@ const WorkflowsPage = lazy(() =>
     default: module.WorkflowsPage,
   })),
 )
+const IntegrationsPage = lazy(() =>
+  import('./pages/IntegrationsPage').then((module) => ({
+    default: module.IntegrationsPage,
+  })),
+)
 const AcceptInvitationPage = lazy(() =>
   import('./pages/AcceptInvitationPage').then((module) => ({
     default: module.AcceptInvitationPage,
@@ -275,6 +280,14 @@ function App() {
           element={
             <ProtectedRoute requiredPermission="WORKFLOW_VIEW">
               <WorkflowsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/integrations"
+          element={
+            <ProtectedRoute requiredPermission="INTEGRATION_VIEW">
+              <IntegrationsPage />
             </ProtectedRoute>
           }
         />

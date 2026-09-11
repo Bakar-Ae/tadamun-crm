@@ -14,6 +14,7 @@ import {
   CalendarDays,
   X,
   Workflow,
+  PlugZap,
 } from 'lucide-react'
 import type { PermissionName } from '../services/permissionService'
 import { NavLink, useNavigate } from 'react-router'
@@ -126,6 +127,13 @@ const navGroups: NavGroup[] = [
         icon: Workflow,
         description: 'Automated CRM actions and execution history',
         requiredPermission: 'WORKFLOW_VIEW',
+      },
+      {
+        label: 'Integrations',
+        path: '/integrations',
+        icon: PlugZap,
+        description: 'External messaging and email connections',
+        requiredPermission: 'INTEGRATION_VIEW',
       },
     ],
   },

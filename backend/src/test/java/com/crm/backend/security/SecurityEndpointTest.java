@@ -180,6 +180,21 @@ class SecurityEndpointTest {
     }
 
     @Test
+    void integrationsShouldRejectRequestWithoutAuthentication()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/integrations"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(authorities = "CUSTOMER_VIEW")
+    void integrationsShouldRejectUserWithoutIntegrationPermission()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/integrations"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @WithMockUser(
             username = "manager@crm.com",
             authorities = {"WEBHOOK_VIEW"}

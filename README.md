@@ -42,6 +42,8 @@ Current version includes:
 
 - Event-driven workflow automation with durable retries and execution history
 
+- Encrypted WhatsApp Cloud and SMTP integrations with durable delivery history
+
 - Search, filtering, pagination
 
 - Quick create actions
