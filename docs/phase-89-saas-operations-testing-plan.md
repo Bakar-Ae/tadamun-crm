@@ -77,8 +77,9 @@ average latency; transaction-control noise is excluded.
 - Step 4 - billing/webhook/workflow/integration recovery coverage: implemented.
 - Step 5 - read-only load and performance testing: implemented.
 - Step 6 - tenant-aware monitoring and protected metrics: implemented.
-- Steps 7-8 remain: backup verification, disaster recovery, and final Phase 89
-  regression evidence.
+- Step 7 - scheduled backup verification and isolated restore proof: implemented.
+- Step 8 remains: disaster-recovery rehearsal and final Phase 89 regression
+  evidence.
 
 ### Tenant-aware monitoring evidence
 
@@ -92,3 +93,16 @@ average latency; transaction-control noise is excluded.
 - `RequestObservabilityFilterTest`, `SaasOperationsMetricsTest`, and security
   endpoint tests cover correlation, tenant-safe labels, and access control.
 - Final backend regression: 315 tests, 0 failures, 0 errors, 0 skipped.
+
+### Backup verification evidence
+
+- A transaction-consistent MySQL dump is created without stopping the CRM.
+- Every run validates dump structure, restores into a disposable MySQL 8.4
+  container, verifies critical tables and Flyway history, and records JSON
+  evidence.
+- The daily Windows task runs at 20:00, starts after a missed trigger, and is
+  permitted to finish while the laptop is on battery.
+- The scheduled proof run completed on 2026-09-12 with task result `0`: 44
+  tables restored, Flyway version 35, and all five critical tables present.
+- Timestamped backups and evidence are retained for 30 days; secrets and backup
+  payloads remain excluded from Git.

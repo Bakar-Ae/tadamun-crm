@@ -1,21 +1,40 @@
 # CRM Backup Runbook
 
-## Goal
+## Daily Check
 
-Protect CRM data from loss.
+```powershell
+$taskName = "Tadamun CRM Backup Verification"
+Get-ScheduledTask -TaskName $taskName
+Get-ScheduledTaskInfo -TaskName $taskName
+```
 
-## Backup Target
+A healthy task is `Ready`, has `LastTaskResult` equal to `0`, and has a future
+`NextRunTime`. The latest JSON file in `logs/backup-verification/` must report
+`Result` as `SUCCESS`.
 
-Database container:
+## Manual Run
 
-```text
-crm_mysql
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Invoke-CrmBackupVerification.ps1
+```
 
-## Restore Test Result
+The live database is read only during the dump. Restore verification happens in
+a temporary MySQL container and never writes to `crm_mysql`.
 
-Date: 2026-06-15
+## Failure Response
 
-Backup file:
+1. Read the newest failure JSON in `logs/backup-verification/`.
+2. Confirm Docker Desktop is running and `crm_mysql` is healthy.
+3. Check available disk space and Docker logs.
+4. Run the verifier manually and retain its console error.
+5. Keep the newest previously verified backup while investigating.
 
-```text
-backups/crm_db_backup.sql
+## Phase 89 Restore Proof
+
+- Verified: 2026-09-12 16:20 Africa/Mogadishu.
+- Scheduled task result: `0` (`Ready`).
+- Restored tables: `44`.
+- Latest Flyway version: `35`.
+- Required critical tables found: `5`.
+- Backup size: `132335` bytes.
+- The isolated restore container was removed after verification.
