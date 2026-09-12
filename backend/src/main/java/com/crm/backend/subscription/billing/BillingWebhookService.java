@@ -1,6 +1,7 @@
 package com.crm.backend.subscription.billing;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.observability.SaasOperationsMetrics;
 import com.crm.backend.organization.Organization;
 import com.crm.backend.organization.OrganizationRepository;
 import com.crm.backend.subscription.SubscriptionAuditAction;
@@ -29,6 +30,7 @@ public class BillingWebhookService {
     private final SubscriptionService subscriptionService;
     private final SubscriptionTimeProvider timeProvider;
     private final AuditLogService auditLogService;
+    private final SaasOperationsMetrics metrics;
 
     public BillingWebhookService(
             BillingProviderRegistry providerRegistry,
@@ -38,7 +40,8 @@ public class BillingWebhookService {
             OrganizationRepository organizationRepository,
             SubscriptionService subscriptionService,
             SubscriptionTimeProvider timeProvider,
-            AuditLogService auditLogService
+            AuditLogService auditLogService,
+            SaasOperationsMetrics metrics
     ) {
         this.providerRegistry = providerRegistry;
         this.eventRepository = eventRepository;
@@ -48,6 +51,7 @@ public class BillingWebhookService {
         this.subscriptionService = subscriptionService;
         this.timeProvider = timeProvider;
         this.auditLogService = auditLogService;
+        this.metrics = metrics;
     }
 
     public BillingWebhookProcessingResult processStripeWebhook(
@@ -69,6 +73,10 @@ public class BillingWebhookService {
                         == BillingWebhookProcessingStatus.PROCESSED
                 || event.getProcessingStatus()
                         == BillingWebhookProcessingStatus.IGNORED)) {
+            metrics.record(
+                    SaasOperationsMetrics.Subsystem.BILLING_WEBHOOK,
+                    SaasOperationsMetrics.Outcome.DUPLICATE
+            );
             return new BillingWebhookProcessingResult(
                     true,
                     true,
@@ -85,6 +93,10 @@ public class BillingWebhookService {
                 );
                 event.setProcessedAt(timeProvider.now());
                 eventRepository.saveAndFlush(event);
+                metrics.record(
+                        SaasOperationsMetrics.Subsystem.BILLING_WEBHOOK,
+                        SaasOperationsMetrics.Outcome.IGNORED
+                );
                 return new BillingWebhookProcessingResult(
                         true,
                         false,
@@ -120,6 +132,11 @@ public class BillingWebhookService {
                             + "\"}"
             );
 
+            metrics.record(
+                    SaasOperationsMetrics.Subsystem.BILLING_WEBHOOK,
+                    SaasOperationsMetrics.Outcome.COMPLETED
+            );
+
             return new BillingWebhookProcessingResult(
                     true,
                     false,
@@ -129,6 +146,10 @@ public class BillingWebhookService {
             event.setProcessingStatus(BillingWebhookProcessingStatus.FAILED);
             event.setLastError(exception.getClass().getSimpleName());
             eventRepository.saveAndFlush(event);
+            metrics.record(
+                    SaasOperationsMetrics.Subsystem.BILLING_WEBHOOK,
+                    SaasOperationsMetrics.Outcome.FAILED
+            );
             return new BillingWebhookProcessingResult(
                     true,
                     false,

@@ -1,5 +1,6 @@
 package com.crm.backend.publicapi.security;
 
+import com.crm.backend.observability.RequestObservabilityContext;
 import com.crm.backend.publicapi.PublicApiAuditAction;
 import com.crm.backend.publicapi.PublicApiAuditService;
 import com.crm.backend.subscription.SubscriptionFeatureUnavailableException;
@@ -131,12 +132,18 @@ public class PublicApiAuthenticationFilter extends OncePerRequestFilter {
         }
 
         PublicApiContextHolder.set(principal);
+        RequestObservabilityContext.bindTenant(
+                request,
+                principal.organizationId(),
+                null
+        );
         installAuthentication(request, principal);
 
         try {
             filterChain.doFilter(request, response);
         } finally {
             PublicApiContextHolder.clear();
+            RequestObservabilityContext.clearTenant();
             SecurityContextHolder.clearContext();
         }
     }

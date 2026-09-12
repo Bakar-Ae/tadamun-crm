@@ -180,7 +180,7 @@ public class IntegrationDeliveryService {
     }
 
     @Transactional
-    public void deliver(Long id, String claimToken) {
+    public IntegrationDeliveryStatus deliver(Long id, String claimToken) {
         IntegrationDelivery delivery = deliveryRepository
                 .findForWorkerUpdate(id)
                 .filter(value -> Objects.equals(
@@ -190,7 +190,7 @@ public class IntegrationDeliveryService {
                         == IntegrationDeliveryStatus.PROCESSING)
                 .orElse(null);
         if (delivery == null) {
-            return;
+            return null;
         }
 
         long startedAt = System.nanoTime();
@@ -216,6 +216,7 @@ public class IntegrationDeliveryService {
                     )
             );
             recordSuccess(delivery, result, elapsedMillis(startedAt));
+            return delivery.getStatus();
         } catch (IntegrationProviderException exception) {
             recordFailure(
                     delivery,
@@ -224,6 +225,7 @@ public class IntegrationDeliveryService {
                     exception.isRetryable(),
                     elapsedMillis(startedAt)
             );
+            return delivery.getStatus();
         } catch (IllegalArgumentException exception) {
             recordFailure(
                     delivery,
@@ -232,6 +234,7 @@ public class IntegrationDeliveryService {
                     false,
                     elapsedMillis(startedAt)
             );
+            return delivery.getStatus();
         }
     }
 

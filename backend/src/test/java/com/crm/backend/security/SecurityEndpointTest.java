@@ -472,6 +472,36 @@ class SecurityEndpointTest {
     }
 
     @Test
+    void metricsEndpointShouldRejectUnauthenticatedRequest()
+            throws Exception {
+        mockMvc.perform(get("/actuator/metrics"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "owner@crm.com",
+            authorities = {"ROLE_OWNER", "MEMBERSHIP_UPDATE"}
+    )
+    void metricsEndpointShouldRejectOrganizationAdministrator()
+            throws Exception {
+        mockMvc.perform(get("/actuator/metrics"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(
+            username = "platform.admin@crm.com",
+            authorities = {PlatformAuthorities.ADMIN}
+    )
+    void metricsEndpointShouldAllowPlatformAdministrator()
+            throws Exception {
+        mockMvc.perform(get("/actuator/metrics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.names").isArray());
+    }
+
+    @Test
     @WithMockUser(
             username = "manager@crm.com",
             authorities = {"CUSTOMER_VIEW"}

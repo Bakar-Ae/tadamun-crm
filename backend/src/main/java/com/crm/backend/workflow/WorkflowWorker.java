@@ -1,5 +1,6 @@
 package com.crm.backend.workflow;
 
+import com.crm.backend.observability.SaasOperationsMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -21,13 +22,16 @@ public class WorkflowWorker {
 
     private final WorkflowQueueClaimService claimService;
     private final WorkflowActionResultService resultService;
+    private final SaasOperationsMetrics metrics;
 
     public WorkflowWorker(
             WorkflowQueueClaimService claimService,
-            WorkflowActionResultService resultService
+            WorkflowActionResultService resultService,
+            SaasOperationsMetrics metrics
     ) {
         this.claimService = claimService;
         this.resultService = resultService;
+        this.metrics = metrics;
     }
 
     @Scheduled(
@@ -44,13 +48,35 @@ public class WorkflowWorker {
             }
         }
         if (recovered > 0) {
+            metrics.record(
+                    SaasOperationsMetrics.Subsystem.WORKFLOW_ACTION,
+                    SaasOperationsMetrics.Outcome.RECOVERED,
+                    recovered
+            );
             log.warn("Recovered stale workflow actions. count={}", recovered);
         }
 
         for (WorkflowQueueClaim claim : claimService.claimReadyActions()) {
             try {
-                resultService.processClaim(claim);
+                WorkflowActionExecutionStatus status =
+                        resultService.processClaim(claim);
+                if (status != null) {
+                    boolean completed = switch (status) {
+                        case SUCCEEDED, SKIPPED -> true;
+                        default -> false;
+                    };
+                    metrics.record(
+                            SaasOperationsMetrics.Subsystem.WORKFLOW_ACTION,
+                            completed
+                                    ? SaasOperationsMetrics.Outcome.COMPLETED
+                                    : SaasOperationsMetrics.Outcome.FAILED
+                    );
+                }
             } catch (RuntimeException failure) {
+                metrics.record(
+                        SaasOperationsMetrics.Subsystem.WORKFLOW_ACTION,
+                        SaasOperationsMetrics.Outcome.FAILED
+                );
                 log.warn(
                         "Workflow action processing failed unexpectedly. actionExecutionId={}, reason={}",
                         claim.actionExecutionId(),

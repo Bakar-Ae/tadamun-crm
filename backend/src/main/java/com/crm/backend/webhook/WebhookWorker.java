@@ -1,5 +1,6 @@
 package com.crm.backend.webhook;
 
+import com.crm.backend.observability.SaasOperationsMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,15 +25,18 @@ public class WebhookWorker {
     private final WebhookQueueClaimService claimService;
     private final WebhookEventFanoutService fanoutService;
     private final WebhookDeliveryService deliveryService;
+    private final SaasOperationsMetrics metrics;
 
     public WebhookWorker(
             WebhookQueueClaimService claimService,
             WebhookEventFanoutService fanoutService,
-            WebhookDeliveryService deliveryService
+            WebhookDeliveryService deliveryService,
+            SaasOperationsMetrics metrics
     ) {
         this.claimService = claimService;
         this.fanoutService = fanoutService;
         this.deliveryService = deliveryService;
+        this.metrics = metrics;
     }
 
     @Scheduled(
@@ -44,6 +48,11 @@ public class WebhookWorker {
     public void processQueues() {
         int recovered = claimService.recoverStaleDeliveries();
         if (recovered > 0) {
+            metrics.record(
+                    SaasOperationsMetrics.Subsystem.WEBHOOK_DELIVERY,
+                    SaasOperationsMetrics.Outcome.RECOVERED,
+                    recovered
+            );
             log.warn("Recovered stale webhook deliveries. count={}",
                     recovered);
         }
@@ -56,7 +65,15 @@ public class WebhookWorker {
         for (WebhookWorkItem item : items) {
             try {
                 fanoutService.fanOut(item.id(), item.claimToken());
+                metrics.record(
+                        SaasOperationsMetrics.Subsystem.WEBHOOK_EVENT,
+                        SaasOperationsMetrics.Outcome.COMPLETED
+                );
             } catch (RuntimeException failure) {
+                metrics.record(
+                        SaasOperationsMetrics.Subsystem.WEBHOOK_EVENT,
+                        SaasOperationsMetrics.Outcome.FAILED
+                );
                 log.warn(
                         "Webhook event fan-out failed. eventId={}, reason={}",
                         item.id(),
@@ -70,8 +87,21 @@ public class WebhookWorker {
     private void processDeliveries(List<WebhookWorkItem> items) {
         for (WebhookWorkItem item : items) {
             try {
-                deliveryService.deliver(item.id(), item.claimToken());
+                WebhookDeliveryOutcome outcome = deliveryService.deliver(
+                        item.id(),
+                        item.claimToken()
+                );
+                metrics.record(
+                        SaasOperationsMetrics.Subsystem.WEBHOOK_DELIVERY,
+                        outcome == WebhookDeliveryOutcome.SUCCEEDED
+                                ? SaasOperationsMetrics.Outcome.COMPLETED
+                                : SaasOperationsMetrics.Outcome.FAILED
+                );
             } catch (RuntimeException failure) {
+                metrics.record(
+                        SaasOperationsMetrics.Subsystem.WEBHOOK_DELIVERY,
+                        SaasOperationsMetrics.Outcome.FAILED
+                );
                 log.warn(
                         "Webhook delivery worker failed. deliveryId={}, reason={}",
                         item.id(),

@@ -1,5 +1,6 @@
 package com.crm.backend.security.tenant;
 
+import com.crm.backend.observability.RequestObservabilityContext;
 import com.crm.backend.security.CustomUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -79,6 +80,11 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             );
 
             TenantContextHolder.set(tenantContext);
+            RequestObservabilityContext.bindTenant(
+                    request,
+                    tenantContext.organizationId(),
+                    userDetails.getId()
+            );
             installTenantAuthentication(
                     originalAuthentication,
                     userDetails,
@@ -95,6 +101,7 @@ public class TenantResolutionFilter extends OncePerRequestFilter {
             writeTenantError(response, exception);
         } finally {
             TenantContextHolder.clear();
+            RequestObservabilityContext.clearTenant();
             SecurityContextHolder.getContext()
                     .setAuthentication(originalAuthentication);
         }

@@ -47,12 +47,14 @@ public class WorkflowActionResultService {
     }
 
     @Transactional
-    public void processClaim(WorkflowQueueClaim claim) {
+    public WorkflowActionExecutionStatus processClaim(
+            WorkflowQueueClaim claim
+    ) {
         WorkflowActionExecution actionExecution = actionRepository
                 .findForUpdate(claim.actionExecutionId())
                 .orElse(null);
         if (!ownsClaim(actionExecution, claim.claimToken())) {
-            return;
+            return null;
         }
 
         long startedAt = System.nanoTime();
@@ -61,8 +63,10 @@ public class WorkflowActionResultService {
                     actionExecution
             );
             recordSuccess(actionExecution, result, elapsedMillis(startedAt));
+            return actionExecution.getStatus();
         } catch (RuntimeException failure) {
             recordFailure(actionExecution, failure, elapsedMillis(startedAt));
+            return actionExecution.getStatus();
         }
     }
 

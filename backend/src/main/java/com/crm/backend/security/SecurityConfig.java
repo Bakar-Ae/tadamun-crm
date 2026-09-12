@@ -1,6 +1,7 @@
 package com.crm.backend.security;
 
 import com.crm.backend.publicapi.security.PublicApiAuthenticationFilter;
+import com.crm.backend.observability.RequestObservabilityContext;
 import com.crm.backend.security.tenant.TenantResolutionFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,6 +79,10 @@ public class SecurityConfig {
                                 "/api/v1/billing/webhooks/stripe",
                                 "/api/v1/public/organization-invitations/**"
                         ).permitAll()
+                        .requestMatchers(
+                                "/actuator/metrics",
+                                "/actuator/metrics/**"
+                        ).hasAuthority(PlatformAuthorities.ADMIN)
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/api/v1/platform/**")
                         .hasAuthority(PlatformAuthorities.ADMIN)
@@ -111,10 +116,12 @@ public class SecurityConfig {
                 "Authorization",
                 "Content-Type",
                 "Idempotency-Key",
+                RequestObservabilityContext.REQUEST_ID_HEADER,
                 TenantResolutionFilter.ORGANIZATION_HEADER
         ));
         configuration.setExposedHeaders(List.of(
                 TenantResolutionFilter.ORGANIZATION_HEADER,
+                RequestObservabilityContext.REQUEST_ID_HEADER,
                 "Retry-After"
         ));
         configuration.setAllowCredentials(true);

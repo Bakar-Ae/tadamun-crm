@@ -76,5 +76,19 @@ average latency; transaction-control noise is excluded.
 - Step 3 - end-to-end organization lifecycle suite: implemented.
 - Step 4 - billing/webhook/workflow/integration recovery coverage: implemented.
 - Step 5 - read-only load and performance testing: implemented.
-- Steps 6-8 remain: tenant-aware monitoring, backup verification,
-  disaster recovery, and final Phase 89 regression evidence.
+- Step 6 - tenant-aware monitoring and protected metrics: implemented.
+- Steps 7-8 remain: backup verification, disaster recovery, and final Phase 89
+  regression evidence.
+
+### Tenant-aware monitoring evidence
+
+- Every backend response carries a validated or generated `X-Request-Id`.
+- Authenticated request logs include trusted organization and user context.
+- HTTP metrics use bounded route/status tags and only tenant
+  `present`/`absent`; organization identifiers never become metric labels.
+- Billing, webhook, workflow, and integration workers publish outcome counters
+  without allowing metric failures to interrupt business processing.
+- Health remains public for probes, while metrics require `PLATFORM_ADMIN`.
+- `RequestObservabilityFilterTest`, `SaasOperationsMetricsTest`, and security
+  endpoint tests cover correlation, tenant-safe labels, and access control.
+- Final backend regression: 315 tests, 0 failures, 0 errors, 0 skipped.

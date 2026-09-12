@@ -1,6 +1,7 @@
 package com.crm.backend.subscription.billing;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.observability.SaasOperationsMetrics;
 import com.crm.backend.organization.Organization;
 import com.crm.backend.organization.OrganizationRepository;
 import com.crm.backend.subscription.SubscriptionPlan;
@@ -38,6 +39,7 @@ class BillingWebhookServiceTest {
     private SubscriptionService subscriptionService;
     private SubscriptionTimeProvider timeProvider;
     private AuditLogService auditLogService;
+    private SaasOperationsMetrics metrics;
     private BillingProvider provider;
     private BillingWebhookService service;
 
@@ -51,6 +53,7 @@ class BillingWebhookServiceTest {
         subscriptionService = mock(SubscriptionService.class);
         timeProvider = mock(SubscriptionTimeProvider.class);
         auditLogService = mock(AuditLogService.class);
+        metrics = mock(SaasOperationsMetrics.class);
         provider = mock(BillingProvider.class);
         service = new BillingWebhookService(
                 providerRegistry,
@@ -60,7 +63,8 @@ class BillingWebhookServiceTest {
                 organizationRepository,
                 subscriptionService,
                 timeProvider,
-                auditLogService
+                auditLogService,
+                metrics
         );
 
         when(providerRegistry.require(BillingProviderName.STRIPE))

@@ -1,5 +1,6 @@
 package com.crm.backend.webhook;
 
+import com.crm.backend.observability.SaasOperationsMetrics;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -23,6 +24,7 @@ class WebhookWorkerTest {
         WebhookDeliveryService deliveryService = mock(
                 WebhookDeliveryService.class
         );
+        SaasOperationsMetrics metrics = mock(SaasOperationsMetrics.class);
         WebhookWorkItem failedEvent = new WebhookWorkItem(1L, "clm_1");
         WebhookWorkItem nextEvent = new WebhookWorkItem(2L, "clm_2");
         WebhookWorkItem failedDelivery = new WebhookWorkItem(3L, "clm_3");
@@ -41,7 +43,8 @@ class WebhookWorkerTest {
         new WebhookWorker(
                 claimService,
                 fanoutService,
-                deliveryService
+                deliveryService,
+                metrics
         ).processQueues();
 
         verify(claimService).recordEventFailure(
@@ -52,6 +55,18 @@ class WebhookWorkerTest {
         verify(claimService).releaseDeliveryAfterWorkerFailure(
                 eq(failedDelivery),
                 any(IllegalStateException.class)
+        );
+        verify(metrics).record(
+                SaasOperationsMetrics.Subsystem.WEBHOOK_EVENT,
+                SaasOperationsMetrics.Outcome.COMPLETED
+        );
+        verify(metrics).record(
+                SaasOperationsMetrics.Subsystem.WEBHOOK_EVENT,
+                SaasOperationsMetrics.Outcome.FAILED
+        );
+        verify(metrics).record(
+                SaasOperationsMetrics.Subsystem.WEBHOOK_DELIVERY,
+                SaasOperationsMetrics.Outcome.FAILED
         );
     }
 }
