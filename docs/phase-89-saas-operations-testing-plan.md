@@ -78,8 +78,9 @@ average latency; transaction-control noise is excluded.
 - Step 5 - read-only load and performance testing: implemented.
 - Step 6 - tenant-aware monitoring and protected metrics: implemented.
 - Step 7 - scheduled backup verification and isolated restore proof: implemented.
-- Step 8 remains: disaster-recovery rehearsal and final Phase 89 regression
-  evidence.
+- Step 8 - disaster-recovery rehearsal and final regression evidence:
+  implemented.
+- Phase 89 status: complete.
 
 ### Tenant-aware monitoring evidence
 
@@ -106,3 +107,33 @@ average latency; transaction-control noise is excluded.
   tables restored, Flyway version 35, and all five critical tables present.
 - Timestamped backups and evidence are retained for 30 days; secrets and backup
   payloads remain excluded from Git.
+
+### Final release gate - 2026-09-12
+
+- Repository baseline: clean `main` at `81ed4f0` before this evidence update.
+- Backend: `./mvnw.cmd test` passed 315 tests with 0 failures, 0 errors, and
+  0 skipped; all 35 Flyway migrations applied in the integration suites.
+- Frontend: 2 Vitest files passed 10 tests; ESLint and the Vite production
+  build both passed.
+- Runtime: the complete Compose stack rebuilt successfully, Compose
+  configuration validated, and MySQL, backend, frontend, and Mailpit were all
+  healthy.
+- Persistence: MySQL uses a volume at `/var/lib/mysql`; backend attachments use
+  a volume at `/data/attachments`.
+- Database: the live schema reported Flyway version 35 and 0 failed migrations.
+- Public smoke: backend health, frontend root, and frontend dashboard route
+  returned HTTP 200; the health body reported `UP`.
+- Security smoke: unauthenticated customer and metrics requests returned HTTP
+  401; a supplied request ID was echoed; authenticated admin login, tenant
+  customer access, and protected metrics returned successfully.
+- Read-only runtime exercise: 83 requests completed with 0% failures, 7.81
+  requests/second, 61.52 ms overall p95, and all performance thresholds passed.
+- Operations: recent backend and frontend logs contained no error entries.
+- Secret hygiene: `.env`, generated backups, and verification logs were not
+  tracked; only `backups/.gitkeep` was tracked, and the high-confidence secret
+  scan found no committed key material.
+- Disaster recovery: the scheduled verifier restored a real backup into an
+  isolated MySQL 8.4 container, verified 44 tables and Flyway version 35, and
+  removed the temporary container without modifying the live database.
+
+Release-gate result: **PASS**. Phase 90 may begin.
