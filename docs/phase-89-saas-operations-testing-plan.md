@@ -41,11 +41,40 @@ cd backend
 .\mvnw.cmd test
 ```
 
+### Read-only load test
+
+The local performance profile logs in once, discovers an active workspace,
+warms each route, and sends only `GET` requests to authentication, dashboard,
+customer, lead, task, report, and subscription-usage endpoints. Credentials are
+read from the ignored `.env` file and are never written to the report.
+
+```powershell
+.\scripts\Invoke-CrmReadOnlyLoadTest.ps1
+.\scripts\Invoke-CrmReadOnlyLoadTest.ps1 -VirtualUsers 10 -Duration 1m
+```
+
+The default acceptance thresholds are less than 1% failed requests, an overall
+95th percentile below 750 ms, an overall 99th percentile below 1500 ms, and a
+per-endpoint 95th percentile below 1000 ms. A compact machine-readable report
+is written to the ignored `tmp/load-test/summary.json`. The runner also prints
+the ten MySQL application-statement digests with the greatest historical
+average latency; transaction-control noise is excluded.
+
+### Local baseline - 2026-09-11
+
+- Profile: 5 virtual users for 30 seconds against the Docker backend.
+- Result: 1,029 requests at 33.70 requests/second with 0% failures.
+- Overall response time: 76.26 ms at p95.
+- Slowest endpoint: report summary at 93.58 ms p95.
+- Slowest eligible MySQL digest: 1.819 ms average; no query exceeded the
+  endpoint or overall performance thresholds.
+
 ## Completion Status
 
 - Step 1 - security and operations test matrix: implemented.
 - Step 2 - cross-tenant isolation regression suite: implemented.
 - Step 3 - end-to-end organization lifecycle suite: implemented.
 - Step 4 - billing/webhook/workflow/integration recovery coverage: implemented.
-- Steps 5-8 remain: load testing, tenant-aware monitoring, backup verification,
+- Step 5 - read-only load and performance testing: implemented.
+- Steps 6-8 remain: tenant-aware monitoring, backup verification,
   disaster recovery, and final Phase 89 regression evidence.

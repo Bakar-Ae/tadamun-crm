@@ -166,6 +166,26 @@ services:
         max-size: "10m"
         max-file: "3"  
 
+  load-test:
+    image: grafana/k6:0.57.0
+    profiles:
+      - performance
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      CRM_BASE_URL: http://backend:8081
+      CRM_ADMIN_EMAIL: ${LOAD_TEST_ADMIN_EMAIL:-admin@crm.com}
+      CRM_ADMIN_PASSWORD: ${LOAD_TEST_ADMIN_PASSWORD:-}
+      LOAD_TEST_VUS: ${LOAD_TEST_VUS:-5}
+      LOAD_TEST_DURATION: ${LOAD_TEST_DURATION:-30s}
+      LOAD_TEST_PAUSE_SECONDS: ${LOAD_TEST_PAUSE_SECONDS:-0.1}
+      LOAD_TEST_ORGANIZATION_ID: ${LOAD_TEST_ORGANIZATION_ID:-}
+    volumes:
+      - ./performance/k6:/scripts:ro
+      - ./tmp/load-test:/results
+    command: ["run", "/scripts/crm-read-only.js"]
+
          
 
 volumes:
