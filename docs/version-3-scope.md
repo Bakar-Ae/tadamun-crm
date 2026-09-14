@@ -2,7 +2,8 @@
 
 ## Status
 
-Planning approved. Implementation has not started.
+Implementation complete. Final public deployment validation and the `v3.0.0`
+release tag remain pending.
 
 ## Version 3 Goal
 

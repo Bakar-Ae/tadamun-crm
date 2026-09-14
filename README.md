@@ -1,8 +1,12 @@
 # Tadamun CRM
 
-Tadamun CRM is a CRM application built to help businesses manage customers, leads, contacts, tasks, notes, and users in one place.
+Tadamun CRM is a multi-tenant SaaS CRM for managing customers, leads,
+contacts, tasks, notes, users, subscriptions, integrations, and automation in
+one place.
 
-This project was built with Java 21, Spring Boot, React, TypeScript, MySQL, and Docker. The goal was to practice building a production-style full-stack application using a modular architecture.
+Version 3 is built with Java 21, Spring Boot, React, TypeScript, MySQL, and
+Docker using a modular architecture with tenant isolation and operational
+release controls.
 
 ---
 
@@ -11,50 +15,34 @@ This project was built with Java 21, Spring Boot, React, TypeScript, MySQL, and 
 Current version includes:
 
 - JWT authentication
-
 - Refresh tokens and logout
-
 - Password change and reset
-
-- Role-based access control
-
+- Multi-organization workspaces and memberships
+- Tenant-scoped roles and permissions
+- Organization invitations and onboarding
+- Tenant-isolated customers, leads, contacts, tasks, notes, and attachments
 - Login rate limiting
-
 - User management
-
 - Customer management
-
 - Lead management
-
 - Contact management
-
 - Task management
-
 - Notes
-
 - Notifications
-
 - Dashboard
-
-- Reports
-
-- Audit logs
-
+- Reports and exports
+- Tenant-aware audit logs and platform administration
+- Stripe subscription billing foundation
+- Subscription plans, usage metering, and feature limits
+- Public API keys with scoped access and rate limits
+- Signed outbound webhooks with retries and delivery history
 - Event-driven workflow automation with durable retries and execution history
-
 - Encrypted WhatsApp Cloud and SMTP integrations with durable delivery history
-
 - Search, filtering, pagination
-
 - Quick create actions
-
 - Detail drawers
-
 - Light and dark mode
-
-- Docker support
-
-- Health checks
+- Docker health checks, monitoring, load tests, and verified backups
 
 ---
 
@@ -266,6 +254,8 @@ npm run build
 
 npm run lint
 
+npm test
+
 ```
 
 ---
@@ -286,6 +276,10 @@ A few things worth keeping in mind:
 
 - Use HTTPS when deploying
 
+- Store tenant and billing secrets only in the deployment secret manager
+
+- Run the migration rehearsal and verified-backup scripts before releases
+
 ---
 
 ## Documentation
@@ -296,23 +290,9 @@ Project documentation can be found in the `docs` folder, including deployment no
 
 ## Next Steps
 
-Some features I'd like to add in future versions:
-
-- File uploads
-
-- Calendar integration
-
-- Email support
-
-- Team dashboards
-
-- AI-assisted insights
-
-- Public API
-
-- Mobile app
-
-- Multi-tenant SaaS support
+Version 4 planning is documented in `docs/version-4-roadmap.md` and includes
+PWA/mobile improvements, AI-assisted CRM features, richer analytics, and
+expanded integration capabilities.
 
 ---
 
