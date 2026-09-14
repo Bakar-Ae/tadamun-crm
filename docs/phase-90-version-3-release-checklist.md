@@ -3,8 +3,9 @@
 ## Status
 
 Release candidate prepared. Local validation and the final security review
-passed. Public deployment validation is blocked because the documented Railway
-frontend and backend domains currently return HTTP 404. Do not create or push
+passed. Public deployment validation is blocked: Railway shows an expired trial
+and all three project services offline; the documented frontend and backend
+domains return HTTP 404. Do not create or push
 the `v3.0.0` tag until both public services are restored and revalidated.
 
 ## Release Identity
@@ -117,12 +118,25 @@ Checked on 2026-09-13:
 - `https://tadamun-crm-web.up.railway.app/` returned HTTP 404.
 - `https://tadamun-crm-production.up.railway.app/actuator/health` returned HTTP
   404 with `Application not found`.
-- Railway dashboard access requires a fresh GitHub sign-in.
+
+Dashboard confirmed from user-provided screenshots on 2026-09-14:
+
+- Workspace: `bakar-ae's Projects`
+- Project: `sparkling-simplicity`
+- Project ID: `e011fbf7-05a2-4bf6-82cf-d43c15ae70dc`
+- Environment: `production`
+- Services: `MySQL`, `tadamun-crm`, and `pleasant-learning`, all offline
+- MySQL has a listed `mysql-volume`; its data has not yet been inspected.
+- Railway displays `Trial expired` and requests an upgrade to continue.
+- CLI authorization remains pending; browser sign-in alone does not authorize
+  the CLI.
 
 Required before release:
 
-1. Sign in to Railway and inspect the Tadamun CRM project.
-2. Restore or regenerate public domains for the frontend and backend services.
+1. Complete CLI authorization for the confirmed CRM project and inspect its
+   deployment settings and retained storage.
+2. Resolve the expired hosting trial with the account owner's approval for any
+   paid plan, then restore the services and check their existing public domains.
 3. Confirm the backend production environment has all required secret values.
 4. Confirm MySQL and `/data/attachments` use persistent Railway volumes.
 5. Deploy the current `main` commit.

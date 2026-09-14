@@ -57,9 +57,11 @@ APIs, automation, integrations, and production operations controls.
 
 ## Remaining Release Gate
 
-The previously documented Railway domains currently return HTTP 404. The
-Railway services or domains must be restored, the current `main` branch must be
-deployed, and public smoke checks must pass before creating `v3.0.0`.
+The previously documented Railway domains return HTTP 404. On 2026-09-14,
+the account dashboard showed an expired trial and all three services offline
+in the confirmed CRM project, `sparkling-simplicity`. Hosting must be restored
+with the account owner's approval for any paid plan, the current `main` branch
+must be deployed, and public smoke checks must pass before creating `v3.0.0`.
 
 See `docs/phase-90-version-3-release-checklist.md` for the exact evidence and
 remaining deployment steps.
