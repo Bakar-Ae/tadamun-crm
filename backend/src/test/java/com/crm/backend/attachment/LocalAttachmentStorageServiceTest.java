@@ -7,6 +7,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,7 +25,8 @@ class LocalAttachmentStorageServiceTest {
         storageService = new LocalAttachmentStorageService(
                 temporaryDirectory.toString(),
                 1024,
-                "text/plain,application/pdf"
+                "text/plain,application/pdf",
+                true
         );
 
         storageService.initializeStorage();
@@ -52,6 +54,35 @@ class LocalAttachmentStorageServiceTest {
         try (var input = resource.getInputStream()) {
             assertArrayEquals(content, input.readAllBytes());
         }
+    }
+
+    @Test
+    void shouldRejectDisabledUploadsWithoutWritingFiles() throws Exception {
+        LocalAttachmentStorageService disabledStorage = new LocalAttachmentStorageService(
+                temporaryDirectory.toString(), 1024, "text/plain", false
+        );
+        MockMultipartFile file = new MockMultipartFile(
+                "file", "notes.txt", "text/plain", "sample".getBytes()
+        );
+
+        assertThrows(AttachmentUploadsDisabledException.class, () -> disabledStorage.store(file));
+        try (var files = Files.list(temporaryDirectory)) {
+            assertEquals(0, files.count());
+        }
+    }
+
+    @Test
+    void shouldStillLoadAndDeleteExistingFilesWhenUploadsAreDisabled() {
+        StoredFile stored = storageService.store(new MockMultipartFile(
+                "file", "notes.txt", "text/plain", "sample".getBytes()
+        ));
+        LocalAttachmentStorageService disabledStorage = new LocalAttachmentStorageService(
+                temporaryDirectory.toString(), 1024, "text/plain", false
+        );
+
+        assertTrue(disabledStorage.load(stored.storageKey()).exists());
+        disabledStorage.delete(stored.storageKey());
+        assertThrows(IllegalArgumentException.class, () -> disabledStorage.load(stored.storageKey()));
     }
 
     @Test

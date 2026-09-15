@@ -1,5 +1,6 @@
 package com.crm.backend.common;
 
+import com.crm.backend.attachment.AttachmentUploadsDisabledException;
 import com.crm.backend.auth.TooManyLoginAttemptsException;
 import com.crm.backend.subscription.billing.BillingProviderException;
 import com.crm.backend.subscription.billing.BillingUnavailableException;
@@ -28,6 +29,19 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(
             GlobalExceptionHandler.class
     );
+
+    @ExceptionHandler(AttachmentUploadsDisabledException.class)
+    public ResponseEntity<Map<String, Object>> handleUploadsDisabled(
+            AttachmentUploadsDisabledException exception
+    ) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                "timestamp", LocalDateTime.now(),
+                "status", 503,
+                "error", "Service Unavailable",
+                "code", "ATTACHMENT_UPLOADS_DISABLED",
+                "message", exception.getMessage()
+        ));
+    }
 
     @ExceptionHandler(SubscriptionFeatureUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handleUnavailableFeature(

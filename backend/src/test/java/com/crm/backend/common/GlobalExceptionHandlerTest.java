@@ -1,5 +1,6 @@
 package com.crm.backend.common;
 
+import com.crm.backend.attachment.AttachmentUploadsDisabledException;
 import com.crm.backend.subscription.SubscriptionFeature;
 import com.crm.backend.subscription.usage.SubscriptionLimitExceededException;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,17 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GlobalExceptionHandlerTest {
+
+    @Test
+    void disabledUploadsShouldReturnAnExplicitUnavailableResponse() {
+        var response = new GlobalExceptionHandler().handleUploadsDisabled(
+                new AttachmentUploadsDisabledException()
+        );
+
+        assertEquals(503, response.getStatusCode().value());
+        assertEquals("ATTACHMENT_UPLOADS_DISABLED", response.getBody().get("code"));
+        assertEquals("File uploads are disabled in this environment", response.getBody().get("message"));
+    }
 
     @Test
     void subscriptionLimitShouldReturnUpgradeRequiredResponse() {

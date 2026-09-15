@@ -32,18 +32,21 @@ public class LocalAttachmentStorageService {
     private final Path storageRoot;
     private final long maxSizeBytes;
     private final Set<String> allowedContentTypes;
+    private final boolean uploadsEnabled;
 
     public LocalAttachmentStorageService(
             @Value("${app.attachments.storage-path}") String storagePath,
             @Value("${app.attachments.max-size-bytes}") long maxSizeBytes,
             @Value("${app.attachments.allowed-content-types}")
-            String allowedContentTypes
+            String allowedContentTypes,
+            @Value("${app.attachments.uploads-enabled:true}") boolean uploadsEnabled
     ) {
         this.storageRoot = Path.of(storagePath)
                 .toAbsolutePath()
                 .normalize();
 
         this.maxSizeBytes = maxSizeBytes;
+        this.uploadsEnabled = uploadsEnabled;
 
         this.allowedContentTypes = Arrays.stream(
                         allowedContentTypes.split(",")
@@ -67,6 +70,9 @@ public class LocalAttachmentStorageService {
     }
 
     public StoredFile store(MultipartFile file) {
+        if (!uploadsEnabled) {
+            throw new AttachmentUploadsDisabledException();
+        }
         validateFile(file);
 
         String contentType = file.getContentType()
