@@ -2,8 +2,9 @@
 
 ## Status
 
-Version 3 implementation and local release validation are complete. Public
-Railway deployment validation and the `v3.0.0` Git tag remain pending.
+Version 3 implementation and local release validation are complete. A free
+Render/Aiven demo is live and passed basic public smoke checks on 2026-09-15.
+The full production release gate and the `v3.0.0` Git tag remain pending.
 
 ## Version 3 Goal
 
@@ -32,6 +33,8 @@ APIs, automation, integrations, and production operations controls.
 
 ## Release Validation
 
+Local release-candidate baseline, before the Render-specific adaptations:
+
 - Production-style migration rehearsal passed from Flyway V15 to V35.
 - Seven core table counts were preserved during rehearsal.
 - No unowned core tenant records remain.
@@ -45,6 +48,25 @@ APIs, automation, integrations, and production operations controls.
   health `UP`, and the frontend returns HTTP 200.
 - Automated backup creation and isolated restoration pass.
 
+Render preparation and public demo checks on 2026-09-15:
+
+- The Render adaptations passed 9 focused attachment/error-handler tests,
+  startup-script checks, and a Docker build. The full suite was not rerun during
+  the guided deployment.
+- Both Render services deployed commit `8f406bb` and reported Live.
+- The separate Aiven database was initialized through V35: 35 successful
+  migrations and 44 tables, without importing local or retained Railway data.
+- Public backend health, version, bootstrap authentication, identity, and logout
+  checks passed. Frontend root and login routes return HTTP 200.
+- Exact-origin CORS preflights pass; an unapproved origin is rejected and
+  unauthenticated customer access is denied.
+- The operator confirmed customer create/edit persistence after refresh,
+  archival, and sign-out/sign-in with the new password.
+
+Frontend: <https://tadamun-crm-1.onrender.com/login>
+
+Backend health: <https://tadamun-crm.onrender.com/actuator/health>
+
 ## Security Position
 
 - Tenant context is derived from trusted authentication and active membership.
@@ -57,20 +79,24 @@ APIs, automation, integrations, and production operations controls.
 
 ## Remaining Release Gate
 
-The previously documented Railway domains return HTTP 404. On 2026-09-14,
-the account dashboard showed an expired trial and all three services offline
-in the confirmed CRM project, `sparkling-simplicity`. Hosting must be restored
-with the account owner's approval for any paid plan, the current `main` branch
-must be deployed, and public smoke checks must pass before creating `v3.0.0`.
+The free demo does not establish production readiness. Uploads, outbound email,
+and Stripe are disabled, free-service sleep interrupts background workers, and
+hosted load, tenant-isolation, integration, and recovery acceptance is pending.
+The existing scheduled backup protects local MySQL, not the Aiven database.
+Verified hosted backups and restoration, appropriate database privileges,
+durable storage, operational monitoring, and the required enabled workflows
+must be established before approving the production release and `v3.0.0` tag.
 
-CLI authorization succeeded on 2026-09-15. Railway then explicitly rejected a
-frontend redeployment because the trial had expired. Both public domains and
-the MySQL volume remain listed. Before deploying Version 3, validate the
-retained MySQL 9.4 database, supply the missing API-key pepper and webhook
-encryption configuration, and attach persistent storage for uploaded files.
+The previous Railway deployment remains separate and unresolved. Its trial
+expired, all three services were offline, and its documented domains returned
+HTTP 404 during the earlier inspection. The retained MySQL 9.4 volume was not
+imported or downgraded. Any later restoration must validate its data, missing
+secret configuration, and storage requirements. Continuing the Render demo does
+not require purchasing a Railway plan.
 
-See `docs/phase-90-version-3-release-checklist.md` for the exact evidence and
-remaining deployment steps.
+See `docs/render-free-demo-guide.md` for the live configuration and
+`docs/phase-90-version-3-release-checklist.md` for detailed evidence and the
+remaining production gate. No paid hosting changes or release tag were made.
 
 ## Version 4 Direction
 

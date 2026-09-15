@@ -4,6 +4,15 @@ This is a constrained demo, not the Version 3 production release. Keep the
 existing local Docker environment and backups unchanged. Never import the local
 Docker `.env` into Render or publish real customer data as demo content.
 
+## Live Demo
+
+Status on 2026-09-15: deployment and basic live smoke checks passed.
+
+- Frontend: <https://tadamun-crm-1.onrender.com/login>
+- Backend health: <https://tadamun-crm.onrender.com/actuator/health>
+- Both services deployed commit `8f406bb` from `main`.
+- Database: the separate Aiven MySQL 8.4 demo service, initialized through V35.
+
 ## Backend
 
 - Repository: `Bakar-Ae/tadamun-crm`, branch `main`.
@@ -34,18 +43,39 @@ CA; the trust roots for outbound HTTPS services are unchanged. Do not add compet
 SSL options to `SPRING_DATASOURCE_URL`. Without the Aiven certificate variable,
 the local Docker startup behavior remains unchanged.
 
-The initial CORS/frontend origin is `http://localhost:5173` for local smoke
-testing, not a guessed public hostname. After creating the frontend, update
-`CORS_ALLOWED_ORIGINS` and `APP_FRONTEND_BASE_URL` to its actual HTTPS origin.
+The initial CORS/frontend origin was `http://localhost:5173` for local smoke
+testing. The hosted backend now sets both `CORS_ALLOWED_ORIGINS` and
+`APP_FRONTEND_BASE_URL` to `https://tadamun-crm-1.onrender.com`. The private
+`.env.render.local` file has been synchronized with this origin; the existing
+local Docker `.env` remains unchanged. Save and deploy backend environment
+changes so the running service reads the new values.
+
 The bootstrap login is `admin@crm.com`; its generated password stays in the
 private environment file. Complete the mandatory password change at first login.
+After changing it, use the new password for normal sign-in, not the old bootstrap
+value. The operator confirmed signing out and signing back in after setup.
+
+## Frontend
+
+- Service name: `tadamun-crm-1`; type: Render Static Site.
+- Repository: `Bakar-Ae/tadamun-crm`; branch: `main`; root directory: `frontend`.
+- Build command: `npm ci && npm run build`; publish directory: `dist`, relative
+  to the root directory. Do not enter `frontend/dist` in that field.
+- Public build variable:
+  `VITE_API_BASE_URL=https://tadamun-crm.onrender.com/api/v1`.
+- Redirects/Rewrites: Source `/*`, Destination `/index.html`, Action `Rewrite`.
+  This serves the React app for direct visits and page refreshes on client routes.
+- Never import the backend environment file into the frontend service. Client
+  bundles must not contain database passwords, bootstrap passwords, or keys.
 
 ## Limits and Pending Checks
 
 - The free instance has 512 MB RAM and 0.1 CPU. The generated JVM, connection-pool,
   and HTTP-thread settings are conservative starting values, not a load guarantee.
   The local restart/login smoke test passed under those limits, but startup was
-  slow. Verify actual Render startup time and normal workflows after deployment.
+  slow. The first Render deployment reported 5m34s including build and deployment;
+  this is not a cold-start benchmark. Basic hosted workflows passed, but idle
+  wake-up latency and sustained performance are not guaranteed.
 - `ATTACHMENT_UPLOADS_ENABLED=false` rejects uploads before storage writes. Reads
   and deletes remain available. Do not re-enable uploads without durable storage.
   The default is `true` for existing local installations.
@@ -56,8 +86,12 @@ private environment file. Complete the mandatory password change at first login.
   not automatically copied to it. The initial connection currently uses the
   service administrator; restrict application database privileges before any
   production use.
-- Frontend setup, real cloud health/login checks, and public URL verification
-  remain pending. This configuration does not complete the production release gate.
+- The scheduled Windows backup task protects the local Docker MySQL database,
+  not this Aiven database. A verified backup/restore process for hosted data is
+  still required before relying on the demo for real records.
+- Hosted multi-tenant, billing, email, integration, load, and disaster-recovery
+  release checks are not established by the basic smoke test. This deployment
+  does not complete the production release gate or authorize a `v3.0.0` tag.
 
 ## Local Verification (2026-09-15)
 
@@ -82,13 +116,44 @@ private environment file. Complete the mandatory password change at first login.
   (11 minutes 56 seconds). This is a slow local cold start, not a prediction of
   Render's timing or a guarantee of acceptable interactive performance.
 - `/actuator/info` reported version `3.0.0`. Bootstrap login, authenticated
-  `/api/v1/auth/me`, and logout passed. The mandatory first-login password change
-  remains required; no user-chosen password was set by the smoke test.
+  `/api/v1/auth/me`, and logout passed. At this point the mandatory first-login
+  password change was still required; the automated test did not choose a new
+  password for the operator.
 - The final memory sample was 354.6 MiB out of 512 MiB, with no OOM termination.
   The temporary container was removed. Existing local CRM containers were not
-  stopped or reconfigured. Public Render deployment remains pending.
+  stopped or reconfigured. Public deployment was verified separately below.
+
+## Public Verification (2026-09-15)
+
+Automated HTTP checks:
+
+- Backend health returned HTTP 200 with `UP`; application version was `3.0.0`.
+- One earlier health request timed out after 90 seconds; a retry returned `UP`.
+  The cause was not isolated. The passing smoke checks do not establish a
+  response-time or availability guarantee.
+- Before the operator changed the bootstrap password, public login,
+  authenticated `/api/v1/auth/me`, and logout passed. The test refresh session
+  was revoked, and no passwords or tokens were printed.
+- Frontend `/` and `/login` returned HTTP 200 with the same app shell, verifying
+  the SPA rewrite.
+- Login preflight allowed the exact frontend origin with the content-type
+  header. Customer preflight also allowed the authorization header.
+- An unapproved origin was rejected with HTTP 403 and no allow-origin header.
+- An unauthenticated customer-list request was denied with HTTP 401.
+
+Operator-confirmed browser checks:
+
+- Created `Deployment Test`; the customer remained after refreshing.
+- Renamed it to `Deployment Test Updated`; the new name remained after refreshing.
+- Archived the test customer successfully. The UI preserves archived history;
+  this was not a permanent deletion test.
+- Signed out and signed back in using the new password, returning to the dashboard.
+
+During this test, the local Windows backup task ran at 20:00 and recorded a
+successful isolated restore at 20:00:31. It was not a backup of the Aiven demo.
 
 References: [Render free limits](https://render.com/docs/free),
 [environment import](https://render.com/docs/configure-environment-variables),
 [monorepo paths](https://render.com/docs/monorepo-support),
+[SPA rewrites](https://render.com/docs/redirects-rewrites),
 [Connector/J security](https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-security.html).

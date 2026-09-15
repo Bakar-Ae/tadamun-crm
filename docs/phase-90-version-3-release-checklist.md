@@ -3,10 +3,10 @@
 ## Status
 
 Release candidate prepared. Local validation and the final security review
-passed. Public deployment validation is blocked: Railway shows an expired trial
-and all three project services offline; the documented frontend and backend
-domains return HTTP 404. Do not create or push
-the `v3.0.0` tag until both public services are restored and revalidated.
+passed. A separate free Render/Aiven demo is now live and its basic public smoke
+checks passed on 2026-09-15. The old Railway deployment remains unresolved.
+Production release acceptance and the `v3.0.0` tag remain pending: a constrained
+demo with uploads, outbound email, and Stripe disabled is not the full release.
 
 ## Release Identity
 
@@ -84,11 +84,18 @@ Release-blocker review:
 - Unverified production-style migration: resolved by rehearsal
 - Plain-text API or webhook secrets: none found
 - Unprotected tenant attachment access: none found
-- Missing backup/restore validation: resolved in Phase 89
+- Local backup/restore validation: resolved in Phase 89; hosted Aiven recovery
+  validation remains pending
 
 ## Automated Validation
 
 Status: PASS
+
+The full local release-candidate baseline below predates the Render adaptations.
+Those adaptations were separately checked with 9 focused attachment/error-handler
+tests, startup-script checks, a Docker build, and a resource-limited startup/login
+test. See `render-free-demo-guide.md`; the full suite was not rerun during the
+guided public deployment.
 
 - Backend: 315 tests, 0 failures, 0 errors, 0 skipped
 - Frontend: 2 test files, 10 tests passed
@@ -111,7 +118,37 @@ Expected warnings that did not fail validation:
 
 ## Public Deployment Validation
 
-Status: BLOCKED
+Status: BASIC FREE-DEMO CHECKS PASS; PRODUCTION ACCEPTANCE PENDING
+
+### Render and Aiven Demo (2026-09-15)
+
+- Frontend: <https://tadamun-crm-1.onrender.com/login>
+- Backend: <https://tadamun-crm.onrender.com/actuator/health>
+- Both Render services deployed `8f406bb` from `main` and reported Live.
+- The separate Aiven MySQL 8.4 database has 44 tables and 35 successful Flyway
+  migrations, latest version V35. No local CRM backup or Railway data was imported.
+- Public backend health is `UP`; actuator reports version `3.0.0`.
+- Public bootstrap login, authenticated identity, and logout passed before the
+  operator changed the temporary password. No passwords or tokens were printed.
+- Frontend root and direct `/login` requests return HTTP 200 with the same app
+  shell after the `/*` to `/index.html` rewrite.
+- Backend CORS permits the exact frontend origin for login and authenticated
+  customer requests. An unapproved origin was rejected with HTTP 403; an
+  unauthenticated customer-list request was denied with HTTP 401.
+- The operator confirmed customer creation and rename persisted after refresh,
+  customer archival worked, and sign-out/sign-in returned to the dashboard using
+  the new password. Archival retains history; permanent deletion was not tested.
+- Uploads, outbound email, and Stripe are intentionally disabled. Background
+  workers only run while the free backend is awake.
+- The existing Windows backup task still backs up local MySQL, not Aiven.
+- Full hosted tenant-isolation, billing, integration, load, and recovery checks
+  remain outside this basic demo smoke test.
+
+See `render-free-demo-guide.md` for configuration and detailed evidence.
+
+### Previous Railway Deployment
+
+Status: BLOCKED; retained resources have not been migrated to the demo.
 
 Checked on 2026-09-13:
 
@@ -153,7 +190,7 @@ Authenticated CLI inspection on 2026-09-15:
   redeployment was rejected with: `Your trial has expired. Please select a
   plan to continue using Railway.` No deployment started.
 
-Required before release:
+Required only if restoring the retained Railway deployment:
 
 1. Resolve the expired hosting trial with the account owner's approval for any
    paid plan.
@@ -168,10 +205,26 @@ Required before release:
 7. Run authenticated tenant and billing smoke checks.
 8. Review production logs for migration, startup, and request errors.
 
+### Remaining Production Gate
+
+1. Confirm the production hosting and operating requirements. Do not enable any
+   paid plan without the account owner's approval; restoring Railway is not a
+   prerequisite for continuing the separate Render demo.
+2. Establish and verify backups and restoration for the chosen hosted database.
+   Local Docker backup evidence does not cover the Aiven service.
+3. Use durable attachment storage before enabling uploads; configure and verify
+   outbound email and billing before claiming these workflows are available.
+4. Restrict application database privileges, review secret handling and logs,
+   and verify the required hosted tenant-isolation and integration workflows.
+5. Validate cold-start latency, load, worker availability, monitoring, and
+   recovery against the intended production requirements.
+6. Review the completed production evidence before authorizing the release tag.
+
 ## Tag Gate
 
-The `v3.0.0` tag remains intentionally absent. Create and push the annotated
-tag only after the public deployment section changes from BLOCKED to PASS:
+The `v3.0.0` tag remains intentionally absent. A passing free-demo smoke test
+does not satisfy production acceptance. Create and push the annotated tag only
+after the remaining production gate above has passed and release is authorized:
 
 ```powershell
 git tag -a v3.0.0 -m "Tadamun CRM Version 3"
