@@ -63,6 +63,12 @@ in the confirmed CRM project, `sparkling-simplicity`. Hosting must be restored
 with the account owner's approval for any paid plan, the current `main` branch
 must be deployed, and public smoke checks must pass before creating `v3.0.0`.
 
+CLI authorization succeeded on 2026-09-15. Railway then explicitly rejected a
+frontend redeployment because the trial had expired. Both public domains and
+the MySQL volume remain listed. Before deploying Version 3, validate the
+retained MySQL 9.4 database, supply the missing API-key pepper and webhook
+encryption configuration, and attach persistent storage for uploaded files.
+
 See `docs/phase-90-version-3-release-checklist.md` for the exact evidence and
 remaining deployment steps.
 

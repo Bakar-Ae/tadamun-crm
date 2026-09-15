@@ -128,18 +128,42 @@ Dashboard confirmed from user-provided screenshots on 2026-09-14:
 - Services: `MySQL`, `tadamun-crm`, and `pleasant-learning`, all offline
 - MySQL has a listed `mysql-volume`; its data has not yet been inspected.
 - Railway displays `Trial expired` and requests an upgrade to continue.
-- CLI authorization remains pending; browser sign-in alone does not authorize
-  the CLI.
+
+Authenticated CLI inspection on 2026-09-15:
+
+- CLI authorization completed for the confirmed CRM workspace and project.
+- All three services have no active deployments.
+- Both existing public domains remain configured; regeneration is not
+  currently indicated.
+- The MySQL volume is `READY`, approximately 156 MB used, and is not marked
+  for deletion. Its database contents still require validation.
+- MySQL is configured with `mysql:9.4`; local validation used MySQL 8.4.
+  Validate the retained database and migration compatibility before upgrading
+  the backend. Do not downgrade the existing database volume in place.
+- The backend has no attached volume despite using `/data/attachments`.
+- Backend variables `PUBLIC_API_KEY_PEPPER` and
+  `WEBHOOK_SECRET_ENCRYPTION_KEYS` are absent. Version 3 requires these values;
+  integration encryption defaults to the webhook key when not configured
+  separately. Existing credential values were not printed or changed.
+- Service root directories are `/backend` and `/frontend`; the frontend API
+  URL already points to the existing backend domain.
+- The backend domain targets port 8080. Verify `PORT` and the service's
+  listening port agree when restoring the deployment.
+- The account has no active paid subscription. An attempted frontend
+  redeployment was rejected with: `Your trial has expired. Please select a
+  plan to continue using Railway.` No deployment started.
 
 Required before release:
 
-1. Complete CLI authorization for the confirmed CRM project and inspect its
-   deployment settings and retained storage.
-2. Resolve the expired hosting trial with the account owner's approval for any
-   paid plan, then restore the services and check their existing public domains.
-3. Confirm the backend production environment has all required secret values.
-4. Confirm MySQL and `/data/attachments` use persistent Railway volumes.
-5. Deploy the current `main` commit.
+1. Resolve the expired hosting trial with the account owner's approval for any
+   paid plan.
+2. Restore MySQL, validate and back up its retained data, and verify migration
+   compatibility with its configured MySQL version.
+3. Configure the missing required backend secrets securely without replacing
+   existing keys or exposing their values.
+4. Add persistent attachment storage and verify the Docker build configuration,
+   health check, and port mapping for both application services.
+5. Deploy the current `main` commit using the existing public domains.
 6. Verify frontend HTTP 200 and backend health `UP` over HTTPS.
 7. Run authenticated tenant and billing smoke checks.
 8. Review production logs for migration, startup, and request errors.
