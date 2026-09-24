@@ -1,16 +1,22 @@
 package com.crm.backend.user;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.common.ResourceNotFoundException;
+import com.crm.backend.organization.membership.OrganizationMembershipRepository;
+import com.crm.backend.organization.membership.OrganizationMembershipStatus;
 import com.crm.backend.role.Role;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.role.RoleRepository;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.dto.CreateUserRequest;
 import com.crm.backend.user.dto.UpdateUserRequest;
 import com.crm.backend.user.dto.UserResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,19 +31,25 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final AuditLogService auditLogService;
+    private final OrganizationMembershipRepository membershipRepository;
+    private final CurrentOrganizationProvider currentOrganizationProvider;
 
     public UserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
             UserMapper userMapper,
-            AuditLogService auditLogService
+            AuditLogService auditLogService,
+            OrganizationMembershipRepository membershipRepository,
+            CurrentOrganizationProvider currentOrganizationProvider
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.auditLogService = auditLogService;
+        this.membershipRepository = membershipRepository;
+        this.currentOrganizationProvider = currentOrganizationProvider;
     }
 
 
@@ -79,15 +91,30 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public Page<UserResponse> getAllUsers(String keyword, UserStatus status, RoleName role, Pageable pageable) {
-        return userRepository.searchUsers(keyword, status, role, pageable)
+        // The API sorts user fields, while the scoped query selects memberships.
+        Sort sort = Sort.by(pageable.getSort().stream()
+                .map(order -> order.withProperty(
+                        order.getProperty().equals("role") || order.getProperty().startsWith("role.")
+                                ? order.getProperty() : "user." + order.getProperty()))
+                .toList());
+        Pageable membershipPage = pageable.isPaged()
+                ? PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort)
+                : Pageable.unpaged(sort);
+        return membershipRepository.searchDirectoryInOrganization(
+                        currentOrganizationProvider.getOrganizationId(),
+                        keyword, status, role, membershipPage)
                 .map(userMapper::toResponse);
     }
 
 
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long id) {
-        User user = findUserOrThrow(id);
-        return userMapper.toResponse(user);
+        return userMapper.toResponse(membershipRepository
+                .findByOrganizationIdAndUserIdAndStatus(
+                        currentOrganizationProvider.getOrganizationId(),
+                        id,
+                        OrganizationMembershipStatus.ACTIVE)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found")));
     }
 
     @Transactional

@@ -1,6 +1,7 @@
 package com.crm.backend.organization.membership;
 
 import com.crm.backend.role.RoleName;
+import com.crm.backend.user.UserStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -61,6 +62,25 @@ public interface OrganizationMembershipRepository
     findByUserIdAndStatusOrderByOrganizationNameAsc(
             Long userId,
             OrganizationMembershipStatus status
+    );
+
+    @EntityGraph(attributePaths = {"user", "role"})
+    @Query("""
+            SELECT membership FROM OrganizationMembership membership
+            WHERE membership.organization.id = :organizationId
+              AND membership.status = 'ACTIVE'
+              AND (:keyword IS NULL OR :keyword = ''
+                OR LOWER(membership.user.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                OR LOWER(membership.user.email) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:status IS NULL OR membership.user.status = :status)
+              AND (:role IS NULL OR membership.role.name = :role)
+            """)
+    Page<OrganizationMembership> searchDirectoryInOrganization(
+            @Param("organizationId") Long organizationId,
+            @Param("keyword") String keyword,
+            @Param("status") UserStatus status,
+            @Param("role") RoleName role,
+            Pageable pageable
     );
 
     @EntityGraph(attributePaths = "user")

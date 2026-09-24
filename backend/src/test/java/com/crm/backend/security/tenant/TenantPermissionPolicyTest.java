@@ -13,6 +13,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class TenantPermissionPolicyTest {
 
     @Test
+    void globalAccountMutationPermissionsShouldNotEnterTenantAuthorities() {
+        Role membershipRole = new Role();
+        membershipRole.setName(RoleName.OWNER);
+        membershipRole.setPermissions(Set.of(
+                permission(PermissionName.USER_VIEW),
+                permission(PermissionName.USER_CREATE),
+                permission(PermissionName.USER_UPDATE),
+                permission(PermissionName.USER_DEACTIVATE),
+                permission(PermissionName.USER_ROLE_CHANGE),
+                permission(PermissionName.MEMBERSHIP_INVITE),
+                permission(PermissionName.MEMBERSHIP_UPDATE),
+                permission(PermissionName.MEMBERSHIP_DEACTIVATE)
+        ));
+
+        assertEquals(Set.of(
+                PermissionName.USER_VIEW,
+                PermissionName.MEMBERSHIP_INVITE,
+                PermissionName.MEMBERSHIP_UPDATE,
+                PermissionName.MEMBERSHIP_DEACTIVATE
+        ), new TenantPermissionPolicy().resolvePermissions(membershipRole));
+    }
+
+    @Test
     void platformPermissionShouldNotEnterTenantAuthorities() {
         Permission customerView = permission(PermissionName.CUSTOMER_VIEW);
         Permission permissionManage = permission(

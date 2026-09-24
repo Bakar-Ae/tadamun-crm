@@ -1,9 +1,11 @@
 package com.crm.backend.user;
 
 import com.crm.backend.audit.AuditLogService;
+import com.crm.backend.organization.membership.OrganizationMembershipRepository;
 import com.crm.backend.role.Role;
 import com.crm.backend.role.RoleName;
 import com.crm.backend.role.RoleRepository;
+import com.crm.backend.security.tenant.CurrentOrganizationProvider;
 import com.crm.backend.user.dto.CreateUserRequest;
 import com.crm.backend.user.dto.UpdateUserRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +43,9 @@ class UserServiceTest {
                 roleRepository,
                 passwordEncoder,
                 userMapper,
-                auditLogService
+                auditLogService,
+                mock(OrganizationMembershipRepository.class),
+                mock(CurrentOrganizationProvider.class)
         );
     }
 

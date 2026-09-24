@@ -13,7 +13,13 @@ import java.util.stream.Collectors;
 public class TenantPermissionPolicy {
 
     private static final Set<PermissionName> PLATFORM_ONLY_PERMISSIONS =
-            EnumSet.of(PermissionName.PERMISSION_MANAGE);
+            EnumSet.of(
+                    PermissionName.PERMISSION_MANAGE,
+                    PermissionName.USER_CREATE,
+                    PermissionName.USER_UPDATE,
+                    PermissionName.USER_DEACTIVATE,
+                    PermissionName.USER_ROLE_CHANGE
+            );
 
     public Set<PermissionName> resolvePermissions(Role membershipRole) {
         if (membershipRole == null) {
